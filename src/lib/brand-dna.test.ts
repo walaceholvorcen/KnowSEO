@@ -37,9 +37,24 @@ describe("DNA da marca chega ao prompt", () => {
     }
   });
 
-  test("idioma do blog entra no prompt", () => {
+  test("pt pede a variante brasileira, não só o código", () => {
+    // O código sozinho fez o modelo escrever em português de Portugal.
     const prompt = buildBrandSystemPrompt({ language: "pt" } as Blog, FULL_DNA);
-    assert.ok(prompt.includes('"pt"'));
+    assert.ok(prompt.includes("português do Brasil"));
+    assert.ok(prompt.includes("nunca português de Portugal"));
+  });
+
+  test("os outros idiomas continuam nomeados", () => {
+    assert.ok(
+      buildBrandSystemPrompt({ language: "es" } as Blog, FULL_DNA).includes(
+        "español",
+      ),
+    );
+    assert.ok(
+      buildBrandSystemPrompt({ language: "en" } as Blog, FULL_DNA).includes(
+        "English",
+      ),
+    );
   });
 
   test("DNA vazio não quebra e cai em texto neutro", () => {

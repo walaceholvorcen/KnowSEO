@@ -8,11 +8,22 @@ import type { Blog, BrandDna } from "@/types";
 // carregar o SDK. O risco que o teste cobre é alguém adicionar campo no
 // DNA e esquecer de trazê-lo para cá - o cliente preenche e nada muda no
 // artigo, sem nenhum erro para denunciar.
+// O código do idioma sozinho não basta.
+//
+// Com "pt" o modelo escreveu em português de Portugal - "do teu setor",
+// "precisas conquistar", "depois de fazeres". O público é brasileiro, e o
+// artigo saiu com cara de tradução. Sem dizer a variante, a saída é sorteio.
+const IDIOMA: Record<string, string> = {
+  es: "español",
+  pt: "português do Brasil (nunca português de Portugal)",
+  en: "English",
+};
+
 export function buildBrandSystemPrompt(
   blog: Blog,
   dna: BrandDna | null,
 ): string {
-  return `Eres un redactor SEO senior escribiendo en nombre de la siguiente marca. Escribe SIEMPRE en el idioma "${blog.language}" (es = español, pt = portugués, en = inglés).
+  return `Eres un redactor SEO senior escribiendo en nombre de la siguiente marca. Escribe SIEMPRE en: ${IDIOMA[blog.language] ?? blog.language}.
 
 # Marca
 - Descripción del negocio: ${dna?.description || "(sin definir - infiere un tono profesional genérico)"}
