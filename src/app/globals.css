@@ -48,12 +48,9 @@
      para azul justo onde o azul devia ser só do cobalto. */
   --color-slate-950: #0b0e0d;
 
-  /* Faixas de nota. Dessaturados de propósito: assentam no papel em vez de
-     piscar como semáforo, e continuam distinguíveis para quem não enxerga
-     bem cor porque vêm sempre acompanhados do rótulo escrito. */
-  --color-nota-excelente: #1f6b45;
-  --color-nota-atencao: #8a5b0f;
-  --color-nota-critico: #9e2a20;
+  /* Faixas de nota: ver o bloco :root/.dark abaixo. São os únicos tokens que
+     trocam de valor entre os modos - fechados o bastante para assentar no
+     papel, abertos o bastante para não sumirem na tinta. */
 
   /* Realce de citação: fundo da menção da marca dentro de uma resposta de IA.
      É o único gesto ousado da interface - o resto fica quieto. */
@@ -66,16 +63,31 @@
 :root {
   --background: #f3f4f1;
   --foreground: #15191c;
+
+  --nota-excelente: #1f6b45;
+  --nota-atencao: #8a5b0f;
+  --nota-critico: #9e2a20;
 }
 
+/* inline para que o token guarde a referência à variável, e não o valor
+   resolvido - é o que faz a faixa trocar de tom junto com o modo. */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-nota-excelente: var(--nota-excelente);
+  --color-nota-atencao: var(--nota-atencao);
+  --color-nota-critico: var(--nota-critico);
 }
 
 .dark {
   --background: #101312;
   --foreground: #e4e7e2;
+
+  /* Os mesmos tons fechados do modo claro caem para ~2,7:1 sobre a tinta -
+     a faixa vira um borrão. Aqui sobem para o outro lado da escala. */
+  --nota-excelente: #5fbf8d;
+  --nota-atencao: #d9a441;
+  --nota-critico: #e8837a;
 }
 
 body {

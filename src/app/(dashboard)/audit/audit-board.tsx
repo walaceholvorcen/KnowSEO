@@ -24,14 +24,14 @@ const SEVERITY_LABEL: Record<string, string> = {
   info: "Informativo",
 };
 
+// Fundo neutro em todas: a severidade fica na palavra e na cor do texto.
+// Antes cada pílula trazia seu próprio fundo colorido e a lista virava
+// confete - com quatro cores brigando, nenhuma chamava atenção.
 const SEVERITY_STYLE: Record<string, string> = {
-  critical:
-    "bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300",
-  high: "bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300",
-  medium:
-    "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400",
-  quick_win:
-    "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300",
+  critical: "bg-slate-100 dark:bg-slate-800 text-nota-critico",
+  high: "bg-slate-100 dark:bg-slate-800 text-nota-atencao",
+  medium: "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400",
+  quick_win: "bg-slate-100 dark:bg-slate-800 text-nota-excelente",
   info: "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400",
 };
 
