@@ -59,7 +59,7 @@ export function isPublicHttpUrl(raw: string): boolean {
   return true;
 }
 
-async function safeFetch(url: string): Promise<Response | null> {
+export async function safeFetch(url: string): Promise<Response | null> {
   if (!isPublicHttpUrl(url)) return null;
   try {
     const res = await fetch(url, {

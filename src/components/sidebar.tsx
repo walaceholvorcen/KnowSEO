@@ -12,11 +12,13 @@ import {
   Settings,
   LogOut,
   Bot,
+  Stethoscope,
 } from "lucide-react";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Início", icon: LayoutGrid },
   { href: "/contents", label: "Conteúdos", icon: FileText },
+  { href: "/audit", label: "Auditoria", icon: Stethoscope },
   { href: "/strategy", label: "Estratégia", icon: Search },
   { href: "/visibility", label: "Visibilidade IA", icon: Bot },
   { href: "/reports", label: "Relatórios", icon: BarChart3 },

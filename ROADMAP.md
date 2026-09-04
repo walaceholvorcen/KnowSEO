@@ -28,6 +28,17 @@ Documento vivo. Atualizado conforme construímos.
 - Capa de artigo gerada automaticamente com a cor da marca, que serve
   também de preview ao compartilhar (Open Graph + Twitter Card)
 
+**Auditoria de SEO do site do cliente**
+- 21 regras cobrindo rastreamento, indexação, on-page, conteúdo e GEO
+- Nota separada para Google e para IA
+- Cada achado traz: problema, impacto, evidência e como corrigir
+- Histórico por site, para mostrar evolução
+- 33 testes garantindo que página saudável não gera achado falso
+- Honestidade sobre schema: quando o site usa JS e não achamos JSON-LD,
+  o achado avisa que pode estar injetado e manda confirmar no Rich
+  Results Test, em vez de afirmar que não existe
+- Medido: 25 páginas em ~4s
+
 **Linkagem interna automática**
 - O cliente cola a URL do site e a gente lê o sitemap dele (segue
   sitemap index, cai no `robots.txt` quando não há caminho padrão)
