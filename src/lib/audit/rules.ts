@@ -12,8 +12,11 @@ const THIN_CONTENT_WORDS = 300;
 const MIN_INTERNAL_LINKS = 3;
 const MAX_URLS_LISTED = 12;
 
-function urls(pages: PageSnapshot[]): string[] {
-  return pages.slice(0, MAX_URLS_LISTED).map((p) => p.url);
+function scope(pages: PageSnapshot[]) {
+  return {
+    affectedUrls: pages.slice(0, MAX_URLS_LISTED).map((p) => p.url),
+    affectedCount: pages.length,
+  };
 }
 
 function duplicatesBy(
@@ -47,6 +50,7 @@ export function runRules(signals: SiteSignals): Finding[] {
       evidence: `A URL analisada responde em ${signals.origin}`,
       fix: "Instale um certificado SSL e redirecione todo o tráfego HTTP para HTTPS com 301.",
       affectedUrls: [signals.origin],
+      affectedCount: 1,
     });
   }
 
@@ -62,6 +66,7 @@ export function runRules(signals: SiteSignals): Finding[] {
       evidence: `${signals.origin}/robots.txt não respondeu com sucesso`,
       fix: "Crie um robots.txt liberando o site e apontando para o sitemap.",
       affectedUrls: [`${signals.origin}/robots.txt`],
+      affectedCount: 1,
     });
   } else {
     const body = signals.robotsTxt.body ?? "";
@@ -76,6 +81,7 @@ export function runRules(signals: SiteSignals): Finding[] {
         evidence: "Foi encontrada a diretiva 'Disallow: /' no robots.txt",
         fix: "Remova o 'Disallow: /'. Bloqueie apenas caminhos específicos que realmente não devem ser indexados.",
         affectedUrls: [`${signals.origin}/robots.txt`],
+      affectedCount: 1,
       });
     }
     if (!/sitemap:/i.test(body)) {
@@ -89,6 +95,7 @@ export function runRules(signals: SiteSignals): Finding[] {
         evidence: "Não há linha 'Sitemap:' no robots.txt",
         fix: `Adicione a linha: Sitemap: ${signals.origin}/sitemap.xml`,
         affectedUrls: [`${signals.origin}/robots.txt`],
+      affectedCount: 1,
       });
     }
   }
@@ -104,6 +111,7 @@ export function runRules(signals: SiteSignals): Finding[] {
       evidence: "Nenhum sitemap encontrado no robots.txt nem nos caminhos convencionais",
       fix: "Publique um sitemap.xml com todas as páginas canônicas e envie no Search Console.",
       affectedUrls: [signals.origin],
+      affectedCount: 1,
     });
   }
 
@@ -119,7 +127,7 @@ export function runRules(signals: SiteSignals): Finding[] {
         "Essas páginas estão proibidas de aparecer na busca. Se alguma delas for importante, é perda direta de tráfego.",
       evidence: "Foi encontrada a meta tag robots com 'noindex'",
       fix: "Remova o noindex das páginas que devem ranquear. Mantenha apenas onde faz sentido (áreas internas, filtros).",
-      affectedUrls: urls(noindexPages),
+      ...scope(noindexPages),
     });
   }
 
@@ -134,7 +142,7 @@ export function runRules(signals: SiteSignals): Finding[] {
         "Sem canônica, variações da mesma URL (com barra, com parâmetro, com www) competem entre si e diluem a força da página.",
       evidence: "Nenhuma tag <link rel=\"canonical\"> encontrada",
       fix: "Adicione uma canônica auto-referente em cada página.",
-      affectedUrls: urls(noCanonical),
+      ...scope(noCanonical),
     });
   }
 
@@ -150,7 +158,7 @@ export function runRules(signals: SiteSignals): Finding[] {
         "O título é o elemento de on-page com maior peso e é o que a pessoa lê no resultado da busca.",
       evidence: "A tag <title> está ausente ou vazia",
       fix: "Escreva um título único de 30-60 caracteres, com a palavra-chave principal no começo.",
-      affectedUrls: urls(noTitle),
+      ...scope(noTitle),
     });
   }
 
@@ -165,7 +173,7 @@ export function runRules(signals: SiteSignals): Finding[] {
         "O Google corta o título no resultado, escondendo justamente o final da mensagem.",
       evidence: `Títulos com mais de ${TITLE_MAX} caracteres`,
       fix: `Reduza para até ${TITLE_MAX} caracteres mantendo a palavra-chave no início.`,
-      affectedUrls: urls(longTitle),
+      ...scope(longTitle),
     });
   }
 
@@ -182,7 +190,7 @@ export function runRules(signals: SiteSignals): Finding[] {
         "Título curto desperdiça espaço no resultado da busca e costuma deixar de fora termos que trariam cliques.",
       evidence: `Títulos com menos de ${TITLE_MIN} caracteres`,
       fix: "Aproveite o espaço: descreva o benefício e inclua um termo secundário.",
-      affectedUrls: urls(shortTitle),
+      ...scope(shortTitle),
     });
   }
 
@@ -201,7 +209,7 @@ export function runRules(signals: SiteSignals): Finding[] {
         .map((t) => `"${t}"`)
         .join(", "),
       fix: "Dê a cada página um título único que reflita a intenção de busca específica dela.",
-      affectedUrls: urls(affected),
+      ...scope(affected),
     });
   }
 
@@ -216,7 +224,7 @@ export function runRules(signals: SiteSignals): Finding[] {
         "Sem descrição o Google monta um trecho automático, geralmente sem apelo - e a taxa de clique cai.",
       evidence: "A meta description está ausente",
       fix: `Escreva uma descrição de ${META_MIN}-${META_MAX} caracteres com proposta de valor e chamada para ação.`,
-      affectedUrls: urls(noMeta),
+      ...scope(noMeta),
     });
   }
 
@@ -232,7 +240,7 @@ export function runRules(signals: SiteSignals): Finding[] {
       impact: "O texto é cortado no resultado da busca.",
       evidence: `Descrições com mais de ${META_MAX} caracteres`,
       fix: `Reduza para até ${META_MAX} caracteres.`,
-      affectedUrls: urls(longMeta),
+      ...scope(longMeta),
     });
   }
 
@@ -247,7 +255,7 @@ export function runRules(signals: SiteSignals): Finding[] {
         "Descrição repetida sinaliza páginas parecidas e reduz a chance de o Google mostrar a sua descrição.",
       evidence: "Mesma descrição em páginas diferentes",
       fix: "Escreva uma descrição própria para cada página.",
-      affectedUrls: urls([...dupMeta.values()].flat()),
+      ...scope([...dupMeta.values()].flat()),
     });
   }
 
@@ -262,7 +270,7 @@ export function runRules(signals: SiteSignals): Finding[] {
         "O H1 diz ao Google e ao leitor do que a página trata. Sem ele a página fica sem tema declarado.",
       evidence: "Nenhuma tag <h1> encontrada",
       fix: "Adicione um único H1 por página, contendo a palavra-chave principal.",
-      affectedUrls: urls(noH1),
+      ...scope(noH1),
     });
   }
 
@@ -277,7 +285,7 @@ export function runRules(signals: SiteSignals): Finding[] {
         "Vários H1 diluem o tema da página e costumam indicar que a tag está sendo usada só para estilo.",
       evidence: "Mais de uma tag <h1> na mesma página",
       fix: "Deixe um único H1 e transforme os demais em H2.",
-      affectedUrls: urls(multiH1),
+      ...scope(multiH1),
     });
   }
 
@@ -293,7 +301,7 @@ export function runRules(signals: SiteSignals): Finding[] {
         "Sem alt o Google não entende a imagem, você perde tráfego da busca por imagens e o site fica inacessível para leitores de tela.",
       evidence: `${noAlt.length} página(s) com imagens sem atributo alt`,
       fix: "Descreva a imagem em poucas palavras no atributo alt. Imagens decorativas podem usar alt vazio.",
-      affectedUrls: urls(noAlt),
+      ...scope(noAlt),
     });
   }
 
@@ -311,7 +319,7 @@ export function runRules(signals: SiteSignals): Finding[] {
         "Página rasa raramente ranqueia. Pior: o sistema de conteúdo útil do Google avalia o site inteiro, então muitas páginas fracas puxam para baixo até as boas.",
       evidence: `Páginas com menos de ${THIN_CONTENT_WORDS} palavras`,
       fix: "Aprofunde a página respondendo as dúvidas seguintes do leitor, ou remova/una páginas que não têm razão de existir.",
-      affectedUrls: urls(thin),
+      ...scope(thin),
     });
   }
 
@@ -328,7 +336,7 @@ export function runRules(signals: SiteSignals): Finding[] {
         "Página pouco linkada recebe menos autoridade e é rastreada com menos frequência.",
       evidence: `Menos de ${MIN_INTERNAL_LINKS} links internos na página`,
       fix: "Linke essas páginas a partir de conteúdos relacionados, usando texto âncora descritivo.",
-      affectedUrls: urls(poorlyLinked),
+      ...scope(poorlyLinked),
     });
   }
 
@@ -344,6 +352,7 @@ export function runRules(signals: SiteSignals): Finding[] {
       evidence: `${signals.origin}/llms.txt não encontrado`,
       fix: "Publique um llms.txt em markdown com o que a empresa faz, para quem, e links para as páginas principais.",
       affectedUrls: [`${signals.origin}/llms.txt`],
+      affectedCount: 1,
     });
   }
 
@@ -366,7 +375,7 @@ export function runRules(signals: SiteSignals): Finding[] {
         ? "Nenhum JSON-LD no HTML inicial. Atenção: o site usa JavaScript e muitos plugins injetam schema depois do carregamento - confirme no Rich Results Test do Google antes de tratar como erro."
         : "Nenhum bloco <script type=\"application/ld+json\"> encontrado no HTML",
       fix: "Adicione JSON-LD adequado ao tipo de página (Organization, LocalBusiness, Article, Product, FAQPage).",
-      affectedUrls: urls(withoutSchema),
+      ...scope(withoutSchema),
     });
   }
 
@@ -383,7 +392,7 @@ export function runRules(signals: SiteSignals): Finding[] {
         "JSON-LD malformado é ignorado por completo - o esforço de ter schema não gera nenhum retorno.",
       evidence: "O bloco JSON-LD não pôde ser interpretado",
       fix: "Valide no Rich Results Test do Google e corrija a sintaxe.",
-      affectedUrls: urls(invalidSchema),
+      ...scope(invalidSchema),
     });
   }
 
@@ -400,7 +409,7 @@ export function runRules(signals: SiteSignals): Finding[] {
         "Texto corrido sem H2 é difícil de recortar. A IA cita trechos - e prefere conteúdo em blocos com título claro.",
       evidence: "Páginas com conteúdo extenso e menos de 2 subtítulos H2",
       fix: "Divida o texto em seções com H2 que façam a pergunta que o leitor faria.",
-      affectedUrls: urls(noStructure),
+      ...scope(noStructure),
     });
   }
 
@@ -410,24 +419,70 @@ export function runRules(signals: SiteSignals): Finding[] {
 // ---------------------------------------------------------------------------
 // Notas
 // ---------------------------------------------------------------------------
-const PENALTY: Record<Severity, number> = {
-  critical: 25,
-  high: 10,
-  medium: 5,
-  quick_win: 2,
+//
+// A penalidade é proporcional ao alcance do problema, não fixa. Um título
+// longo em 1 de 25 páginas não pode pesar o mesmo que em 25 de 25 - com
+// penalidade fixa, um site excelente tirava nota de site medíocre e a nota
+// deixava de significar alguma coisa.
+
+const BASE_PENALTY: Record<Severity, number> = {
+  critical: 30,
+  high: 12,
+  medium: 6,
+  quick_win: 3,
   info: 0,
 };
 
+// Piso do alcance: um problema pontual ainda conta, mas pouco.
+const MIN_SCOPE = 0.15;
+
 const GEO_CATEGORIES = new Set(["geo"]);
 
-function scoreFrom(findings: Finding[]): number {
-  const penalty = findings.reduce((sum, f) => sum + PENALTY[f.severity], 0);
-  return Math.max(0, Math.min(100, 100 - penalty));
+function penaltyFor(finding: Finding, totalPages: number): number {
+  const base = BASE_PENALTY[finding.severity];
+  if (base === 0) return 0;
+
+  // Achado de site inteiro (robots, sitemap, HTTPS, llms.txt) não tem
+  // alcance parcial: ou o site tem o problema, ou não tem.
+  const isSiteWide =
+    finding.category === "crawlability" ||
+    finding.category === "technical" ||
+    finding.code === "NO_LLMS_TXT";
+
+  if (isSiteWide) return base;
+  if (totalPages === 0) return base;
+
+  const ratio = Math.min(1, finding.affectedCount / totalPages);
+  return base * Math.max(MIN_SCOPE, ratio);
 }
 
-export function computeScores(findings: Finding[]) {
+function scoreFrom(findings: Finding[], totalPages: number): number {
+  const penalty = findings.reduce(
+    (sum, f) => sum + penaltyFor(f, totalPages),
+    0,
+  );
+  return Math.max(0, Math.min(100, Math.round(100 - penalty)));
+}
+
+export function computeScores(findings: Finding[], totalPages = 0) {
   return {
-    google: scoreFrom(findings.filter((f) => !GEO_CATEGORIES.has(f.category))),
-    ai: scoreFrom(findings.filter((f) => GEO_CATEGORIES.has(f.category))),
+    google: scoreFrom(
+      findings.filter((f) => !GEO_CATEGORIES.has(f.category)),
+      totalPages,
+    ),
+    ai: scoreFrom(
+      findings.filter((f) => GEO_CATEGORIES.has(f.category)),
+      totalPages,
+    ),
   };
+}
+
+export type ScoreBand = "excelente" | "bom" | "atencao" | "critico";
+
+/** Faixa que dá significado ao número (o cliente não sabe o que é "67"). */
+export function scoreBand(score: number): ScoreBand {
+  if (score >= 90) return "excelente";
+  if (score >= 70) return "bom";
+  if (score >= 50) return "atencao";
+  return "critico";
 }

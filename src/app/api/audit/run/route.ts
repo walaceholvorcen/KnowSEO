@@ -89,7 +89,7 @@ export async function POST(request: Request) {
             evidence: f.evidence,
             fix: f.fix,
             affected_urls: f.affectedUrls,
-            affected_count: f.affectedUrls.length,
+            affected_count: f.affectedCount,
           })),
         );
 

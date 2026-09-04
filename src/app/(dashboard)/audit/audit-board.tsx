@@ -4,7 +4,15 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Stethoscope, ChevronDown, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { scoreBand, type ScoreBand } from "@/lib/audit/rules";
 import type { AuditRow, FindingRow } from "./page";
+
+const BAND_LABEL: Record<ScoreBand, string> = {
+  excelente: "Excelente",
+  bom: "Bom",
+  atencao: "Precisa atenção",
+  critico: "Crítico",
+};
 
 const SEVERITY_ORDER = ["critical", "high", "medium", "quick_win", "info"];
 
@@ -45,12 +53,14 @@ function ScoreCard({
   score: number | null;
   hint: string;
 }) {
+  const band = score === null ? null : scoreBand(score);
+
   const color =
-    score === null
+    band === null
       ? "text-slate-400 dark:text-slate-500"
-      : score >= 80
+      : band === "excelente" || band === "bom"
         ? "text-emerald-600 dark:text-emerald-400"
-        : score >= 50
+        : band === "atencao"
           ? "text-amber-600 dark:text-amber-400"
           : "text-red-600 dark:text-red-400";
 
@@ -67,6 +77,9 @@ function ScoreCard({
           </span>
         )}
       </p>
+      {band && (
+        <p className={cn("text-sm font-semibold", color)}>{BAND_LABEL[band]}</p>
+      )}
       <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{hint}</p>
     </div>
   );

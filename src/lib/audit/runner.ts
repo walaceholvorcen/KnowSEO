@@ -95,6 +95,6 @@ export async function auditSite(siteUrl: string): Promise<AuditResult | null> {
     origin,
     pagesAnalyzed: snapshots.length,
     findings,
-    scores: computeScores(findings),
+    scores: computeScores(findings, snapshots.length),
   };
 }

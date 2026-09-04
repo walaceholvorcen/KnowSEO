@@ -15,7 +15,10 @@ export interface Finding {
   impact: string;
   evidence: string;
   fix: string;
+  /** Amostra de URLs para exibição (limitada). */
   affectedUrls: string[];
+  /** Quantidade real de páginas afetadas - base do cálculo da nota. */
+  affectedCount: number;
 }
 
 // Sinais extraídos de uma página. Tudo que as regras precisam para decidir,
