@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { destacaDoFundo, textoSobre } from "@/lib/contrast";
+import { normalizarDominio, numeroWhatsAppNaUrl } from "@/lib/cta";
 import type { Blog } from "@/types";
 
 export function BlogSettingsForm({ blog }: { blog: Blog }) {
@@ -27,6 +28,7 @@ export function BlogSettingsForm({ blog }: { blog: Blog }) {
   const [error, setError] = useState<string | null>(null);
 
   const corTexto = textoSobre(primaryColor);
+  const numeroNaUrl = ctaType === "link" ? numeroWhatsAppNaUrl(ctaUrl) : null;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -34,10 +36,16 @@ export function BlogSettingsForm({ blog }: { blog: Blog }) {
     setSaved(false);
     setError(null);
 
+    // O campo aceita o que o cliente colar da barra do navegador. Sem
+    // normalizar, "https://cliente.com/" nunca casa com o host que chega
+    // na requisição e o domínio próprio não funciona, calado.
+    const dominio = normalizarDominio(customDomain);
+    if (dominio !== customDomain) setCustomDomain(dominio);
+
     const { error: saveError } = await supabase
       .from("blogs")
       .update({
-        custom_domain: customDomain || null,
+        custom_domain: dominio || null,
         theme: { ...blog.theme, primary_color: primaryColor },
         cta_config: {
           type: ctaType,
@@ -56,7 +64,7 @@ export function BlogSettingsForm({ blog }: { blog: Blog }) {
       return;
     }
 
-    if (customDomain) {
+    if (dominio) {
       await fetch("/api/onboarding/complete-step", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -180,6 +188,26 @@ export function BlogSettingsForm({ blog }: { blog: Blog }) {
             className="w-full rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm outline-none focus:border-cobalto-500 dark:focus:border-cobalto-400"
             placeholder="https://suempresa.com/contacto"
           />
+          {numeroNaUrl && (
+            <div className="mt-2 rounded-lg bg-slate-100 dark:bg-slate-800 px-3 py-2.5 text-sm">
+              <p className="text-slate-600 dark:text-slate-400">
+                Esse é um link de WhatsApp. Como o tipo está em Link, cada
+                conversa é contada como clique comum e o relatório deixa de
+                mostrar quantas pessoas chamaram no WhatsApp.
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setCtaType("whatsapp");
+                  setWhatsapp(numeroNaUrl);
+                  setCtaUrl("");
+                }}
+                className="mt-2 rounded-lg border border-cobalto-600 px-3 py-1.5 text-sm font-semibold text-cobalto-700 dark:text-cobalto-300 hover:bg-cobalto-50 dark:hover:bg-cobalto-900/40"
+              >
+                Usar como WhatsApp ({numeroNaUrl})
+              </button>
+            </div>
+          )}
         </div>
       ) : (
         <div>
