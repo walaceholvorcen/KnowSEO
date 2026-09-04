@@ -46,7 +46,7 @@ export function Sidebar({
     <aside className="flex h-screen w-60 flex-col border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
       <div className="border-b border-slate-100 dark:border-slate-800 px-5 py-5">
         <span className="text-lg font-bold text-slate-900 dark:text-slate-100">
-          Know<span className="text-navy-600 dark:text-navy-300">SEO</span>
+          Know<span className="text-cobalto-600 dark:text-cobalto-300">SEO</span>
         </span>
         <p className="mt-0.5 truncate text-xs text-slate-400 dark:text-slate-500">
           {workspaceName}
@@ -65,7 +65,7 @@ export function Sidebar({
               className={cn(
                 "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition",
                 active
-                  ? "bg-navy-50 dark:bg-navy-900/40 text-navy-700 dark:text-navy-300"
+                  ? "bg-cobalto-50 dark:bg-cobalto-900/40 text-cobalto-700 dark:text-cobalto-300"
                   : "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800",
               )}
             >
@@ -77,7 +77,7 @@ export function Sidebar({
       </nav>
 
       <div className="space-y-3 border-t border-slate-100 dark:border-slate-800 px-5 py-4">
-        <div className="rounded-lg bg-navy-50 dark:bg-navy-900/40 px-3 py-2 text-xs text-navy-700 dark:text-navy-300">
+        <div className="rounded-lg bg-cobalto-50 dark:bg-cobalto-900/40 px-3 py-2 text-xs text-cobalto-700 dark:text-cobalto-300">
           <span className="font-semibold">{credits}</span>{" "}
           {credits === 1 ? "crédito" : "créditos"} disponibles
         </div>

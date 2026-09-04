@@ -24,7 +24,7 @@ export function SettingsNav() {
             className={cn(
               "border-b-2 px-3 py-2 text-sm font-medium",
               active
-                ? "border-navy-600 dark:border-navy-400 text-navy-700 dark:text-navy-300"
+                ? "border-cobalto-600 dark:border-cobalto-400 text-cobalto-700 dark:text-cobalto-300"
                 : "border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100",
             )}
           >

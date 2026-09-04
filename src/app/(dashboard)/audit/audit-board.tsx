@@ -55,32 +55,45 @@ function ScoreCard({
 }) {
   const band = score === null ? null : scoreBand(score);
 
-  const color =
-    band === null
-      ? "text-slate-400 dark:text-slate-500"
-      : band === "excelente" || band === "bom"
-        ? "text-emerald-600 dark:text-emerald-400"
-        : band === "atencao"
-          ? "text-amber-600 dark:text-amber-400"
-          : "text-red-600 dark:text-red-400";
+  // A cor fica na faixa, não no número. O número é o dado; quem interpreta
+  // é a palavra ao lado dela. Pintar o "55" de vermelho obriga o cliente a
+  // decorar o que cada cor quer dizer antes de entender a tela.
+  const bandColor =
+    band === "excelente" || band === "bom"
+      ? "text-nota-excelente"
+      : band === "atencao"
+        ? "text-nota-atencao"
+        : "text-nota-critico";
+
+  const bandRule =
+    band === "excelente" || band === "bom"
+      ? "bg-nota-excelente"
+      : band === "atencao"
+        ? "bg-nota-atencao"
+        : "bg-nota-critico";
 
   return (
     <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
-      <p className="text-xs font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500">
-        {label}
-      </p>
-      <p className={cn("mt-1 text-3xl font-bold", color)}>
-        {score === null ? "—" : score}
+      <p className="text-sm text-slate-500 dark:text-slate-400">{label}</p>
+      <p className="mt-2 flex items-baseline gap-1.5 font-display text-slate-900 dark:text-slate-100">
+        <span className="tabular text-5xl leading-none">
+          {score === null ? "—" : score}
+        </span>
         {score !== null && (
-          <span className="text-lg text-slate-400 dark:text-slate-500">
-            /100
+          <span className="text-base text-slate-400 dark:text-slate-500">
+            de 100
           </span>
         )}
       </p>
       {band && (
-        <p className={cn("text-sm font-semibold", color)}>{BAND_LABEL[band]}</p>
+        <div className="mt-3 flex items-center gap-2">
+          {/* O filete repete a faixa em forma, não só em cor - quem não
+              distingue verde de vermelho ainda lê a palavra ao lado. */}
+          <span className={cn("h-0.5 w-6 rounded-full", bandRule)} />
+          <span className={cn("text-sm", bandColor)}>{BAND_LABEL[band]}</span>
+        </div>
       )}
-      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{hint}</p>
+      <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">{hint}</p>
     </div>
   );
 }
@@ -152,10 +165,10 @@ export function AuditBoard({
 
       <form
         onSubmit={handleRun}
-        className="mb-6 rounded-xl border border-navy-200 dark:border-navy-700 bg-navy-50 dark:bg-navy-900/40 p-6"
+        className="mb-6 rounded-xl border border-cobalto-200 dark:border-cobalto-700 bg-cobalto-50 dark:bg-cobalto-900/40 p-6"
       >
         <div className="mb-3 flex items-center gap-2">
-          <Stethoscope size={18} className="text-navy-600 dark:text-navy-300" />
+          <Stethoscope size={18} className="text-cobalto-600 dark:text-cobalto-300" />
           <h3 className="font-semibold text-slate-900 dark:text-slate-100">
             Analisar um site
           </h3>
@@ -165,12 +178,12 @@ export function AuditBoard({
             value={siteUrl}
             onChange={(e) => setSiteUrl(e.target.value)}
             placeholder="suempresa.com"
-            className="flex-1 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm outline-none focus:border-navy-500 dark:focus:border-navy-400"
+            className="flex-1 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm outline-none focus:border-cobalto-500 dark:focus:border-cobalto-400"
           />
           <button
             type="submit"
             disabled={running}
-            className="whitespace-nowrap rounded-lg bg-navy-600 px-4 py-2 text-sm font-semibold text-white hover:bg-navy-700 disabled:opacity-50"
+            className="whitespace-nowrap rounded-lg bg-cobalto-600 px-4 py-2 text-sm font-semibold text-white hover:bg-cobalto-700 disabled:opacity-50"
           >
             {running ? "Analisando..." : "Analisar"}
           </button>
@@ -201,10 +214,10 @@ export function AuditBoard({
               hint="Prontidão para ser citado por ChatGPT e afins"
             />
             <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
-              <p className="text-xs font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500">
+              <p className="text-sm text-slate-500 dark:text-slate-400">
                 Páginas analisadas
               </p>
-              <p className="mt-1 text-3xl font-bold text-slate-900 dark:text-slate-100">
+              <p className="tabular mt-2 font-display text-5xl leading-none text-slate-900 dark:text-slate-100">
                 {latest.pages_analyzed}
               </p>
               <p className="mt-1 truncate text-xs text-slate-500 dark:text-slate-400">
@@ -275,7 +288,7 @@ export function AuditBoard({
                         <div className="space-y-3 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/50 px-4 py-4 pl-11 text-sm">
                           {f.impact && (
                             <div>
-                              <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                              <p className="text-sm text-slate-500 dark:text-slate-400">
                                 Por que importa
                               </p>
                               <p className="mt-0.5 text-slate-700 dark:text-slate-300">
@@ -285,7 +298,7 @@ export function AuditBoard({
                           )}
                           {f.evidence && (
                             <div>
-                              <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                              <p className="text-sm text-slate-500 dark:text-slate-400">
                                 Evidência
                               </p>
                               <p className="mt-0.5 text-slate-700 dark:text-slate-300">
@@ -295,7 +308,7 @@ export function AuditBoard({
                           )}
                           {f.fix && (
                             <div>
-                              <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                              <p className="text-sm text-slate-500 dark:text-slate-400">
                                 Como corrigir
                               </p>
                               <p className="mt-0.5 text-slate-700 dark:text-slate-300">
@@ -305,7 +318,7 @@ export function AuditBoard({
                           )}
                           {f.affected_urls.length > 0 && (
                             <div>
-                              <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                              <p className="text-sm text-slate-500 dark:text-slate-400">
                                 Páginas afetadas
                               </p>
                               <ul className="mt-0.5 space-y-0.5">

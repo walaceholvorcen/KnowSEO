@@ -108,7 +108,7 @@ export function VisibilityBoard({
           <button
             onClick={() => call("run", "run")}
             disabled={busy !== null || queries.length === 0}
-            className="flex items-center gap-1.5 rounded-lg bg-navy-600 px-3 py-2 text-sm font-semibold text-white hover:bg-navy-700 disabled:opacity-50"
+            className="flex items-center gap-1.5 rounded-lg bg-cobalto-600 px-3 py-2 text-sm font-semibold text-white hover:bg-cobalto-700 disabled:opacity-50"
           >
             <Play size={15} />
             {busy === "run" ? "Analizando..." : "Analizar ahora"}
@@ -125,7 +125,7 @@ export function VisibilityBoard({
       {/* Score */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
-          <p className="text-xs font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500">
+          <p className="text-sm text-slate-500 dark:text-slate-400">
             Visibilidade
           </p>
           <p className="mt-1 text-3xl font-bold text-slate-900 dark:text-slate-100">
@@ -140,7 +140,7 @@ export function VisibilityBoard({
           )}
         </div>
         <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
-          <p className="text-xs font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500">
+          <p className="text-sm text-slate-500 dark:text-slate-400">
             Perguntas monitoradas
           </p>
           <p className="mt-1 text-3xl font-bold text-slate-900 dark:text-slate-100">
@@ -148,7 +148,7 @@ export function VisibilityBoard({
           </p>
         </div>
         <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
-          <p className="text-xs font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500">
+          <p className="text-sm text-slate-500 dark:text-slate-400">
             Citações na última rodada
           </p>
           <p className="mt-1 text-3xl font-bold text-slate-900 dark:text-slate-100">
@@ -179,7 +179,7 @@ export function VisibilityBoard({
                     resolve e o gráfico aparece vazio. */}
                 <div className="flex h-full w-full items-end">
                   <div
-                    className="w-full rounded-t bg-navy-600 dark:bg-navy-500"
+                    className="w-full rounded-t bg-cobalto-600 dark:bg-cobalto-500"
                     style={{ height: `${Math.max(t.score, 3)}%` }}
                   />
                 </div>

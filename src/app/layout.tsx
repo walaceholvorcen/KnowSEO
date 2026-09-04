@@ -1,15 +1,19 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Instrument_Sans, Instrument_Serif } from "next/font/google";
 import { THEME_INIT_SCRIPT } from "@/lib/theme";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+// Duas famílias, papéis separados: a sans carrega a interface inteira, a
+// serifada aparece só onde o número é o produto (a nota da auditoria, o
+// score de visibilidade). Nada de serifada como enfeite em título de card.
+const sans = Instrument_Sans({
+  variable: "--font-instrument-sans",
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const display = Instrument_Serif({
+  variable: "--font-instrument-serif",
+  weight: "400",
   subsets: ["latin"],
 });
 
@@ -21,9 +25,9 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
-      lang="en"
+      lang="es"
       suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${sans.variable} ${display.variable} h-full antialiased`}
     >
       <head>
         {/* Aplica el modo oscuro antes del primer paint, evitando el flash
@@ -32,7 +36,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             hidrate. */}
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
-      <body className="min-h-full flex flex-col bg-white dark:bg-slate-900 dark:bg-slate-950">
+      {/* Antes havia bg-white com dois dark: conflitantes. O fundo agora vem
+          do token, que é papel no claro e tinta no escuro. */}
+      <body className="min-h-full flex flex-col bg-background">
         {children}
       </body>
     </html>

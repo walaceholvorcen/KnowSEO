@@ -6,39 +6,88 @@
    > Interfaz puede forzar un modo aunque difiera del SO. */
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* Paleta "azul marino" - reemplaza el violeta original de la marca. */
+/* ---------------------------------------------------------------------------
+   Paleta "tinta e sinal".
+
+   Regra que manda em tudo aqui: neste produto a cor JÁ tem função. As faixas
+   de nota (excelente/atenção/crítico) falam por cor. Se a marca também for
+   saturada nesse espectro, o cliente deixa de saber se a cor significa
+   "marca" ou "resultado". Por isso a base é neutra, a marca é uma cor só, e
+   verde/âmbar/vermelho ficam reservados para dado - nunca decoram.
+   --------------------------------------------------------------------------- */
 @theme {
-  --color-navy-50: #eef2f8;
-  --color-navy-100: #dce6f3;
-  --color-navy-200: #b8cce6;
-  --color-navy-300: #8fb0d6;
-  --color-navy-400: #5c8ac0;
-  --color-navy-500: #3a6da8;
-  --color-navy-600: #22518a;
-  --color-navy-700: #1a3f6d;
-  --color-navy-800: #142f52;
-  --color-navy-900: #0d1f38;
+  /* Marca. Aparece pouco: ação, link, estado ativo. Nunca como preenchimento
+     de área grande - é aí que azul de SaaS vira papel de parede. */
+  --color-cobalto-50: #eef1ff;
+  --color-cobalto-100: #dde3ff;
+  --color-cobalto-200: #bcc7ff;
+  --color-cobalto-300: #94a6fa;
+  --color-cobalto-400: #6c82f0;
+  --color-cobalto-500: #3e5ce0;
+  --color-cobalto-600: #1b3fcb;
+  --color-cobalto-700: #1531a0;
+  --color-cobalto-800: #12277a;
+  --color-cobalto-900: #0e1c52;
+
+  /* Neutros. Substituem os valores do "slate" do Tailwind em vez de renomear
+     as ~500 classes espalhadas pelas telas: o slate padrão puxa para azul e
+     brigava com o cobalto. Estes puxam levemente para verde-cinza, como
+     papel, e deixam o azul ser a única coisa azul da tela. */
+  --color-slate-50: #f7f8f6;
+  --color-slate-100: #f3f4f1;
+  --color-slate-200: #e4e7e2;
+  --color-slate-300: #d6dad4;
+  --color-slate-400: #a9afa8;
+  --color-slate-500: #7c837b;
+  --color-slate-600: #5a625c;
+  --color-slate-700: #414843;
+  --color-slate-800: #2a2f2c;
+  --color-slate-900: #15191c;
+  /* Sem este passo o slate-950 do Tailwind (azul-preto) continuava sendo
+     usado em login, onboarding e no fundo do painel, e a tela toda puxava
+     para azul justo onde o azul devia ser só do cobalto. */
+  --color-slate-950: #0b0e0d;
+
+  /* Faixas de nota. Dessaturados de propósito: assentam no papel em vez de
+     piscar como semáforo, e continuam distinguíveis para quem não enxerga
+     bem cor porque vêm sempre acompanhados do rótulo escrito. */
+  --color-nota-excelente: #1f6b45;
+  --color-nota-atencao: #8a5b0f;
+  --color-nota-critico: #9e2a20;
+
+  /* Realce de citação: fundo da menção da marca dentro de uma resposta de IA.
+     É o único gesto ousado da interface - o resto fica quieto. */
+  --color-realce: #dde3ff;
+
+  --font-sans: var(--font-instrument-sans);
+  --font-display: var(--font-instrument-serif);
 }
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f3f4f1;
+  --foreground: #15191c;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
 }
 
 .dark {
-  --background: #0b1220;
-  --foreground: #e2e8f0;
+  --background: #101312;
+  --foreground: #e4e7e2;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  /* Antes daqui havia "Arial, Helvetica": a fonte era carregada no layout e
+     descartada nesta linha. A aplicação inteira renderizava em Arial. */
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+/* Números de nota e de métrica alinham em coluna e não dançam ao mudar de
+   valor. Sem isto, "90" e "67" ocupam larguras diferentes e a tela treme. */
+.tabular {
+  font-variant-numeric: tabular-nums;
 }

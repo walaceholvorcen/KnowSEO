@@ -63,9 +63,9 @@ export default async function DashboardHomePage() {
       {nextStep && (
         <Link
           href={nextStep.href}
-          className="mt-6 block rounded-xl border border-navy-200 dark:border-navy-700 bg-navy-50 dark:bg-navy-900/40 p-5 transition hover:border-navy-300 dark:hover:border-navy-600"
+          className="mt-6 block rounded-xl border border-cobalto-200 dark:border-cobalto-700 bg-cobalto-50 dark:bg-cobalto-900/40 p-5 transition hover:border-cobalto-300 dark:hover:border-cobalto-600"
         >
-          <p className="text-xs font-semibold uppercase tracking-wide text-navy-600 dark:text-navy-300">
+          <p className="text-sm text-cobalto-700 dark:text-cobalto-300">
             Próximo paso
           </p>
           <h2 className="mt-1 text-lg font-bold text-slate-900 dark:text-slate-100">
@@ -110,7 +110,7 @@ export default async function DashboardHomePage() {
                   >
                     {step.title}
                   </span>
-                  <span className="ml-auto rounded-full bg-navy-100 dark:bg-navy-900/60 px-2 py-0.5 text-xs font-medium text-navy-700 dark:text-navy-300">
+                  <span className="ml-auto rounded-full bg-cobalto-100 dark:bg-cobalto-900/60 px-2 py-0.5 text-xs font-medium text-cobalto-700 dark:text-cobalto-300">
                     +1 artículo
                   </span>
                 </Link>

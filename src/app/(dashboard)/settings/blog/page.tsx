@@ -32,7 +32,7 @@ export default async function BlogSettingsPage() {
             <a
               href={`http://${blog.subdomain}.${rootDomain}`}
               target="_blank"
-              className="text-navy-600 dark:text-navy-300 underline"
+              className="text-cobalto-600 dark:text-cobalto-300 underline"
             >
               {blog.subdomain}.{rootDomain}
             </a>

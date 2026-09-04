@@ -9,6 +9,7 @@ import {
   tenantOrigin,
   tenantAssetOrigin,
 } from "@/lib/tenant";
+import { textoSobre } from "@/lib/contrast";
 import { CtaBanner } from "./cta-banner";
 import { PageviewTracker } from "./pageview-tracker";
 
@@ -112,8 +113,11 @@ export default async function TenantArticlePage({
       <PageviewTracker blogId={blog.id} articleId={article.id} />
 
       <header
-        className="px-6 py-10 text-white"
-        style={{ backgroundColor: blog.theme.primary_color }}
+        className="px-6 py-10"
+        style={{
+          backgroundColor: blog.theme.primary_color,
+          color: textoSobre(blog.theme.primary_color),
+        }}
       >
         <div className="mx-auto max-w-2xl">
           <Link href="/" className="text-sm opacity-80 hover:opacity-100">
@@ -137,7 +141,7 @@ export default async function TenantArticlePage({
         />
 
         <article
-          className="prose dark:prose-invert prose-slate mt-8 max-w-none [&_h2]:mt-8 [&_h2]:text-xl [&_h2]:font-bold [&_h3]:mt-6 [&_h3]:text-lg [&_h3]:font-semibold [&_p]:my-4 [&_ul]:my-4 [&_ul]:list-disc [&_ul]:pl-6 [&_a]:text-navy-600 [&_a]:underline"
+          className="prose dark:prose-invert prose-slate mt-8 max-w-none [&_h2]:mt-8 [&_h2]:text-xl [&_h2]:font-bold [&_h3]:mt-6 [&_h3]:text-lg [&_h3]:font-semibold [&_p]:my-4 [&_ul]:my-4 [&_ul]:list-disc [&_ul]:pl-6 [&_a]:text-cobalto-600 [&_a]:underline"
           dangerouslySetInnerHTML={{ __html: article.content_html ?? "" }}
         />
 

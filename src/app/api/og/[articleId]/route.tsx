@@ -1,4 +1,5 @@
 import { ImageResponse } from "next/og";
+import { textoSobre } from "@/lib/contrast";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 // Capa gerada na hora, com a cor da marca do cliente. Serve como imagem
@@ -24,7 +25,11 @@ export async function GET(
 
   const title = article?.title ?? "";
   const blogName = blog?.name ?? "";
-  const color = blog?.theme?.primary_color ?? "#22518a";
+  const color = blog?.theme?.primary_color ?? "#15191c";
+  // A capa era um degradê da cor da marca para um azul-preto fixo: em marca
+  // clara o título branco sumia, e o degradê entregava um azul que não era
+  // do cliente. Campo chapado na cor dele, texto escolhido pelo contraste.
+  const tinta = textoSobre(color);
 
   return new ImageResponse(
     (
@@ -36,7 +41,7 @@ export async function GET(
           flexDirection: "column",
           justifyContent: "space-between",
           padding: "72px",
-          background: `linear-gradient(135deg, ${color} 0%, #0b1220 100%)`,
+          background: color,
           fontFamily: "sans-serif",
         }}
       >
@@ -44,7 +49,8 @@ export async function GET(
           style={{
             display: "flex",
             fontSize: 28,
-            color: "rgba(255,255,255,0.75)",
+            color: tinta,
+            opacity: 0.75,
             fontWeight: 600,
           }}
         >
@@ -56,7 +62,7 @@ export async function GET(
             display: "flex",
             fontSize: title.length > 70 ? 56 : 72,
             lineHeight: 1.15,
-            color: "#ffffff",
+            color: tinta,
             fontWeight: 700,
             maxWidth: "1000px",
           }}
@@ -70,7 +76,8 @@ export async function GET(
             width: "120px",
             height: "8px",
             borderRadius: "4px",
-            background: "rgba(255,255,255,0.9)",
+            background: tinta,
+            opacity: 0.9,
           }}
         />
       </div>

@@ -84,10 +84,10 @@ export function InternalLinksManager({
       {/* Detecção automática */}
       <form
         onSubmit={handleCrawl}
-        className="rounded-xl border border-navy-200 dark:border-navy-700 bg-navy-50 dark:bg-navy-900/40 p-6"
+        className="rounded-xl border border-cobalto-200 dark:border-cobalto-700 bg-cobalto-50 dark:bg-cobalto-900/40 p-6"
       >
         <div className="mb-1 flex items-center gap-2">
-          <Radar size={18} className="text-navy-600 dark:text-navy-300" />
+          <Radar size={18} className="text-cobalto-600 dark:text-cobalto-300" />
           <h3 className="font-semibold text-slate-900 dark:text-slate-100">
             Detectar páginas automáticamente
           </h3>
@@ -102,12 +102,12 @@ export function InternalLinksManager({
             value={siteUrl}
             onChange={(e) => setSiteUrl(e.target.value)}
             placeholder="suempresa.com"
-            className="flex-1 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm outline-none focus:border-navy-500 dark:focus:border-navy-400"
+            className="flex-1 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm outline-none focus:border-cobalto-500 dark:focus:border-cobalto-400"
           />
           <button
             type="submit"
             disabled={crawling}
-            className="whitespace-nowrap rounded-lg bg-navy-600 px-4 py-2 text-sm font-semibold text-white hover:bg-navy-700 disabled:opacity-50"
+            className="whitespace-nowrap rounded-lg bg-cobalto-600 px-4 py-2 text-sm font-semibold text-white hover:bg-cobalto-700 disabled:opacity-50"
           >
             {crawling ? "Analizando..." : "Analizar sitio"}
           </button>
@@ -137,13 +137,13 @@ export function InternalLinksManager({
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             placeholder="https://suempresa.com/servicios"
-            className="flex-1 rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm outline-none focus:border-navy-500 dark:focus:border-navy-400"
+            className="flex-1 rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm outline-none focus:border-cobalto-500 dark:focus:border-cobalto-400"
           />
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Título (opcional)"
-            className="w-40 rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm outline-none focus:border-navy-500 dark:focus:border-navy-400"
+            className="w-40 rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm outline-none focus:border-cobalto-500 dark:focus:border-cobalto-400"
           />
           <button
             type="submit"

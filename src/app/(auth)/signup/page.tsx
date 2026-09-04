@@ -118,7 +118,7 @@ export default function SignupPage() {
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm outline-none focus:border-navy-500 dark:focus:border-navy-400 focus:ring-1 focus:ring-navy-500 dark:focus:ring-navy-400"
+              className="w-full rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm outline-none focus:border-cobalto-500 dark:focus:border-cobalto-400 focus:ring-1 focus:ring-cobalto-500 dark:focus:ring-cobalto-400"
               placeholder="Ana García"
             />
           </div>
@@ -131,7 +131,7 @@ export default function SignupPage() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm outline-none focus:border-navy-500 dark:focus:border-navy-400 focus:ring-1 focus:ring-navy-500 dark:focus:ring-navy-400"
+              className="w-full rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm outline-none focus:border-cobalto-500 dark:focus:border-cobalto-400 focus:ring-1 focus:ring-cobalto-500 dark:focus:ring-cobalto-400"
               placeholder="tu@empresa.com"
             />
           </div>
@@ -145,7 +145,7 @@ export default function SignupPage() {
               minLength={6}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm outline-none focus:border-navy-500 dark:focus:border-navy-400 focus:ring-1 focus:ring-navy-500 dark:focus:ring-navy-400"
+              className="w-full rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm outline-none focus:border-cobalto-500 dark:focus:border-cobalto-400 focus:ring-1 focus:ring-cobalto-500 dark:focus:ring-cobalto-400"
               placeholder="Mínimo 6 caracteres"
             />
           </div>
@@ -159,7 +159,7 @@ export default function SignupPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-lg bg-navy-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-navy-700 disabled:opacity-50"
+            className="w-full rounded-lg bg-cobalto-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-cobalto-700 disabled:opacity-50"
           >
             {loading ? "Creando..." : "Crear cuenta"}
           </button>
@@ -169,7 +169,7 @@ export default function SignupPage() {
           ¿Ya tienes cuenta?{" "}
           <Link
             href="/login"
-            className="font-medium text-navy-600 dark:text-navy-300 hover:underline"
+            className="font-medium text-cobalto-600 dark:text-cobalto-300 hover:underline"
           >
             Inicia sesión
           </Link>

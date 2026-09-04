@@ -35,7 +35,7 @@ export function CreateBlogForm({ workspaceId }: { workspaceId: string }) {
         // já nascerem no azul marinho da marca. O cliente pode trocar
         // depois em Configurações > Blog e Domínio.
         theme: {
-          primary_color: "#22518a",
+          primary_color: "#15191c",
           logo_url: null,
           tagline: null,
         },
@@ -74,7 +74,7 @@ export function CreateBlogForm({ workspaceId }: { workspaceId: string }) {
             setName(e.target.value);
             if (!subdomain) setSubdomain(slugify(e.target.value));
           }}
-          className="w-full rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm outline-none focus:border-navy-500 dark:focus:border-navy-400 focus:ring-1 focus:ring-navy-500 dark:focus:ring-navy-400"
+          className="w-full rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm outline-none focus:border-cobalto-500 dark:focus:border-cobalto-400 focus:ring-1 focus:ring-cobalto-500 dark:focus:ring-cobalto-400"
           placeholder="Blog de mi empresa"
         />
       </div>
@@ -83,7 +83,7 @@ export function CreateBlogForm({ workspaceId }: { workspaceId: string }) {
         <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
           Dirección
         </label>
-        <div className="flex items-center rounded-lg border border-slate-300 dark:border-slate-700 focus-within:border-navy-500 dark:focus-within:border-navy-400 focus-within:ring-1 focus-within:ring-navy-500 dark:focus-within:ring-navy-400">
+        <div className="flex items-center rounded-lg border border-slate-300 dark:border-slate-700 focus-within:border-cobalto-500 dark:focus-within:border-cobalto-400 focus-within:ring-1 focus-within:ring-cobalto-500 dark:focus-within:ring-cobalto-400">
           <input
             type="text"
             required
@@ -105,7 +105,7 @@ export function CreateBlogForm({ workspaceId }: { workspaceId: string }) {
         <select
           value={language}
           onChange={(e) => setLanguage(e.target.value as "es" | "pt" | "en")}
-          className="w-full rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm outline-none focus:border-navy-500 dark:focus:border-navy-400 focus:ring-1 focus:ring-navy-500 dark:focus:ring-navy-400"
+          className="w-full rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm outline-none focus:border-cobalto-500 dark:focus:border-cobalto-400 focus:ring-1 focus:ring-cobalto-500 dark:focus:ring-cobalto-400"
         >
           <option value="es">Español</option>
           <option value="pt">Português</option>
@@ -122,7 +122,7 @@ export function CreateBlogForm({ workspaceId }: { workspaceId: string }) {
       <button
         type="submit"
         disabled={loading}
-        className="w-full rounded-lg bg-navy-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-navy-700 disabled:opacity-50"
+        className="w-full rounded-lg bg-cobalto-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-cobalto-700 disabled:opacity-50"
       >
         {loading ? "Creando..." : "Crear blog"}
       </button>

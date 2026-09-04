@@ -81,7 +81,7 @@ export function BrandDnaForm({
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={3}
-          className="w-full rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm outline-none focus:border-navy-500 dark:focus:border-navy-400"
+          className="w-full rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm outline-none focus:border-cobalto-500 dark:focus:border-cobalto-400"
           placeholder="Ej: Somos una clínica dental en Madrid especializada en ortodoncia invisible..."
         />
       </div>
@@ -93,7 +93,7 @@ export function BrandDnaForm({
         <input
           value={targetAudience}
           onChange={(e) => setTargetAudience(e.target.value)}
-          className="w-full rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm outline-none focus:border-navy-500 dark:focus:border-navy-400"
+          className="w-full rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm outline-none focus:border-cobalto-500 dark:focus:border-cobalto-400"
           placeholder="Ej: Adultos de 25-45 años preocupados por su salud dental"
         />
       </div>
@@ -105,7 +105,7 @@ export function BrandDnaForm({
         <input
           value={tone}
           onChange={(e) => setTone(e.target.value)}
-          className="w-full rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm outline-none focus:border-navy-500 dark:focus:border-navy-400"
+          className="w-full rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm outline-none focus:border-cobalto-500 dark:focus:border-cobalto-400"
         />
       </div>
 
@@ -117,7 +117,7 @@ export function BrandDnaForm({
           value={writingStyle}
           onChange={(e) => setWritingStyle(e.target.value)}
           rows={2}
-          className="w-full rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm outline-none focus:border-navy-500 dark:focus:border-navy-400"
+          className="w-full rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm outline-none focus:border-cobalto-500 dark:focus:border-cobalto-400"
           placeholder="Ej: Usa 'tú' en vez de 'usted'. Evita tecnicismos sin explicarlos."
         />
       </div>
@@ -129,7 +129,7 @@ export function BrandDnaForm({
         <input
           value={bannedTopics}
           onChange={(e) => setBannedTopics(e.target.value)}
-          className="w-full rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm outline-none focus:border-navy-500 dark:focus:border-navy-400"
+          className="w-full rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm outline-none focus:border-cobalto-500 dark:focus:border-cobalto-400"
           placeholder="Ej: No mencionar competidores, no dar consejos médicos definitivos"
         />
       </div>
@@ -141,7 +141,7 @@ export function BrandDnaForm({
         <input
           value={bannedWords}
           onChange={(e) => setBannedWords(e.target.value)}
-          className="w-full rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm outline-none focus:border-navy-500 dark:focus:border-navy-400"
+          className="w-full rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm outline-none focus:border-cobalto-500 dark:focus:border-cobalto-400"
           placeholder="Ej: barato, low cost, garantizado"
         />
       </div>
@@ -149,7 +149,7 @@ export function BrandDnaForm({
       <button
         type="submit"
         disabled={saving}
-        className="rounded-lg bg-navy-600 px-4 py-2 text-sm font-semibold text-white hover:bg-navy-700 disabled:opacity-50"
+        className="rounded-lg bg-cobalto-600 px-4 py-2 text-sm font-semibold text-white hover:bg-cobalto-700 disabled:opacity-50"
       >
         {saving ? "Guardando..." : saved ? "Guardado ✓" : "Guardar"}
       </button>

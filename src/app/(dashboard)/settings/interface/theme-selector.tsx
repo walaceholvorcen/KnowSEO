@@ -54,7 +54,7 @@ export function ThemeSelector() {
             className={cn(
               "flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition",
               active
-                ? "border-navy-600 dark:border-navy-400 bg-navy-50 dark:bg-navy-900/40 text-navy-700 dark:text-navy-300"
+                ? "border-cobalto-600 dark:border-cobalto-400 bg-cobalto-50 dark:bg-cobalto-900/40 text-cobalto-700 dark:text-cobalto-300"
                 : "border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800",
             )}
           >

@@ -4,6 +4,7 @@ import Image from "next/image";
 import type { Metadata } from "next";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { resolveBlogByHost, tenantBaseUrl } from "@/lib/tenant";
+import { textoSobre } from "@/lib/contrast";
 import { formatDate } from "@/lib/utils";
 import type { Article } from "@/types";
 
@@ -52,8 +53,11 @@ export default async function TenantBlogHome({
   return (
     <div className="min-h-screen bg-white dark:bg-slate-900">
       <header
-        className="px-6 py-16 text-center text-white"
-        style={{ backgroundColor: blog.theme.primary_color }}
+        className="px-6 py-16 text-center"
+        style={{
+          backgroundColor: blog.theme.primary_color,
+          color: textoSobre(blog.theme.primary_color),
+        }}
       >
         <h1 className="text-3xl font-bold">{blog.name}</h1>
         {blog.theme.tagline && (
@@ -81,7 +85,7 @@ export default async function TenantBlogHome({
                   height={630}
                   className="mb-4 w-full rounded-xl"
                 />
-                <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 hover:text-navy-600 dark:hover:text-navy-300">
+                <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 hover:text-cobalto-600 dark:hover:text-cobalto-300">
                   {article.title}
                 </h2>
                 {article.excerpt && (

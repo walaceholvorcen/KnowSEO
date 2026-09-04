@@ -442,3 +442,47 @@ Legenda: ✅ testado rodando · 🟡 construído, não validado ponta a ponta ·
 **Leitura:** o motor está bom. Falta o que transforma em produto vendável —
 trava de qualidade (risco), senha e cobrança (bloqueio), ROI e piloto
 automático (valor percebido).
+
+---
+
+## 15. Design — "tinta e sinal"
+
+Toda tarefa de interface invoca a skill `frontend-design` antes de escrever
+código. Não é opcional.
+
+**A regra que manda em tudo:** neste produto a cor já tem função. As faixas
+de nota falam por cor. Se a marca também for saturada nesse espectro, o
+cliente não sabe mais se a cor significa "marca" ou "resultado". Logo: base
+neutra, uma cor de marca só, e verde/âmbar/vermelho reservados para dado.
+
+| Papel | Token | Hex |
+|---|---|---|
+| Fundo claro | `slate-100` | `#f3f4f1` |
+| Texto / fundo escuro | `slate-900` | `#15191c` |
+| Marca (ação, link, ativo) | `cobalto-600` | `#1b3fcb` |
+| Realce de citação | `realce` | `#dde3ff` |
+| Nota excelente / bom | `nota-excelente` | `#1f6b45` |
+| Nota atenção | `nota-atencao` | `#8a5b0f` |
+| Nota crítico | `nota-critico` | `#9e2a20` |
+
+Os neutros substituem os **valores** do `slate` do Tailwind em vez de
+renomear ~500 classes: o slate padrão puxa para azul e brigava com o
+cobalto. O `navy-*` virou `cobalto-*` por renomeação mecânica.
+
+Tipografia: **Instrument Sans** na interface, **Instrument Serif**
+(`font-display`) só onde o número é o produto — nota da auditoria, páginas
+analisadas. Números levam a classe `.tabular` para não dançarem ao mudar de
+valor.
+
+Decisões que valem regra:
+- A cor fica na faixa, nunca no número. Pintar o "55" de vermelho obriga o
+  cliente a decorar o significado das cores antes de ler a tela.
+- Faixa aparece sempre em duas formas — filete colorido **e** palavra —
+  para quem não distingue as cores.
+- Nada de rótulo em CAIXA ALTA acima de conteúdo. Foi removido de todas as
+  telas; é o tique mais denunciador de página gerada.
+- A cor do cliente nunca assume texto branco: `src/lib/contrast.ts` decide
+  entre papel e tinta pela luminância (WCAG). Vale para cabeçalho do blog,
+  banner de CTA e capa gerada.
+- O padrão do blog é tinta, não a cor do Know SEO — o blog é do cliente.
+  Migration `0004` corrige o violeta pré-rebrand que sobrara no schema.

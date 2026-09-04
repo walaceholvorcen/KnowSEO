@@ -87,7 +87,7 @@ export function StrategyBoard({
         <button
           onClick={handleFindIdeas}
           disabled={loadingIdeas}
-          className="flex items-center gap-2 rounded-lg bg-navy-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-navy-700 disabled:opacity-50"
+          className="flex items-center gap-2 rounded-lg bg-cobalto-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-cobalto-700 disabled:opacity-50"
         >
           <Sparkles size={16} />
           {loadingIdeas ? "Buscando..." : "Buscar oportunidades"}
@@ -163,7 +163,7 @@ export function StrategyBoard({
                 <button
                   onClick={() => handleWrite(kw.id)}
                   disabled={generatingId === kw.id || credits <= 0}
-                  className="ml-auto flex items-center gap-1.5 rounded-lg bg-navy-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-navy-700 disabled:opacity-50"
+                  className="ml-auto flex items-center gap-1.5 rounded-lg bg-cobalto-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-cobalto-700 disabled:opacity-50"
                 >
                   <PenLine size={14} />
                   {generatingId === kw.id ? "Generando..." : "Escribir artículo"}

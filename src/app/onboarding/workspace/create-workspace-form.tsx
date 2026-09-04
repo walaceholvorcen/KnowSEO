@@ -70,7 +70,7 @@ export function CreateWorkspaceForm({
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="w-full rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm outline-none focus:border-navy-500 dark:focus:border-navy-400 focus:ring-1 focus:ring-navy-500 dark:focus:ring-navy-400"
+          className="w-full rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm outline-none focus:border-cobalto-500 dark:focus:border-cobalto-400 focus:ring-1 focus:ring-cobalto-500 dark:focus:ring-cobalto-400"
           placeholder="Mi agencia / Mi empresa"
         />
       </div>
@@ -84,7 +84,7 @@ export function CreateWorkspaceForm({
       <button
         type="submit"
         disabled={loading}
-        className="w-full rounded-lg bg-navy-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-navy-700 disabled:opacity-50"
+        className="w-full rounded-lg bg-cobalto-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-cobalto-700 disabled:opacity-50"
       >
         {loading ? "Creando..." : "Continuar"}
       </button>

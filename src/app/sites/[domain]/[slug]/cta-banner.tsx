@@ -1,5 +1,6 @@
 "use client";
 
+import { textoSobre } from "@/lib/contrast";
 import type { Blog } from "@/types";
 
 export function CtaBanner({
@@ -33,18 +34,30 @@ export function CtaBanner({
     }).catch(() => {});
   }
 
+  // O botão era branco com texto na cor da marca. Marca clara = botão
+  // branco sobre fundo claro, invisível. Agora o par sai da própria cor:
+  // o fundo do botão é o oposto legível dela, e o texto volta a ser a cor
+  // da marca - contraste garantido nos dois sentidos.
+  const corTexto = textoSobre(blog.theme.primary_color);
+
   return (
     <div
-      className="mt-12 rounded-xl p-6 text-center text-white"
-      style={{ backgroundColor: blog.theme.primary_color }}
+      className="mt-12 rounded-xl p-6 text-center"
+      style={{
+        backgroundColor: blog.theme.primary_color,
+        color: corTexto,
+      }}
     >
       <a
         href={href}
         target="_blank"
         rel="noopener noreferrer"
         onClick={handleClick}
-        className="inline-block rounded-lg bg-white dark:bg-slate-900 px-6 py-2.5 font-semibold"
-        style={{ color: blog.theme.primary_color }}
+        className="inline-block rounded-lg px-6 py-2.5 font-semibold"
+        style={{
+          backgroundColor: corTexto,
+          color: blog.theme.primary_color,
+        }}
       >
         {cta.button_text}
       </a>

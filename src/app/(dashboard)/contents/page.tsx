@@ -40,7 +40,7 @@ export default async function ContentsPage() {
         </div>
         <Link
           href="/strategy"
-          className="rounded-lg bg-navy-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-navy-700"
+          className="rounded-lg bg-cobalto-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-cobalto-700"
         >
           + Criar conteúdo
         </Link>
@@ -50,7 +50,7 @@ export default async function ContentsPage() {
         <div className="rounded-xl border border-dashed border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 p-12 text-center">
           <p className="text-slate-500 dark:text-slate-400">
             Nenhum artigo ainda.{" "}
-            <Link href="/strategy" className="text-navy-600 dark:text-navy-300 underline">
+            <Link href="/strategy" className="text-cobalto-600 dark:text-cobalto-300 underline">
               Escolha uma keyword
             </Link>{" "}
             para gerar o primeiro.
@@ -62,7 +62,7 @@ export default async function ContentsPage() {
             <Link
               key={article.id}
               href={`/contents/${article.id}`}
-              className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 transition hover:border-navy-300 dark:hover:border-navy-600 hover:shadow-sm"
+              className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 transition hover:border-cobalto-300 dark:hover:border-cobalto-600 hover:shadow-sm"
             >
               <Image
                 src={article.cover_image_url || `/api/og/${article.id}`}

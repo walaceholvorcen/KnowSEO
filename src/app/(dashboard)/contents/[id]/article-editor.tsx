@@ -76,7 +76,7 @@ export function ArticleEditor({ article }: { article: Article }) {
   if (isGenerating) {
     return (
       <div className="mx-auto flex max-w-3xl flex-col items-center justify-center px-8 py-24 text-center">
-        <div className="mb-4 h-8 w-8 animate-spin rounded-full border-2 border-navy-600 dark:border-navy-400 border-t-transparent" />
+        <div className="mb-4 h-8 w-8 animate-spin rounded-full border-2 border-cobalto-600 dark:border-cobalto-400 border-t-transparent" />
         <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-200">
           Generando el artículo con IA...
         </h2>
@@ -113,7 +113,7 @@ export function ArticleEditor({ article }: { article: Article }) {
           <button
             onClick={() => handleSave("published")}
             disabled={saving}
-            className="rounded-lg bg-navy-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-navy-700 disabled:opacity-50"
+            className="rounded-lg bg-cobalto-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-cobalto-700 disabled:opacity-50"
           >
             {status === "published" ? "Actualizar" : "Publicar"}
           </button>
@@ -173,7 +173,7 @@ export function ArticleEditor({ article }: { article: Article }) {
         contentEditable
         suppressContentEditableWarning
         dangerouslySetInnerHTML={{ __html: article.content_html ?? "" }}
-        className="prose dark:prose-invert prose-slate mt-4 min-h-[400px] max-w-none rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 outline-none focus:border-navy-400 dark:focus:border-navy-300 [&_h2]:text-xl [&_h2]:font-bold [&_h3]:text-lg [&_h3]:font-semibold [&_p]:my-3 [&_ul]:my-3 [&_ul]:list-disc [&_ul]:pl-6 [&_a]:text-navy-600 [&_a]:underline"
+        className="prose dark:prose-invert prose-slate mt-4 min-h-[400px] max-w-none rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 outline-none focus:border-cobalto-400 dark:focus:border-cobalto-300 [&_h2]:text-xl [&_h2]:font-bold [&_h3]:text-lg [&_h3]:font-semibold [&_p]:my-3 [&_ul]:my-3 [&_ul]:list-disc [&_ul]:pl-6 [&_a]:text-cobalto-600 [&_a]:underline"
       />
 
       <div className="mt-8 space-y-4 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
@@ -186,7 +186,7 @@ export function ArticleEditor({ article }: { article: Article }) {
             value={seoTitle}
             maxLength={60}
             onChange={(e) => setSeoTitle(e.target.value)}
-            className="w-full rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm outline-none focus:border-navy-500 dark:focus:border-navy-400"
+            className="w-full rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm outline-none focus:border-cobalto-500 dark:focus:border-cobalto-400"
           />
         </div>
         <div>
@@ -198,7 +198,7 @@ export function ArticleEditor({ article }: { article: Article }) {
             maxLength={155}
             onChange={(e) => setSeoDescription(e.target.value)}
             rows={2}
-            className="w-full rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm outline-none focus:border-navy-500 dark:focus:border-navy-400"
+            className="w-full rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm outline-none focus:border-cobalto-500 dark:focus:border-cobalto-400"
           />
         </div>
       </div>
