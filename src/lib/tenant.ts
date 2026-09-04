@@ -22,6 +22,16 @@ export async function tenantBaseUrl(host: string): Promise<URL> {
   return new URL(await tenantOrigin(host));
 }
 
+// Origem para servir assets da aplicação (capa gerada em /api/og).
+//
+// Na rota de preview a base do tenant inclui um caminho
+// ("https://app.com/b/cliente"), e uma URL relativa resolvida contra ela
+// vira "/b/cliente/api/og/..." - que não existe. A capa mora na raiz do
+// app, então aqui devolvemos só esquema + host.
+export async function tenantAssetOrigin(host: string): Promise<string> {
+  return new URL(await tenantOrigin(host)).origin;
+}
+
 // Resolve qual blog corresponde ao segmento recebido do proxy.
 //
 // Aceita duas formas:

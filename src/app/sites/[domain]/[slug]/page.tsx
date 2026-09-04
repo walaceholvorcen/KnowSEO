@@ -3,7 +3,12 @@ import Link from "next/link";
 import Image from "next/image";
 import type { Metadata } from "next";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { resolveBlogByHost, tenantBaseUrl, tenantOrigin } from "@/lib/tenant";
+import {
+  resolveBlogByHost,
+  tenantBaseUrl,
+  tenantOrigin,
+  tenantAssetOrigin,
+} from "@/lib/tenant";
 import { CtaBanner } from "./cta-banner";
 import { PageviewTracker } from "./pageview-tracker";
 
@@ -30,7 +35,11 @@ export async function generateMetadata({
   const title = article.seo_title || article.title;
   const description = article.seo_description || article.excerpt || undefined;
   // Capa própria se o cliente subiu uma; senão a gerada com a cor da marca.
-  const image = article.cover_image_url || `/api/og/${article.id}`;
+  // Absoluta e a partir da raiz do app: a capa não vive sob o caminho
+  // do tenant.
+  const image =
+    article.cover_image_url ||
+    `${await tenantAssetOrigin(domain)}/api/og/${article.id}`;
 
   return {
     metadataBase: await tenantBaseUrl(domain),
@@ -75,6 +84,7 @@ export default async function TenantArticlePage({
   if (!article) notFound();
 
   const origin = await tenantOrigin(domain);
+  const assetOrigin = await tenantAssetOrigin(domain);
   // Dado estruturado: habilita rich results no Google e dá à IA um
   // resumo inequívoco de autor, data e tema do artigo.
   const jsonLd = {
@@ -82,7 +92,7 @@ export default async function TenantArticlePage({
     "@type": "Article",
     headline: article.title,
     description: article.seo_description || article.excerpt || undefined,
-    image: article.cover_image_url || `${origin}/api/og/${article.id}`,
+    image: article.cover_image_url || `${assetOrigin}/api/og/${article.id}`,
     datePublished: article.published_at,
     dateModified: article.updated_at || article.published_at,
     mainEntityOfPage: `${origin}/${article.slug}`,
