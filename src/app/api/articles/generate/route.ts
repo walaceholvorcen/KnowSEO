@@ -3,11 +3,19 @@ import { requireUserAndWorkspace } from "@/lib/workspace";
 import { createClient } from "@/lib/supabase/server";
 import { generateArticle } from "@/lib/anthropic";
 import { slugify } from "@/lib/utils";
+import { isAiConfigured, AI_NOT_CONFIGURED_MESSAGE } from "@/lib/ai-config";
 import type { Blog, BrandDna, InternalLink, Keyword } from "@/types";
 
 export async function POST(request: Request) {
   const { supabase, workspace } = await requireUserAndWorkspace();
   const { keywordId } = await request.json();
+
+  if (!isAiConfigured()) {
+    return NextResponse.json(
+      { error: AI_NOT_CONFIGURED_MESSAGE },
+      { status: 503 },
+    );
+  }
 
   const { data: keyword } = await supabase
     .from("keywords")
@@ -122,7 +130,11 @@ export async function POST(request: Request) {
 
     console.error("[articles/generate] failed", err);
     return NextResponse.json(
-      { error: "generation failed", articleId: draft.id },
+      {
+        error:
+          "A geração falhou. O rascunho foi salvo - tente gerar de novo.",
+        articleId: draft.id,
+      },
       { status: 500 },
     );
   }

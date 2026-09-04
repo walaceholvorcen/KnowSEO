@@ -5,11 +5,19 @@ import {
   fetchRealKeywordMetrics,
   isDataForSeoConfigured,
 } from "@/lib/dataforseo";
+import { isAiConfigured, AI_NOT_CONFIGURED_MESSAGE } from "@/lib/ai-config";
 import type { Blog, BrandDna, Keyword } from "@/types";
 
 export async function POST(request: Request) {
   const { supabase, workspace } = await requireUserAndWorkspace();
   const { blogId } = await request.json();
+
+  if (!isAiConfigured()) {
+    return NextResponse.json(
+      { error: AI_NOT_CONFIGURED_MESSAGE },
+      { status: 503 },
+    );
+  }
 
   const { data: blog } = await supabase
     .from("blogs")
@@ -37,11 +45,27 @@ export async function POST(request: Request) {
     (k) => k.keyword,
   ) ?? [];
 
-  const ideas = await generateKeywordIdeas({
-    blog: blog as Blog,
-    dna: dna as BrandDna | null,
-    existingKeywords,
-  });
+  let ideas;
+  try {
+    ideas = await generateKeywordIdeas({
+      blog: blog as Blog,
+      dna: dna as BrandDna | null,
+      existingKeywords,
+    });
+  } catch (err) {
+    console.error("[keywords/suggest] falha na IA", err);
+    return NextResponse.json(
+      { error: "Não foi possível gerar sugestões agora. Tente de novo em instantes." },
+      { status: 502 },
+    );
+  }
+
+  if (!ideas.length) {
+    return NextResponse.json(
+      { error: "A IA não devolveu sugestões. Tente de novo." },
+      { status: 502 },
+    );
+  }
 
   // Enriquece com dados reais da DataForSEO quando configurado - senão
   // fica só com a estimativa qualitativa de dificultad que la IA ya dio.
