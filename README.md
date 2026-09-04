@@ -125,3 +125,18 @@ src/
   proxy.ts                           - roteamento multi-tenant por host
 supabase/migrations/0001_init.sql    - schema + RLS
 ```
+
+## Segredos
+
+Chaves ficam **apenas** em `.env.local` (ignorado pelo git) e nas variáveis
+de ambiente da Vercel. Nada de segredo em código.
+
+O repositório tem um hook que bloqueia commit com chave ou arquivo de
+ambiente. Ao clonar, ative com:
+
+```bash
+git config core.hooksPath .githooks
+```
+
+Se uma chave vazar, o certo é **revogar e gerar outra** — tirar do
+histórico não desfaz a exposição.

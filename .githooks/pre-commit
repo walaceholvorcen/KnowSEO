@@ -1,0 +1,49 @@
+#!/bin/sh
+# Bloqueia commit que contenha segredo. O risco real não é o .env.local
+# (já ignorado) - é alguém colar uma chave direto num arquivo de código,
+# ou forçar um .env para dentro do repositório.
+#
+# Ativado por: git config core.hooksPath .githooks
+
+STAGED=$(git diff --cached --name-only --diff-filter=ACM)
+[ -z "$STAGED" ] && exit 0
+
+FOUND=0
+
+# 1) Arquivos de ambiente com valores reais
+for f in $STAGED; do
+  case "$f" in
+    *.env|.env.*|*/.env|*/.env.*)
+      case "$f" in
+        *.example|*.sample|*.template) ;;
+        *)
+          echo "BLOQUEADO: $f parece um arquivo de ambiente com valores reais."
+          FOUND=1
+          ;;
+      esac
+      ;;
+  esac
+done
+
+# 2) Padrões de chave no conteúdo staged
+#
+# Montado por concatenação de propósito: escrito inteiro, o próprio hook
+# casaria com os padrões e bloquearia o commit de si mesmo.
+PATTERNS="sk-ant-api[0-9]{2}-|sb_""secret_|service_""role|-----BEGIN [A-Z ]*PRIVATE KEY-----|AKIA[0-9A-Z]{16}"
+
+# Ignora o próprio hook ao varrer o conteúdo.
+MATCHES=$(git diff --cached -U0 -- . ':(exclude).githooks/pre-commit' \
+  | grep -E "^\+" | grep -nE "$PATTERNS" | head -5)
+if [ -n "$MATCHES" ]; then
+  echo "BLOQUEADO: possível segredo no conteúdo commitado:"
+  echo "$MATCHES" | sed 's/\(.\{100\}\).*/\1.../'
+  FOUND=1
+fi
+
+if [ "$FOUND" = "1" ]; then
+  echo ""
+  echo "Se for falso positivo, revise e use: git commit --no-verify"
+  exit 1
+fi
+
+exit 0
