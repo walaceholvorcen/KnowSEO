@@ -26,23 +26,36 @@ export function BrandDnaForm({
   const [bannedTopics, setBannedTopics] = useState(
     initial?.banned_topics ?? "",
   );
+  const [bannedWords, setBannedWords] = useState(initial?.banned_words ?? "");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
     setSaved(false);
+    setError(null);
 
-    await supabase.from("brand_dna").upsert({
+    const { error: saveError } = await supabase.from("brand_dna").upsert({
       blog_id: blogId,
       description,
       target_audience: targetAudience,
       tone,
       writing_style: writingStyle,
       banned_topics: bannedTopics,
+      banned_words: bannedWords,
       updated_at: new Date().toISOString(),
     });
+
+    // Sem esta checagem o botão dizia "Guardado ✓" mesmo quando o upsert
+    // falhava - o cliente achava que tinha configurado a marca e os
+    // artigos saíam com tom genérico, sem nada denunciando o problema.
+    if (saveError) {
+      setSaving(false);
+      setError(saveError.message);
+      return;
+    }
 
     await fetch("/api/onboarding/complete-step", {
       method: "POST",
@@ -121,6 +134,18 @@ export function BrandDnaForm({
         />
       </div>
 
+      <div>
+        <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+          Palabras prohibidas
+        </label>
+        <input
+          value={bannedWords}
+          onChange={(e) => setBannedWords(e.target.value)}
+          className="w-full rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm outline-none focus:border-navy-500 dark:focus:border-navy-400"
+          placeholder="Ej: barato, low cost, garantizado"
+        />
+      </div>
+
       <button
         type="submit"
         disabled={saving}
@@ -128,6 +153,12 @@ export function BrandDnaForm({
       >
         {saving ? "Guardando..." : saved ? "Guardado ✓" : "Guardar"}
       </button>
+
+      {error && (
+        <p className="text-sm text-red-600 dark:text-red-400">
+          No se pudo guardar: {error}
+        </p>
+      )}
     </form>
   );
 }
