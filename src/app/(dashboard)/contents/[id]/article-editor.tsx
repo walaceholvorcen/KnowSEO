@@ -25,9 +25,11 @@ export function ArticleEditor({ article }: { article: Article }) {
   const [seoDescription, setSeoDescription] = useState(
     article.seo_description ?? "",
   );
+  const [slug, setSlug] = useState(article.slug);
   const [status, setStatus] = useState(article.status);
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const isGenerating = article.generation_status === "generating";
 
@@ -38,27 +40,51 @@ export function ArticleEditor({ article }: { article: Article }) {
 
   async function handleSave(nextStatus?: Article["status"]) {
     setSaving(true);
+    setError(null);
     const finalStatus = nextStatus ?? status;
 
-    const { error } = await supabase
+    // O slug vem do campo, não do título.
+    //
+    // Antes ele era recalculado do título a cada salvamento. Isso descartava
+    // o slug curto que o modelo escolhe e, pior, trocava a URL de um artigo
+    // já publicado assim que alguém ajustasse o título - todo link que
+    // apontava para ele passava a dar 404, num produto de SEO.
+    const slugFinal = slugify(slug) || slugify(title);
+
+    const { error: saveError } = await supabase
       .from("articles")
       .update({
         title,
-        slug: slugify(title),
+        slug: slugFinal,
         seo_title: seoTitle,
         seo_description: seoDescription,
         content_html: contentRef.current?.innerHTML ?? article.content_html,
         status: finalStatus,
+        // Só a primeira publicação define a data. Sem isto, cada correção
+        // num artigo publicado o devolvia ao topo do blog como se fosse novo.
         published_at:
           finalStatus === "published"
-            ? new Date().toISOString()
+            ? (article.published_at ?? new Date().toISOString())
             : article.published_at,
         updated_at: new Date().toISOString(),
       })
       .eq("id", article.id);
 
     setSaving(false);
-    if (!error) {
+
+    // O erro era descartado: slug repetido derrubava o salvamento e a tela
+    // não dizia nada - o cliente saía achando que tinha publicado.
+    if (saveError) {
+      setError(
+        saveError.code === "23505"
+          ? "Já existe outro artigo com esse endereço. Mude o endereço do artigo."
+          : saveError.message,
+      );
+      return;
+    }
+
+    {
+      setSlug(slugFinal);
       setStatus(finalStatus);
       setSavedAt(new Date().toLocaleTimeString("es-ES"));
 
@@ -126,6 +152,28 @@ export function ArticleEditor({ article }: { article: Article }) {
         placeholder="Título"
         className="w-full border-none text-3xl font-bold text-slate-900 dark:text-slate-100 outline-none placeholder:text-slate-300"
       />
+
+      <div className="mt-2 flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400">
+        <span>/</span>
+        <input
+          value={slug}
+          onChange={(e) => setSlug(e.target.value)}
+          placeholder="endereco-do-artigo"
+          className="min-w-0 flex-1 border-none bg-transparent outline-none focus:text-slate-900 dark:focus:text-slate-100"
+        />
+      </div>
+      {status === "published" && slug !== article.slug && (
+        <p className="mt-1 text-sm text-nota-atencao">
+          Mudar o endereço de um artigo publicado quebra os links que já
+          apontam para ele. O endereço atual é /{article.slug}.
+        </p>
+      )}
+
+      {error && (
+        <p className="mt-3 rounded-lg bg-slate-100 dark:bg-slate-800 px-3 py-2 text-sm text-nota-critico">
+          {error}
+        </p>
+      )}
 
       <div className="mt-6 flex items-center gap-1 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-1.5">
         <button
