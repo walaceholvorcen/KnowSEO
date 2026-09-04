@@ -1,0 +1,44 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+/* Dark mode via .dark class on <html> (set by src/lib/theme.ts), en vez de
+   solo prefers-color-scheme - así "Claro/Oscuro/Sistema" en Configuración
+   > Interfaz puede forzar un modo aunque difiera del SO. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Paleta "azul marino" - reemplaza el violeta original de la marca. */
+@theme {
+  --color-navy-50: #eef2f8;
+  --color-navy-100: #dce6f3;
+  --color-navy-200: #b8cce6;
+  --color-navy-300: #8fb0d6;
+  --color-navy-400: #5c8ac0;
+  --color-navy-500: #3a6da8;
+  --color-navy-600: #22518a;
+  --color-navy-700: #1a3f6d;
+  --color-navy-800: #142f52;
+  --color-navy-900: #0d1f38;
+}
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+.dark {
+  --background: #0b1220;
+  --foreground: #e2e8f0;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
