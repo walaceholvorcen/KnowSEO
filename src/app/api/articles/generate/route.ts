@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireUserAndWorkspace } from "@/lib/workspace";
+import { createClient } from "@/lib/supabase/server";
 import { generateArticle } from "@/lib/anthropic";
 import { slugify } from "@/lib/utils";
 import type { Blog, BrandDna, InternalLink, Keyword } from "@/types";
@@ -45,15 +46,16 @@ export async function POST(request: Request) {
   // Cria o artigo em estado "generating" já para o usuário poder navegar
   // até ele e ver o spinner, em vez de esperar a resposta da IA na tela
   // de listagem.
+  const draftTitle =
+    (keyword as Keyword).suggested_title ?? keyword.keyword;
+
   const { data: draft, error: draftError } = await supabase
     .from("articles")
     .insert({
       blog_id: blog.id,
       keyword_id: keyword.id,
-      title: (keyword as Keyword).suggested_title ?? keyword.keyword,
-      slug: slugify(
-        (keyword as Keyword).suggested_title ?? keyword.keyword,
-      ),
+      title: draftTitle,
+      slug: await uniqueSlug(supabase, blog.id, slugify(draftTitle)),
       generation_status: "generating",
     })
     .select()
@@ -88,7 +90,12 @@ export async function POST(request: Request) {
       .from("articles")
       .update({
         title: generated.title,
-        slug: slugify(generated.slug || generated.title),
+        slug: await uniqueSlug(
+          supabase,
+          blog.id,
+          slugify(generated.slug || generated.title),
+          draft.id,
+        ),
         seo_title: generated.seo_title,
         seo_description: generated.seo_description,
         excerpt: generated.excerpt,
@@ -119,4 +126,34 @@ export async function POST(request: Request) {
       { status: 500 },
     );
   }
+}
+
+// O slug é único por blog. Sem isto, uma geração que falhou deixa o
+// rascunho gravado e a mesma keyword nunca mais pode ser gerada - o
+// insert seguinte colide e o usuário fica travado sem entender por quê.
+async function uniqueSlug(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  blogId: string,
+  base: string,
+  excludeId?: string,
+): Promise<string> {
+  const root = base || "artigo";
+
+  for (let attempt = 0; attempt < 30; attempt++) {
+    const candidate = attempt === 0 ? root : `${root}-${attempt + 1}`;
+
+    let query = supabase
+      .from("articles")
+      .select("id")
+      .eq("blog_id", blogId)
+      .eq("slug", candidate);
+
+    if (excludeId) query = query.neq("id", excludeId);
+
+    const { data } = await query.maybeSingle();
+    if (!data) return candidate;
+  }
+
+  // Fallback improvável: sufixo aleatório para nunca travar o usuário.
+  return `${root}-${Math.random().toString(36).slice(2, 7)}`;
 }

@@ -134,7 +134,10 @@ export async function generateArticle(params: {
 
   const response = await client.messages.parse({
     model: MODEL,
-    max_tokens: 32000,
+    // 16000 é folga larga para um artigo (~4000 tokens). Acima disso o
+    // SDK exige streaming, por assumir que a requisição pode passar de
+    // 10 minutos.
+    max_tokens: 16000,
     system: [
       {
         type: "text",
