@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
+import { TENANT_BASE_HEADER } from "@/lib/tenant";
 
 // Host da aplicação principal (dashboard). Tudo que chegar em outro host
 // é tratado como o blog público de um tenant e é reescrito para
@@ -46,13 +47,24 @@ export async function proxy(request: NextRequest) {
   if (isAppHost && previewMatch) {
     const [, subdomain, rawRest = "/"] = previewMatch;
     const rest = rawRest === "/sitemap.xml" ? "/sitemap" : rawRest;
-    const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || APP_DOMAIN;
+
     const previewUrl = new URL(
-      `/sites/${subdomain}.${rootDomain}${rest === "/" ? "" : rest}`,
+      `/sites/${subdomain}${rest === "/" ? "" : rest}`,
       request.url,
     );
     previewUrl.search = url.search;
-    return NextResponse.rewrite(previewUrl);
+
+    // Informa a base pública real para que sitemap, canonical e og:image
+    // não apontem para um subdomínio inexistente.
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set(
+      TENANT_BASE_HEADER,
+      `${url.protocol}//${hostname}/b/${subdomain}`,
+    );
+
+    return NextResponse.rewrite(previewUrl, {
+      request: { headers: requestHeaders },
+    });
   }
 
   if (isAppHost || isInternal) {

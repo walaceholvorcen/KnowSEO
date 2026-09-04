@@ -19,7 +19,7 @@ export async function generateMetadata({
   if (!blog) return {};
 
   return {
-    metadataBase: tenantBaseUrl(domain),
+    metadataBase: await tenantBaseUrl(domain),
     title: blog.name,
     description: blog.theme.tagline ?? undefined,
     openGraph: {

@@ -33,7 +33,7 @@ export async function generateMetadata({
   const image = article.cover_image_url || `/api/og/${article.id}`;
 
   return {
-    metadataBase: tenantBaseUrl(domain),
+    metadataBase: await tenantBaseUrl(domain),
     title,
     description,
     // Evita conteúdo duplicado quando o mesmo artigo é servido pelo
@@ -74,7 +74,7 @@ export default async function TenantArticlePage({
 
   if (!article) notFound();
 
-  const origin = tenantOrigin(domain);
+  const origin = await tenantOrigin(domain);
   // Dado estruturado: habilita rich results no Google e dá à IA um
   // resumo inequívoco de autor, data e tema do artigo.
   const jsonLd = {

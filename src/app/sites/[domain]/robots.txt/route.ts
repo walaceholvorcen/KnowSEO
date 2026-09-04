@@ -12,7 +12,7 @@ export async function GET(
   const blog = await resolveBlogByHost(domain);
   if (!blog) return new Response("Not found", { status: 404 });
 
-  const origin = tenantOrigin(domain);
+  const origin = await tenantOrigin(domain);
 
   const body = `User-agent: *
 Allow: /
