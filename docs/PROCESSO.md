@@ -548,3 +548,51 @@ Atenção/Crítico) via `scoreBand()`.
   hoje ele fica de fora do diagnóstico de gargalo.
 - Fase 2 (gestão via Business Profile API) segue bloqueada por aprovação do
   Google, fora do nosso controle.
+
+---
+
+## 17. Estratégia e Configurações no padrão do veredito
+
+Mesma reforma da seção 15/16, aplicada às duas telas que ainda usavam o
+formato antigo (título + subtítulo + lista de cards).
+
+**Estratégia:** abre com `"N pautas esperando escolha"` em vez de título
+genérico. Cada keyword virou linha com filete, não card - funil, dificuldade
+e volume em uma frase corrida, sem pílula colorida decorativa (a pílula de
+"oportunidade" antes era sempre verde, para os três valores possíveis -
+cor que não distingue nada é decoração, não informação; virou texto plano).
+Dificuldade reaproveita a cor das faixas de nota (fácil = mesma cor de
+"saudável", difícil = mesma cor de "atenção") em vez de emerald/red cru.
+
+**Configurações:** as três abas (DNA da Marca, Blog e Domínio, Interface)
+ganharam abertura com veredito real, calculado a partir do dado:
+- DNA da Marca: conta quantos dos 5 campos de voz estão preenchidos -
+  "vazio" / "parcial: 3 de 5" / "completo".
+- Blog e Domínio: usa `domain_status` do schema para dizer se o domínio
+  próprio está ativo, aguardando DNS, ou com erro.
+- Interface: sem diagnóstico (é config pura), mas com frase direta em vez
+  de "Gerencie o tema da interface."
+
+O bloco azul de ação em Linkagem Interna saiu pelo mesmo motivo do bloco
+da Auditoria (seção 15): competia com o veredito no topo da tela.
+
+### Espanhol residual eliminado
+Sweep final encontrou e corrigiu: "Inicia sesión" (link no signup),
+"Aún no hay páginas mapeadas", "páginas detectadas y guardadas",
+"Detectar páginas automáticamente" (faltava o acento certo em português),
+placeholder "suempresa.com/servicios", e comentários de código em
+`src/app/page.tsx` e `signup/page.tsx`.
+
+**Observação, não bug:** o DNA da Marca real do cliente de teste (blog em
+`pt`) tem descrição e público-alvo escritos em espanhol - dado do próprio
+cliente, não string da interface. O prompt já força a saída em português do
+Brasil independente disso (seção 6), mas o conteúdo-fonte do DNA vale a
+pena revisar com o cliente.
+
+### NotaCard, Lede, Linha, Secao — vocabulário de tela estabelecido
+Depois desta rodada, toda tela do painel (Início, Conteúdos, Auditoria,
+Estratégia, Visibilidade IA, Google Meu Negócio, Relatórios, as 3 de
+Configurações) usa o mesmo vocabulário de `src/components/lede.tsx`:
+`Lede` (abertura com veredito), `Linha` (item de lista com filete),
+`Secao` (rótulo de subseção), `NotaCard` (nota de 0-100 com faixa). Tela
+nova deve usar essas peças antes de inventar layout próprio.

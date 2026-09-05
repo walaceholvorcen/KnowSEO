@@ -50,7 +50,7 @@ export function InternalLinksManager({
     }
 
     setLinks(data.links as InternalLink[]);
-    setCrawlResult(`${data.count} páginas detectadas y guardadas.`);
+    setCrawlResult(`${data.count} páginas detectadas e salvas.`);
     router.refresh();
   }
 
@@ -80,19 +80,17 @@ export function InternalLinksManager({
   }
 
   return (
-    <div className="space-y-4">
-      {/* Detecção automática */}
-      <form
-        onSubmit={handleCrawl}
-        className="rounded-xl border border-cobalto-200 dark:border-cobalto-700 bg-cobalto-50 dark:bg-cobalto-900/40 p-6"
-      >
+    <div className="space-y-8">
+      {/* Fundo neutro de propósito: um bloco azul aqui competiria com o
+          veredito no topo da página - só uma coisa grita por vez. */}
+      <form onSubmit={handleCrawl}>
         <div className="mb-1 flex items-center gap-2">
-          <Radar size={18} className="text-cobalto-600 dark:text-cobalto-300" />
-          <h3 className="font-semibold text-slate-900 dark:text-slate-100">
-            Detectar páginas automáticamente
+          <Radar size={16} className="text-slate-400 dark:text-slate-500" />
+          <h3 className="font-medium text-slate-900 dark:text-slate-100">
+            Detectar páginas automaticamente
           </h3>
         </div>
-        <p className="mb-4 text-sm text-slate-600 dark:text-slate-400">
+        <p className="mb-4 text-slate-600 dark:text-slate-400">
           Lemos o sitemap do seu site e guardamos as páginas para que a IA
           possa criar links para elas dentro dos artigos.
         </p>
@@ -101,7 +99,7 @@ export function InternalLinksManager({
           <input
             value={siteUrl}
             onChange={(e) => setSiteUrl(e.target.value)}
-            placeholder="suempresa.com"
+            placeholder="suaempresa.com"
             className="flex-1 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm outline-none focus:border-cobalto-500 dark:focus:border-cobalto-400"
           />
           <button
@@ -119,12 +117,12 @@ export function InternalLinksManager({
           </p>
         )}
         {crawlError && (
-          <p className="mt-3 rounded-lg bg-red-50 dark:bg-red-900/20 px-3 py-2 text-sm text-red-600 dark:text-red-400">
+          <p className="mt-3 text-nota-critico">
             {crawlError}
           </p>
         )}
         {crawlResult && (
-          <p className="mt-3 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 px-3 py-2 text-sm text-emerald-700 dark:text-emerald-300">
+          <p className="mt-3 text-nota-excelente">
             {crawlResult}
           </p>
         )}
@@ -136,7 +134,7 @@ export function InternalLinksManager({
           <input
             value={url}
             onChange={(e) => setUrl(e.target.value)}
-            placeholder="https://suempresa.com/servicios"
+            placeholder="https://suaempresa.com/servicos"
             className="flex-1 rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm outline-none focus:border-cobalto-500 dark:focus:border-cobalto-400"
           />
           <input
@@ -156,7 +154,7 @@ export function InternalLinksManager({
 
         {links.length === 0 ? (
           <p className="text-sm text-slate-400 dark:text-slate-500">
-            Aún no hay páginas mapeadas.
+            Nenhuma página mapeada ainda.
           </p>
         ) : (
           <>

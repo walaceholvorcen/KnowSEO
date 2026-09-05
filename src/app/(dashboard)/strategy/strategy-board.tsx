@@ -4,18 +4,36 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Sparkles, X, PenLine } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { Lede, Linha } from "@/components/lede";
+import { cn } from "@/lib/utils";
 import type { Keyword } from "@/types";
 
+// Os valores gravados no banco são os códigos internos ("baja", "alta") -
+// o rótulo em português mora só aqui, na borda de exibição.
+const DIFFICULTY_LABEL: Record<string, string> = {
+  baja: "Baixa",
+  media: "Média",
+  alta: "Alta",
+};
+
+// Reaproveita a linguagem de cor já estabelecida pelas notas: fácil de
+// ranquear é a mesma ideia de "saudável", difícil é a mesma de "atenção".
 const DIFFICULTY_COLOR: Record<string, string> = {
-  baja: "text-emerald-600 dark:text-emerald-400",
-  media: "text-amber-600 dark:text-amber-400",
-  alta: "text-red-600 dark:text-red-400",
+  baja: "text-nota-excelente",
+  media: "text-nota-atencao",
+  alta: "text-nota-critico",
+};
+
+const FUNNEL_LABEL: Record<string, string> = {
+  top: "Topo de funil",
+  middle: "Meio de funil",
+  bottom: "Fundo de funil",
 };
 
 const OPPORTUNITY_LABEL: Record<string, string> = {
-  buena: "Boa",
-  muy_buena: "Muito boa",
-  excelente: "Excelente",
+  buena: "boa",
+  muy_buena: "muito boa",
+  excelente: "excelente",
 };
 
 export function StrategyBoard({
@@ -32,21 +50,26 @@ export function StrategyBoard({
   const [keywords, setKeywords] = useState(initialKeywords);
   const [loadingIdeas, setLoadingIdeas] = useState(false);
   const [generatingId, setGeneratingId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const suggested = keywords.filter((k) => k.status === "suggested");
 
   async function handleFindIdeas() {
     setLoadingIdeas(true);
+    setError(null);
     const res = await fetch("/api/keywords/suggest", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ blogId }),
     });
     const data = await res.json();
-    if (res.ok) {
-      setKeywords((prev) => [...(data.keywords as Keyword[]), ...prev]);
-    }
     setLoadingIdeas(false);
+
+    if (!res.ok) {
+      setError(data.error ?? "Não foi possível buscar pautas agora.");
+      return;
+    }
+    setKeywords((prev) => [...(data.keywords as Keyword[]), ...prev]);
   }
 
   async function handleReject(id: string) {
@@ -71,107 +94,91 @@ export function StrategyBoard({
     } else if (data.articleId) {
       router.push(`/contents/${data.articleId}`);
     } else {
-      alert(data.error ?? "Não foi possível gerar o artigo.");
+      setError(data.error ?? "Não foi possível gerar o artigo.");
     }
   }
 
+  const semCreditos = credits <= 0;
+
+  const veredito = semCreditos
+    ? "Seus créditos acabaram. Conclua a configuração para ganhar mais."
+    : suggested.length === 0
+      ? "Nenhuma pauta sugerida ainda. Peça à IA para olhar o blog e sugerir por onde escrever."
+      : `${suggested.length} ${suggested.length === 1 ? "pauta esperando" : "pautas esperando"} escolha.`;
+
   return (
-    <div className="mx-auto max-w-4xl px-8 py-10">
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Estratégia</h1>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            Oportunidades de keywords para o seu blog.
-          </p>
-        </div>
-        <button
-          onClick={handleFindIdeas}
-          disabled={loadingIdeas}
-          className="flex items-center gap-2 rounded-lg bg-cobalto-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-cobalto-700 disabled:opacity-50"
-        >
-          <Sparkles size={16} />
-          {loadingIdeas ? "Buscando..." : "Buscar oportunidades"}
-        </button>
-      </div>
-
-      {credits <= 0 && (
-        <div className="mb-6 rounded-lg bg-amber-50 dark:bg-amber-900/20 px-4 py-3 text-sm text-amber-700 dark:text-amber-300">
-          Seus créditos acabaram. Conclua os passos da
-          guía de configuración para ganar más.
-        </div>
-      )}
-
-      {suggested.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 p-12 text-center text-slate-500 dark:text-slate-400">
-          Sin sugerencias todavía. Haz clic en &ldquo;Buscar
-          oportunidades&rdquo; para a IA sugerir pautas para o seu blog.
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {suggested.map((kw) => (
-            <div
-              key={kw.id}
-              className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4"
+    <div className="mx-auto max-w-3xl px-8 py-12">
+      <Lede
+        acao={
+          !semCreditos && (
+            <button
+              onClick={handleFindIdeas}
+              disabled={loadingIdeas}
+              className="flex items-center gap-2 rounded-lg bg-cobalto-600 px-4 py-2 font-semibold text-white hover:bg-cobalto-700 disabled:opacity-50"
             >
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <h3 className="font-semibold text-slate-900 dark:text-slate-100">
-                    {kw.suggested_title || kw.keyword}
-                  </h3>
-                  <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-                    <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-2 py-0.5">
-                      {kw.keyword}
+              <Sparkles size={15} />
+              {loadingIdeas ? "Buscando..." : "Buscar pautas"}
+            </button>
+          )
+        }
+      >
+        {veredito}
+      </Lede>
+
+      {error && <p className="mb-6 text-nota-critico">{error}</p>}
+
+      {suggested.length > 0 && (
+        <ul>
+          {suggested.map((kw) => (
+            <Linha key={kw.id}>
+              <h3 className="font-medium text-slate-900 dark:text-slate-100">
+                {kw.suggested_title || kw.keyword}
+              </h3>
+              <p className="mt-1 text-slate-600 dark:text-slate-400">
+                {kw.keyword}
+                {kw.funnel_stage && <>. {FUNNEL_LABEL[kw.funnel_stage]}</>}
+                {kw.difficulty && (
+                  <>
+                    , dificuldade{" "}
+                    <span className={DIFFICULTY_COLOR[kw.difficulty]}>
+                      {DIFFICULTY_LABEL[kw.difficulty].toLowerCase()}
                     </span>
-                    {kw.funnel_stage && (
-                      <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-2 py-0.5">
-                        {kw.funnel_stage === "top"
-                          ? "Topo de funil"
-                          : kw.funnel_stage === "middle"
-                            ? "Meio de funil"
-                            : "Fundo de funil"}
-                      </span>
-                    )}
-                    {kw.search_volume != null && (
-                      <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-2 py-0.5">
-                        {kw.search_volume.toLocaleString("pt-BR")}{" "}
-                        búsquedas/mes
-                      </span>
-                    )}
-                    {kw.difficulty && (
-                      <span
-                        className={`font-medium ${DIFFICULTY_COLOR[kw.difficulty]}`}
-                      >
-                        Dificultad {kw.difficulty}
-                      </span>
-                    )}
-                  </div>
-                </div>
-                {kw.opportunity_score && (
-                  <span className="whitespace-nowrap rounded-full bg-emerald-100 dark:bg-emerald-900/40 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
-                    {OPPORTUNITY_LABEL[kw.opportunity_score]}
-                  </span>
+                  </>
                 )}
-              </div>
+                {kw.search_volume != null && (
+                  <>
+                    {" "}
+                    · {kw.search_volume.toLocaleString("pt-BR")} buscas por
+                    mês
+                  </>
+                )}
+                {kw.opportunity_score && (
+                  <>. Oportunidade {OPPORTUNITY_LABEL[kw.opportunity_score]}.</>
+                )}
+              </p>
 
               <div className="mt-3 flex items-center gap-2">
                 <button
                   onClick={() => handleReject(kw.id)}
-                  className="flex items-center gap-1 rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-1.5 text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800"
+                  className={cn(
+                    "flex items-center gap-1 rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-1.5",
+                    "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800",
+                  )}
                 >
                   <X size={14} /> Descartar
                 </button>
                 <button
                   onClick={() => handleWrite(kw.id)}
-                  disabled={generatingId === kw.id || credits <= 0}
-                  className="ml-auto flex items-center gap-1.5 rounded-lg bg-cobalto-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-cobalto-700 disabled:opacity-50"
+                  disabled={generatingId === kw.id || semCreditos}
+                  className="ml-auto flex items-center gap-1.5 rounded-lg bg-cobalto-600 px-3 py-1.5 font-semibold text-white hover:bg-cobalto-700 disabled:opacity-50"
                 >
                   <PenLine size={14} />
                   {generatingId === kw.id ? "Gerando..." : "Escrever artigo"}
                 </button>
               </div>
-            </div>
+            </Linha>
           ))}
-        </div>
+        </ul>
       )}
     </div>
   );

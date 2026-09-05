@@ -113,7 +113,7 @@ export function AuditBoard({
           <input
             value={siteUrl}
             onChange={(e) => setSiteUrl(e.target.value)}
-            placeholder="suempresa.com"
+            placeholder="suaempresa.com"
             className="flex-1 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm outline-none focus:border-cobalto-500 dark:focus:border-cobalto-400"
           />
           <button

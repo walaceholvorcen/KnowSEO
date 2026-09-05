@@ -2,6 +2,18 @@ import { requireUserAndWorkspace, getWorkspaceBlogs } from "@/lib/workspace";
 import type { BrandDna } from "@/types";
 import { SettingsNav } from "../settings-nav";
 import { BrandDnaForm } from "./brand-dna-form";
+import { Lede } from "@/components/lede";
+
+// Campos opcionais que realmente mudam o tom do artigo. "tone" fica de fora
+// porque nasce com valor padrão - vazio nele seria bug, não sinal de
+// DNA incompleto.
+const CAMPOS_DE_VOZ = [
+  "description",
+  "target_audience",
+  "writing_style",
+  "banned_topics",
+  "banned_words",
+] as const;
 
 export default async function BrandDnaPage() {
   const { supabase, workspace } = await requireUserAndWorkspace();
@@ -14,21 +26,23 @@ export default async function BrandDnaPage() {
     .eq("blog_id", blog.id)
     .maybeSingle();
 
+  const perfil = dna as BrandDna | null;
+  const preenchidos = CAMPOS_DE_VOZ.filter((c) => perfil?.[c]?.trim()).length;
+
+  const veredito =
+    preenchidos === 0
+      ? "O DNA da marca está vazio. Sem ele, todo artigo sai com tom genérico."
+      : preenchidos === CAMPOS_DE_VOZ.length
+        ? "DNA completo. Todo artigo novo usa este tom e estas regras."
+        : `DNA parcial: ${preenchidos} de ${CAMPOS_DE_VOZ.length} campos preenchidos.`;
+
   return (
-    <div className="mx-auto max-w-3xl px-8 py-10">
-      <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Configurações</h1>
+    <div className="mx-auto max-w-3xl px-8 py-12">
       <SettingsNav />
-      <div className="mt-6">
-        <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-200">
-          DNA da Marca
-        </h2>
-        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-          Essas informações alimentam todo artigo gerado pela IA.
-        </p>
-        <div className="mt-4">
-          <BrandDnaForm blogId={blog.id} initial={dna as BrandDna | null} />
-        </div>
-      </div>
+      <Lede apoio="Isso alimenta o prompt de todo artigo gerado pela IA - é a diferença entre um texto genérico e um com a voz da sua marca.">
+        {veredito}
+      </Lede>
+      <BrandDnaForm blogId={blog.id} initial={perfil} />
     </div>
   );
 }

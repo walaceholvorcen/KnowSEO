@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
-// Sin landing page todavía (a propósito - primero validamos el producto).
-// La raíz solo redirige según el estado de sesión.
+// Sem landing page ainda (de propósito - primeiro validamos o produto).
+// A raiz só redireciona conforme o estado de sessão.
 export default async function RootPage() {
   const supabase = await createClient();
   const {

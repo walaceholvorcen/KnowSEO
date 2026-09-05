@@ -33,7 +33,7 @@ export default function SignupPage() {
     }
 
     // Si la confirmación de email está activada en el proyecto Supabase,
-    // no hay sesión todavía - pedimos al usuario que confirme por correo.
+    // ainda não há sessão - pedimos para o usuário confirmar por email.
     if (!data.session) {
       setNeedsConfirmation(true);
       setLoading(false);
@@ -171,7 +171,7 @@ export default function SignupPage() {
             href="/login"
             className="font-medium text-cobalto-600 dark:text-cobalto-300 hover:underline"
           >
-            Inicia sesión
+            Entrar
           </Link>
         </p>
       </div>
