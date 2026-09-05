@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { CheckCircle2, Circle } from "lucide-react";
+import { Check } from "lucide-react";
 import { requireUserAndWorkspace, getWorkspaceBlogs } from "@/lib/workspace";
+import { Lede, Linha, Secao } from "@/components/lede";
 import type { OnboardingSteps } from "@/types";
 
 const STEPS: {
@@ -11,32 +12,32 @@ const STEPS: {
 }[] = [
   {
     key: "brand_dna",
-    title: "Define el DNA de tu marca",
-    description: "Descripción, tono de voz y público objetivo.",
+    title: "Defina o DNA da marca",
+    description: "O que a empresa faz, para quem escreve e em que tom.",
     href: "/settings/brand",
   },
   {
     key: "domain_connected",
-    title: "Conecta tu dominio",
-    description: "Usa tu propio dominio en vez del subdominio gratuito.",
+    title: "Conecte seu domínio",
+    description: "Use o seu domínio no lugar do subdomínio gratuito.",
     href: "/settings/blog",
   },
   {
     key: "site_analyzed",
-    title: "Mapea las páginas de tu sitio",
-    description: "Permite enlazado interno automático en los artículos.",
+    title: "Mapeie as páginas do seu site",
+    description: "É o que permite link interno automático nos artigos.",
     href: "/settings/blog",
   },
   {
     key: "first_article_published",
-    title: "Publica tu primer artículo",
-    description: "Genera y publica un artículo con IA.",
-    href: "/contents",
+    title: "Publique o primeiro artigo",
+    description: "Escolha uma pauta e deixe a IA escrever.",
+    href: "/strategy",
   },
   {
     key: "analytics_connected",
-    title: "Revisa tus primeras visitas",
-    description: "El seguimiento ya está activo desde el primer artículo.",
+    title: "Veja as primeiras visitas",
+    description: "O rastreio liga sozinho com o primeiro artigo no ar.",
     href: "/reports",
   },
 ];
@@ -46,79 +47,94 @@ export default async function DashboardHomePage() {
   const blogs = await getWorkspaceBlogs(supabase, workspace.id);
   const blog = blogs[0];
 
-  const completed = STEPS.filter(
-    (s) => workspace.onboarding_steps[s.key],
-  ).length;
-  const nextStep = STEPS.find((s) => !workspace.onboarding_steps[s.key]);
+  const desde = new Date();
+  desde.setDate(desde.getDate() - 28);
+
+  const [{ count: publicados }, { count: visitas }] = await Promise.all([
+    supabase
+      .from("articles")
+      .select("id", { count: "exact", head: true })
+      .eq("blog_id", blog.id)
+      .eq("status", "published"),
+    supabase
+      .from("analytics_events")
+      .select("id", { count: "exact", head: true })
+      .eq("blog_id", blog.id)
+      .eq("event_type", "pageview")
+      .gte("created_at", desde.toISOString()),
+  ]);
+
+  const nArtigos = publicados ?? 0;
+  const nVisitas = visitas ?? 0;
+  const proximo = STEPS.find((s) => !workspace.onboarding_steps[s.key]);
+  const feitos = STEPS.filter((s) => workspace.onboarding_steps[s.key]).length;
+
+  // A frase muda com o estado real da operação. Tela vazia é convite, não
+  // um zero pendurado no meio de um card.
+  const veredito =
+    nArtigos === 0
+      ? "Seu blog está no ar e ainda sem nenhum artigo. O primeiro leva cerca de um minuto."
+      : nVisitas === 0
+        ? `${nArtigos} ${nArtigos === 1 ? "artigo publicado" : "artigos publicados"}, ainda sem visita registrada. Divulgue o link e o número começa a subir.`
+        : `${nArtigos} ${nArtigos === 1 ? "artigo publicado" : "artigos publicados"} e ${nVisitas} ${nVisitas === 1 ? "visita" : "visitas"} nos últimos 28 dias.`;
 
   return (
-    <div className="mx-auto max-w-4xl px-8 py-10">
-      <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-        Hola 👋
-      </h1>
-      <p className="mt-1 text-slate-500 dark:text-slate-400">
-        Blog activo: <strong>{blog?.name}</strong>
+    <div className="mx-auto max-w-3xl px-8 py-12">
+      <Lede
+        apoio={<>Blog {blog?.name}.</>}
+        acao={
+          proximo && (
+            <Link
+              href={proximo.href}
+              className="rounded-lg bg-cobalto-600 px-4 py-2 font-semibold text-white hover:bg-cobalto-700"
+            >
+              {proximo.title}
+            </Link>
+          )
+        }
+      >
+        {veredito}
+      </Lede>
+
+      <Secao>Configuração</Secao>
+      <p className="text-slate-600 dark:text-slate-400">
+        {feitos === STEPS.length
+          ? "Tudo configurado."
+          : `${feitos} de ${STEPS.length} prontos. Cada passo concluído libera mais um artigo.`}
       </p>
 
-      {nextStep && (
-        <Link
-          href={nextStep.href}
-          className="mt-6 block rounded-xl border border-cobalto-200 dark:border-cobalto-700 bg-cobalto-50 dark:bg-cobalto-900/40 p-5 transition hover:border-cobalto-300 dark:hover:border-cobalto-600"
-        >
-          <p className="text-sm text-cobalto-700 dark:text-cobalto-300">
-            Próximo paso
-          </p>
-          <h2 className="mt-1 text-lg font-bold text-slate-900 dark:text-slate-100">
-            {nextStep.title}
-          </h2>
-          <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-            {nextStep.description}
-          </p>
-        </Link>
-      )}
-
-      <div className="mt-8 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
-        <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-            Guía de configuración
-          </h3>
-          <span className="text-sm text-slate-400 dark:text-slate-500">
-            {completed} de {STEPS.length} completados
-          </span>
-        </div>
-
-        <ul className="space-y-3">
-          {STEPS.map((step) => {
-            const done = workspace.onboarding_steps[step.key];
-            return (
-              <li key={step.key}>
-                <Link
-                  href={step.href}
-                  className="flex items-center gap-3 rounded-lg px-2 py-2 hover:bg-slate-50 dark:hover:bg-slate-800"
-                >
-                  {done ? (
-                    <CheckCircle2 size={18} className="text-emerald-500 dark:text-emerald-400" />
-                  ) : (
-                    <Circle size={18} className="text-slate-300 dark:text-slate-600" />
-                  )}
+      <ul className="mt-4">
+        {STEPS.map((step) => {
+          const feito = workspace.onboarding_steps[step.key];
+          return (
+            <Linha key={step.key}>
+              <Link href={step.href} className="group flex items-baseline gap-3">
+                {/* O estado aparece na marca e no peso do texto, não numa
+                    pílula colorida repetida em toda linha. */}
+                <span className="w-4 shrink-0 text-nota-excelente">
+                  {feito && <Check size={16} />}
+                </span>
+                <span className="min-w-0">
                   <span
                     className={
-                      done
-                        ? "text-sm text-slate-400 dark:text-slate-500 line-through"
-                        : "text-sm text-slate-700 dark:text-slate-300"
+                      feito
+                        ? "text-slate-400 dark:text-slate-500"
+                        : "text-slate-900 dark:text-slate-100 group-hover:text-cobalto-600 dark:group-hover:text-cobalto-400"
                     }
                   >
                     {step.title}
                   </span>
-                  <span className="ml-auto rounded-full bg-cobalto-100 dark:bg-cobalto-900/60 px-2 py-0.5 text-xs font-medium text-cobalto-700 dark:text-cobalto-300">
-                    +1 artículo
-                  </span>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-      </div>
+                  {!feito && (
+                    <span className="mt-0.5 block text-slate-500 dark:text-slate-400">
+                      {step.description}
+                    </span>
+                  )}
+                </span>
+              </Link>
+            </Linha>
+          );
+        })}
+      </ul>
     </div>
   );
 }

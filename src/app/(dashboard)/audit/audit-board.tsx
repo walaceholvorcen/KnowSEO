@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Stethoscope, ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { scoreBand, type ScoreBand } from "@/lib/audit/rules";
+import { Lede } from "@/components/lede";
 import type { AuditRow, FindingRow } from "./page";
 
 const BAND_LABEL: Record<ScoreBand, string> = {
@@ -148,31 +149,28 @@ export function AuditBoard({
     const data = await res.json();
     setRunning(false);
 
-    if (!res.ok) setError(data.error ?? "Error inesperado");
+    if (!res.ok) setError(data.error ?? "Algo deu errado. Tente de novo.");
     else router.refresh();
   }
 
   return (
-    <div className="mx-auto max-w-4xl px-8 py-10">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-          Auditoria do site
-        </h1>
-        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-          O que impede o site de ser encontrado — no Google e pela IA.
-        </p>
-      </div>
-
-      <form
-        onSubmit={handleRun}
-        className="mb-6 rounded-xl border border-cobalto-200 dark:border-cobalto-700 bg-cobalto-50 dark:bg-cobalto-900/40 p-6"
+    <div className="mx-auto max-w-3xl px-8 py-12">
+      <Lede
+        apoio={
+          latest
+            ? `${findings.length} ${findings.length === 1 ? "achado" : "achados"} em ${latest.pages_analyzed} ${latest.pages_analyzed === 1 ? "página" : "páginas"} de ${latest.site_url}.`
+            : "Lemos robots, sitemap e até 25 páginas para dizer o que trava o site no Google e na IA."
+        }
       >
-        <div className="mb-3 flex items-center gap-2">
-          <Stethoscope size={18} className="text-cobalto-600 dark:text-cobalto-300" />
-          <h3 className="font-semibold text-slate-900 dark:text-slate-100">
-            Analisar um site
-          </h3>
-        </div>
+        {latest
+          ? `O site tira ${latest.score_google} de 100 no Google e ${latest.score_ai} de 100 na prontidão para IA.`
+          : "Nenhum site auditado ainda. A análise leva menos de um minuto."}
+      </Lede>
+
+      {/* Bloco de ação em fundo azul competia com a frase de abertura: numa
+          tela só, duas coisas gritando é o mesmo que nenhuma. O formulário
+          fica neutro; a ousadia é do veredito. */}
+      <form onSubmit={handleRun} className="mb-8">
         <div className="flex gap-2">
           <input
             value={siteUrl}
@@ -194,7 +192,7 @@ export function AuditBoard({
           </p>
         )}
         {error && (
-          <p className="mt-3 rounded-lg bg-red-50 dark:bg-red-900/20 px-3 py-2 text-sm text-red-600 dark:text-red-400">
+          <p className="mt-3 text-nota-critico">
             {error}
           </p>
         )}

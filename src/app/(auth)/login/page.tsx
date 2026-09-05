@@ -38,10 +38,10 @@ export default function LoginPage() {
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-            Iniciar sesión
+            Entrar
           </h1>
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            Entra en tu panel de contenido
+            Entre no seu painel de conteúdo
           </p>
         </div>
 
@@ -61,7 +61,7 @@ export default function LoginPage() {
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
-              Contraseña
+              Senha
             </label>
             <input
               type="password"
@@ -89,12 +89,12 @@ export default function LoginPage() {
         </form>
 
         <p className="text-center text-sm text-slate-500 dark:text-slate-400">
-          ¿No tienes cuenta?{" "}
+          Ainda não tem conta?{" "}
           <Link
             href="/signup"
             className="font-medium text-cobalto-600 dark:text-cobalto-300 hover:underline"
           >
-            Crear cuenta gratis
+            Criar conta grátis
           </Link>
         </p>
       </div>

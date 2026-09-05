@@ -1,87 +1,138 @@
+import Link from "next/link";
 import { requireUserAndWorkspace, getWorkspaceBlogs } from "@/lib/workspace";
+import { Lede, Linha, Secao } from "@/components/lede";
 import type { AnalyticsEvent } from "@/types";
-
-function StatCard({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
-      <p className="text-sm text-slate-500 dark:text-slate-400">
-        {label}
-      </p>
-      <p className="mt-1 text-3xl font-bold text-slate-900 dark:text-slate-100">
-        {value.toLocaleString("es-ES")}
-      </p>
-    </div>
-  );
-}
 
 export default async function ReportsPage() {
   const { supabase, workspace } = await requireUserAndWorkspace();
   const blogs = await getWorkspaceBlogs(supabase, workspace.id);
   const blog = blogs[0];
 
-  const since = new Date();
-  since.setDate(since.getDate() - 28);
+  const desde = new Date();
+  desde.setDate(desde.getDate() - 28);
 
   const { data: events } = await supabase
     .from("analytics_events")
     .select("*")
     .eq("blog_id", blog.id)
-    .gte("created_at", since.toISOString())
+    .gte("created_at", desde.toISOString())
     .order("created_at", { ascending: false });
 
-  const list = (events as AnalyticsEvent[]) ?? [];
-  const pageviews = list.filter((e) => e.event_type === "pageview").length;
-  const ctaClicks = list.filter((e) => e.event_type === "cta_click").length;
-  const whatsappClicks = list.filter(
+  const lista = (events as AnalyticsEvent[]) ?? [];
+  const visitas = lista.filter((e) => e.event_type === "pageview").length;
+  const cliquesCta = lista.filter((e) => e.event_type === "cta_click").length;
+  const cliquesZap = lista.filter(
     (e) => e.event_type === "whatsapp_click",
   ).length;
+  const conversas = cliquesCta + cliquesZap;
 
-  const byPath = new Map<string, number>();
-  for (const e of list) {
+  const porCaminho = new Map<string, number>();
+  for (const e of lista) {
     if (e.event_type !== "pageview" || !e.path) continue;
-    byPath.set(e.path, (byPath.get(e.path) ?? 0) + 1);
+    porCaminho.set(e.path, (porCaminho.get(e.path) ?? 0) + 1);
   }
-  const topPages = [...byPath.entries()]
+  const maisVistas = [...porCaminho.entries()]
     .sort((a, b) => b[1] - a[1])
     .slice(0, 8);
 
+  // O caminho gravado inclui o prefixo interno da rota de preview
+  // (/b/testando/...), que não diz nada ao cliente. Aqui ele vira o
+  // título do artigo; sem correspondência, mostra só o endereço final.
+  const { data: artigos } = await supabase
+    .from("articles")
+    .select("slug,title")
+    .eq("blog_id", blog.id);
+
+  const tituloPorSlug = new Map(
+    ((artigos as { slug: string; title: string }[]) ?? []).map((a) => [
+      a.slug,
+      a.title,
+    ]),
+  );
+
+  function nomeDaPagina(caminho: string) {
+    const slug = caminho.split("/").filter(Boolean).pop() ?? "";
+    return tituloPorSlug.get(slug) ?? `/${slug}`;
+  }
+
+  // A pergunta que o cliente traz para esta tela é "o blog me trouxe
+  // alguém?". A resposta é uma frase, não três números lado a lado sem
+  // relação declarada entre eles.
+  const veredito =
+    visitas === 0
+      ? "Ainda não houve visita nos últimos 28 dias. O rastreio já está ligado — falta divulgar o link."
+      : conversas === 0
+        ? `${visitas} ${visitas === 1 ? "visita" : "visitas"} nos últimos 28 dias, e nenhuma virou conversa ainda.`
+        : `${visitas} ${visitas === 1 ? "visita" : "visitas"} nos últimos 28 dias, ${conversas} ${conversas === 1 ? "virou conversa" : "viraram conversa"}.`;
+
   return (
-    <div className="mx-auto max-w-4xl px-8 py-10">
-      <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Relatórios</h1>
-      <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-        Dados de primeira parte - já ativos desde a primeira publicação, sem
-        precisar conectar Google Analytics.
-      </p>
+    <div className="mx-auto max-w-3xl px-8 py-12">
+      <Lede
+        apoio="Dado de primeira parte, medido no seu próprio blog. Não depende do Google Analytics nem de consentimento de cookie."
+        acao={
+          visitas === 0 && (
+            <Link
+              href="/contents"
+              className="rounded-lg bg-cobalto-600 px-4 py-2 font-semibold text-white hover:bg-cobalto-700"
+            >
+              Ver meus artigos
+            </Link>
+          )
+        }
+      >
+        {veredito}
+      </Lede>
 
-      <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatCard label="Visitas (28 dias)" value={pageviews} />
-        <StatCard label="Cliques em CTA" value={ctaClicks} />
-        <StatCard label="Cliques no WhatsApp" value={whatsappClicks} />
-      </div>
-
-      <div className="mt-8 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
-        <h3 className="mb-4 text-sm font-semibold text-slate-700 dark:text-slate-300">
-          Páginas mais visitadas
-        </h3>
-        {topPages.length === 0 ? (
-          <p className="text-sm text-slate-400 dark:text-slate-500">
-            Ainda não há visitas registradas. Publique e compartilhe seu
-            primeiro artigo.
-          </p>
-        ) : (
-          <ul className="divide-y divide-slate-100">
-            {topPages.map(([path, count]) => (
-              <li
-                key={path}
-                className="flex items-center justify-between py-2 text-sm"
-              >
-                <span className="truncate text-slate-600 dark:text-slate-400">{path}</span>
-                <span className="font-medium text-slate-900 dark:text-slate-100">{count}</span>
-              </li>
-            ))}
+      {conversas > 0 && (
+        <>
+          <Secao>De onde vieram as conversas</Secao>
+          <ul className="mt-4">
+            <Linha>
+              <div className="flex items-baseline justify-between gap-4">
+                <span className="text-slate-700 dark:text-slate-300">
+                  WhatsApp
+                </span>
+                <span className="tabular font-display text-2xl text-slate-900 dark:text-slate-100">
+                  {cliquesZap}
+                </span>
+              </div>
+            </Linha>
+            <Linha>
+              <div className="flex items-baseline justify-between gap-4">
+                <span className="text-slate-700 dark:text-slate-300">
+                  Botão do artigo
+                </span>
+                <span className="tabular font-display text-2xl text-slate-900 dark:text-slate-100">
+                  {cliquesCta}
+                </span>
+              </div>
+            </Linha>
           </ul>
-        )}
-      </div>
+        </>
+      )}
+
+      <Secao>Páginas mais visitadas</Secao>
+      {maisVistas.length === 0 ? (
+        <p className="mt-2 text-slate-500 dark:text-slate-400">
+          Nada registrado ainda. Assim que alguém abrir um artigo, ele aparece
+          aqui.
+        </p>
+      ) : (
+        <ul className="mt-4">
+          {maisVistas.map(([caminho, contagem]) => (
+            <Linha key={caminho}>
+              <div className="flex items-baseline justify-between gap-4">
+                <span className="min-w-0 truncate text-slate-700 dark:text-slate-300">
+                  {nomeDaPagina(caminho)}
+                </span>
+                <span className="tabular shrink-0 font-display text-2xl text-slate-900 dark:text-slate-100">
+                  {contagem}
+                </span>
+              </div>
+            </Linha>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

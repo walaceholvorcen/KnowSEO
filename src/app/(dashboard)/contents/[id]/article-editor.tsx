@@ -86,7 +86,7 @@ export function ArticleEditor({ article }: { article: Article }) {
     {
       setSlug(slugFinal);
       setStatus(finalStatus);
-      setSavedAt(new Date().toLocaleTimeString("es-ES"));
+      setSavedAt(new Date().toLocaleTimeString("pt-BR"));
 
       if (finalStatus === "published") {
         await fetch("/api/onboarding/complete-step", {
@@ -104,10 +104,10 @@ export function ArticleEditor({ article }: { article: Article }) {
       <div className="mx-auto flex max-w-3xl flex-col items-center justify-center px-8 py-24 text-center">
         <div className="mb-4 h-8 w-8 animate-spin rounded-full border-2 border-cobalto-600 dark:border-cobalto-400 border-t-transparent" />
         <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-200">
-          Generando el artículo con IA...
+          Gerando o artigo com IA...
         </h2>
         <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-          Esto puede tardar 20-40 segundos. Puedes salir y volver luego.
+          Pode levar de 20 a 40 segundos. Você pode sair e voltar depois.
         </p>
       </div>
     );
@@ -126,7 +126,7 @@ export function ArticleEditor({ article }: { article: Article }) {
         <div className="flex items-center gap-2">
           {savedAt && (
             <span className="text-xs text-slate-400 dark:text-slate-500">
-              Guardado {savedAt}
+              Salvo {savedAt}
             </span>
           )}
           <button
@@ -134,14 +134,14 @@ export function ArticleEditor({ article }: { article: Article }) {
             disabled={saving}
             className="rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-1.5 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
           >
-            Guardar borrador
+            Salvar rascunho
           </button>
           <button
             onClick={() => handleSave("published")}
             disabled={saving}
             className="rounded-lg bg-cobalto-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-cobalto-700 disabled:opacity-50"
           >
-            {status === "published" ? "Actualizar" : "Publicar"}
+            {status === "published" ? "Atualizar" : "Publicar"}
           </button>
         </div>
       </div>
@@ -206,7 +206,7 @@ export function ArticleEditor({ article }: { article: Article }) {
         </button>
         <button
           onClick={() => {
-            const url = window.prompt("URL del enlace");
+            const url = window.prompt("URL do link");
             if (url) exec("createLink", url);
           }}
           className="rounded p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700"

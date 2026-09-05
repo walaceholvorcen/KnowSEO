@@ -79,14 +79,14 @@ export function Sidebar({
       <div className="space-y-3 border-t border-slate-100 dark:border-slate-800 px-5 py-4">
         <div className="rounded-lg bg-cobalto-50 dark:bg-cobalto-900/40 px-3 py-2 text-xs text-cobalto-700 dark:text-cobalto-300">
           <span className="font-semibold">{credits}</span>{" "}
-          {credits === 1 ? "crédito" : "créditos"} disponibles
+          {credits === 1 ? "crédito" : "créditos"} disponíveis
         </div>
         <button
           onClick={handleLogout}
           className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100"
         >
           <LogOut size={16} />
-          Cerrar sesión
+          Sair
         </button>
       </div>
     </aside>

@@ -13,8 +13,8 @@ const DIFFICULTY_COLOR: Record<string, string> = {
 };
 
 const OPPORTUNITY_LABEL: Record<string, string> = {
-  buena: "Buena",
-  muy_buena: "Muy buena",
+  buena: "Boa",
+  muy_buena: "Muito boa",
   excelente: "Excelente",
 };
 
@@ -71,7 +71,7 @@ export function StrategyBoard({
     } else if (data.articleId) {
       router.push(`/contents/${data.articleId}`);
     } else {
-      alert(data.error ?? "No se pudo generar el artículo");
+      alert(data.error ?? "Não foi possível gerar o artigo.");
     }
   }
 
@@ -96,7 +96,7 @@ export function StrategyBoard({
 
       {credits <= 0 && (
         <div className="mb-6 rounded-lg bg-amber-50 dark:bg-amber-900/20 px-4 py-3 text-sm text-amber-700 dark:text-amber-300">
-          No te quedan créditos para generar artículos. Completa pasos de la
+          Seus créditos acabaram. Conclua os passos da
           guía de configuración para ganar más.
         </div>
       )}
@@ -104,7 +104,7 @@ export function StrategyBoard({
       {suggested.length === 0 ? (
         <div className="rounded-xl border border-dashed border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 p-12 text-center text-slate-500 dark:text-slate-400">
           Sin sugerencias todavía. Haz clic en &ldquo;Buscar
-          oportunidades&rdquo; para que la IA analice temas para tu blog.
+          oportunidades&rdquo; para a IA sugerir pautas para o seu blog.
         </div>
       ) : (
         <div className="space-y-3">
@@ -125,15 +125,15 @@ export function StrategyBoard({
                     {kw.funnel_stage && (
                       <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-2 py-0.5">
                         {kw.funnel_stage === "top"
-                          ? "Tope de embudo"
+                          ? "Topo de funil"
                           : kw.funnel_stage === "middle"
-                            ? "Medio de embudo"
-                            : "Fondo de embudo"}
+                            ? "Meio de funil"
+                            : "Fundo de funil"}
                       </span>
                     )}
                     {kw.search_volume != null && (
                       <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-2 py-0.5">
-                        {kw.search_volume.toLocaleString("es-ES")}{" "}
+                        {kw.search_volume.toLocaleString("pt-BR")}{" "}
                         búsquedas/mes
                       </span>
                     )}
@@ -158,7 +158,7 @@ export function StrategyBoard({
                   onClick={() => handleReject(kw.id)}
                   className="flex items-center gap-1 rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-1.5 text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800"
                 >
-                  <X size={14} /> Rechazar
+                  <X size={14} /> Descartar
                 </button>
                 <button
                   onClick={() => handleWrite(kw.id)}
@@ -166,7 +166,7 @@ export function StrategyBoard({
                   className="ml-auto flex items-center gap-1.5 rounded-lg bg-cobalto-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-cobalto-700 disabled:opacity-50"
                 >
                   <PenLine size={14} />
-                  {generatingId === kw.id ? "Generando..." : "Escribir artículo"}
+                  {generatingId === kw.id ? "Gerando..." : "Escrever artigo"}
                 </button>
               </div>
             </div>

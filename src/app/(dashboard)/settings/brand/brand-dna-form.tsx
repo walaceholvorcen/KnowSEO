@@ -48,7 +48,7 @@ export function BrandDnaForm({
       updated_at: new Date().toISOString(),
     });
 
-    // Sem esta checagem o botão dizia "Guardado ✓" mesmo quando o upsert
+    // Sem esta checagem o botão dizia "Salvo" mesmo quando o upsert
     // falhava - o cliente achava que tinha configurado a marca e os
     // artigos saíam com tom genérico, sem nada denunciando o problema.
     if (saveError) {
@@ -75,32 +75,32 @@ export function BrandDnaForm({
     >
       <div>
         <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
-          ¿Qué hace tu empresa?
+          O que a sua empresa faz?
         </label>
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={3}
           className="w-full rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm outline-none focus:border-cobalto-500 dark:focus:border-cobalto-400"
-          placeholder="Ej: Somos una clínica dental en Madrid especializada en ortodoncia invisible..."
+          placeholder="Ex: Somos uma agência de performance que cuida de anúncios para pequenas empresas..."
         />
       </div>
 
       <div>
         <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
-          Público objetivo
+          Público-alvo
         </label>
         <input
           value={targetAudience}
           onChange={(e) => setTargetAudience(e.target.value)}
           className="w-full rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm outline-none focus:border-cobalto-500 dark:focus:border-cobalto-400"
-          placeholder="Ej: Adultos de 25-45 años preocupados por su salud dental"
+          placeholder="Ex: Donos de negócio de 25 a 55 anos que querem mais clientes"
         />
       </div>
 
       <div>
         <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
-          Tono de voz
+          Tom de voz
         </label>
         <input
           value={tone}
@@ -111,38 +111,38 @@ export function BrandDnaForm({
 
       <div>
         <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
-          Reglas de estilo adicionales
+          Regras de estilo
         </label>
         <textarea
           value={writingStyle}
           onChange={(e) => setWritingStyle(e.target.value)}
           rows={2}
           className="w-full rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm outline-none focus:border-cobalto-500 dark:focus:border-cobalto-400"
-          placeholder="Ej: Usa 'tú' en vez de 'usted'. Evita tecnicismos sin explicarlos."
+          placeholder="Ex: Trate o leitor por você. Frases curtas. Explique todo termo técnico."
         />
       </div>
 
       <div>
         <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
-          Temas prohibidos
+          Assuntos proibidos
         </label>
         <input
           value={bannedTopics}
           onChange={(e) => setBannedTopics(e.target.value)}
           className="w-full rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm outline-none focus:border-cobalto-500 dark:focus:border-cobalto-400"
-          placeholder="Ej: No mencionar competidores, no dar consejos médicos definitivos"
+          placeholder="Ex: Não citar concorrentes, não prometer resultado garantido"
         />
       </div>
 
       <div>
         <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
-          Palabras prohibidas
+          Palavras proibidas
         </label>
         <input
           value={bannedWords}
           onChange={(e) => setBannedWords(e.target.value)}
           className="w-full rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm outline-none focus:border-cobalto-500 dark:focus:border-cobalto-400"
-          placeholder="Ej: barato, low cost, garantizado"
+          placeholder="Ex: barato, low cost, garantido"
         />
       </div>
 
@@ -151,7 +151,7 @@ export function BrandDnaForm({
         disabled={saving}
         className="rounded-lg bg-cobalto-600 px-4 py-2 text-sm font-semibold text-white hover:bg-cobalto-700 disabled:opacity-50"
       >
-        {saving ? "Guardando..." : saved ? "Guardado ✓" : "Guardar"}
+        {saving ? "Salvando..." : saved ? "Salvo" : "Salvar"}
       </button>
 
       {error && (

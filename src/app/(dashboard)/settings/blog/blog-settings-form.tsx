@@ -228,7 +228,7 @@ export function BlogSettingsForm({ blog }: { blog: Blog }) {
         disabled={saving}
         className="rounded-lg bg-cobalto-600 px-4 py-2 text-sm font-semibold text-white hover:bg-cobalto-700 disabled:opacity-50"
       >
-        {saving ? "Guardando..." : saved ? "Guardado" : "Guardar"}
+        {saving ? "Salvando..." : saved ? "Salvo" : "Salvar"}
       </button>
 
       {error && (

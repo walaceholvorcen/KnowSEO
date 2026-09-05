@@ -85,11 +85,11 @@ export default function SignupPage() {
       <div className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-950 px-4">
         <div className="w-full max-w-sm rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 text-center shadow-sm">
           <h1 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-            Revisa tu email
+            Confira seu email
           </h1>
           <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
             Te enviamos un enlace de confirmación a <strong>{email}</strong>.
-            Ábrelo para activar tu cuenta.
+            Abra a mensagem para ativar sua conta.
           </p>
         </div>
       </div>
@@ -101,7 +101,7 @@ export default function SignupPage() {
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-            Crear cuenta gratis
+            Criar conta grátis
           </h1>
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
             Empieza sin tarjeta de crédito
@@ -137,7 +137,7 @@ export default function SignupPage() {
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
-              Contraseña
+              Senha
             </label>
             <input
               type="password"
@@ -166,7 +166,7 @@ export default function SignupPage() {
         </form>
 
         <p className="text-center text-sm text-slate-500 dark:text-slate-400">
-          ¿Ya tienes cuenta?{" "}
+          Já tem conta?{" "}
           <Link
             href="/login"
             className="font-medium text-cobalto-600 dark:text-cobalto-300 hover:underline"

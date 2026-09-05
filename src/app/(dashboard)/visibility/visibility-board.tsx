@@ -3,11 +3,12 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Bot, Check, X, Play, Sparkles } from "lucide-react";
+import { Lede, Linha, Secao } from "@/components/lede";
 import type { AiQuery, AiVisibilityCheck } from "@/types";
 
 const INTENT_LABEL: Record<string, string> = {
-  discovery: "Descubrimiento",
-  comparison: "Comparación",
+  discovery: "Descoberta",
+  comparison: "Comparação",
   local: "Local",
   problem: "Problema",
 };
@@ -80,203 +81,166 @@ export function VisibilityBoard({
     });
     const data = await res.json();
     setBusy(null);
-    if (!res.ok) setError(data.error ?? "Error inesperado");
+    if (!res.ok) setError(data.error ?? "Algo deu errado. Tente de novo.");
     else router.refresh();
   }
 
+  const citadas = latest.filter((c) => c.cited).length;
+  const [primeiroRival, vezesRival] = topCompetitors[0] ?? [null, 0];
+
+  // A frase que o cliente manda para o chefe. O número sozinho ("0%") não
+  // diz nada; quem a IA cita no lugar dele, sim.
+  const veredito =
+    queries.length === 0
+      ? "Ninguém sabe ainda se a IA cita você. Gere as perguntas que um cliente faria antes de contratar."
+      : latest.length === 0
+        ? `${queries.length} perguntas prontas para consultar. Falta rodar a primeira análise.`
+        : citadas === 0
+          ? `Em ${latest.length} perguntas do seu setor, a IA não citou você nenhuma vez.`
+          : `A IA citou você em ${citadas} das ${latest.length} perguntas do seu setor.`;
+
+  const apoio =
+    primeiroRival && citadas < latest.length
+      ? `No seu lugar apareceu ${primeiroRival}, ${vezesRival} ${vezesRival === 1 ? "vez" : "vezes"}.`
+      : "Quando alguém pergunta ao ChatGPT sobre o seu setor, é isto que ele responde.";
+
   return (
-    <div className="mx-auto max-w-4xl px-8 py-10">
-      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
-        <div className="min-w-[16rem] flex-1">
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-            Visibilidade em IA
-          </h1>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            Quando alguém pergunta ao ChatGPT sobre o seu setor, a sua
-            empresa aparece?
-          </p>
-        </div>
-        <div className="flex shrink-0 gap-2">
-          <button
-            onClick={() => call("questions", "questions")}
-            disabled={busy !== null}
-            className="flex items-center gap-1.5 rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50"
-          >
-            <Sparkles size={15} />
-            {busy === "questions" ? "Generando..." : "Generar preguntas"}
-          </button>
-          <button
-            onClick={() => call("run", "run")}
-            disabled={busy !== null || queries.length === 0}
-            className="flex items-center gap-1.5 rounded-lg bg-cobalto-600 px-3 py-2 text-sm font-semibold text-white hover:bg-cobalto-700 disabled:opacity-50"
-          >
-            <Play size={15} />
-            {busy === "run" ? "Analizando..." : "Analizar ahora"}
-          </button>
-        </div>
-      </div>
+    <div className="mx-auto max-w-3xl px-8 py-12">
+      <Lede
+        apoio={apoio}
+        acao={
+          <>
+            <button
+              onClick={() => call("run", "run")}
+              disabled={busy !== null || queries.length === 0}
+              className="flex items-center gap-1.5 rounded-lg bg-cobalto-600 px-4 py-2 font-semibold text-white hover:bg-cobalto-700 disabled:opacity-50"
+            >
+              <Play size={15} />
+              {busy === "run" ? "Analisando..." : "Analisar agora"}
+            </button>
+            <button
+              onClick={() => call("questions", "questions")}
+              disabled={busy !== null}
+              className="flex items-center gap-1.5 rounded-lg border border-slate-300 dark:border-slate-700 px-4 py-2 font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-50"
+            >
+              <Sparkles size={15} />
+              {busy === "questions" ? "Gerando..." : "Gerar perguntas"}
+            </button>
+          </>
+        }
+      >
+        {veredito}
+      </Lede>
 
       {error && (
-        <div className="mb-6 rounded-lg bg-amber-50 dark:bg-amber-900/20 px-4 py-3 text-sm text-amber-700 dark:text-amber-300">
+        <p className="mb-8 rounded-lg bg-slate-100 dark:bg-slate-800 px-4 py-3 text-nota-critico">
           {error}
-        </div>
+        </p>
       )}
 
-      {/* Score */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            Visibilidade
+      {topCompetitors.length > 0 && (
+        <>
+          <Secao>Quem a IA cita no seu lugar</Secao>
+          <p className="text-slate-600 dark:text-slate-400">
+            Cada um destes é uma resposta que poderia ter sido sua.
           </p>
-          <p className="mt-1 text-3xl font-bold text-slate-900 dark:text-slate-100">
-            {score === null ? "—" : `${score}%`}
-          </p>
-          {delta !== null && (
-            <p
-              className={`mt-1 text-xs font-medium ${delta >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}`}
-            >
-              {delta >= 0 ? "▲" : "▼"} {Math.abs(delta)} pts vs. anterior
-            </p>
-          )}
-        </div>
-        <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            Perguntas monitoradas
-          </p>
-          <p className="mt-1 text-3xl font-bold text-slate-900 dark:text-slate-100">
-            {queries.length}
-          </p>
-        </div>
-        <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            Citações na última rodada
-          </p>
-          <p className="mt-1 text-3xl font-bold text-slate-900 dark:text-slate-100">
-            {latest.filter((c) => c.cited).length}
-            <span className="text-lg text-slate-400 dark:text-slate-500">
-              /{latest.length || 0}
-            </span>
-          </p>
-        </div>
-      </div>
+          <ul className="mt-4">
+            {topCompetitors.map(([domain, count]) => (
+              <Linha key={domain}>
+                <div className="flex items-baseline justify-between gap-4">
+                  <span className="min-w-0 truncate text-slate-800 dark:text-slate-200">
+                    {domain}
+                  </span>
+                  <span className="tabular shrink-0 font-display text-2xl text-slate-900 dark:text-slate-100">
+                    {count}
+                  </span>
+                </div>
+              </Linha>
+            ))}
+          </ul>
+        </>
+      )}
 
-      {/* Evolução */}
       {timeline.length > 1 && (
-        <div className="mt-6 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
-          <h3 className="mb-4 text-sm font-semibold text-slate-700 dark:text-slate-300">
-            Evolução
-          </h3>
-          <div className="flex h-40 items-end gap-3">
+        <>
+          <Secao>Evolução</Secao>
+          <div className="mt-4 flex h-32 items-end gap-3">
             {timeline.map((t) => (
               <div
                 key={t.day}
-                className="flex h-full flex-1 flex-col items-center justify-end gap-1"
+                className="flex h-full flex-1 flex-col items-center justify-end gap-1.5"
               >
-                <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                <span className="tabular text-slate-600 dark:text-slate-400">
                   {t.score}%
                 </span>
                 {/* Trilho com altura definida: sem ele o % da barra não
                     resolve e o gráfico aparece vazio. */}
                 <div className="flex h-full w-full items-end">
                   <div
-                    className="w-full rounded-t bg-cobalto-600 dark:bg-cobalto-500"
-                    style={{ height: `${Math.max(t.score, 3)}%` }}
+                    className="w-full bg-cobalto-600 dark:bg-cobalto-500"
+                    style={{ height: `${Math.max(t.score, 2)}%` }}
                   />
                 </div>
-                <span className="text-[10px] text-slate-400 dark:text-slate-500">
+                <span className="tabular text-slate-400 dark:text-slate-500">
                   {t.day.slice(5)}
                 </span>
               </div>
             ))}
           </div>
-        </div>
-      )}
-
-      {/* Concorrentes */}
-      {topCompetitors.length > 0 && (
-        <div className="mt-6 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
-          <h3 className="mb-3 text-sm font-semibold text-slate-700 dark:text-slate-300">
-            Quem a IA cita no seu lugar
-          </h3>
-          <ul className="space-y-1.5">
-            {topCompetitors.map(([domain, count]) => (
-              <li
-                key={domain}
-                className="flex items-center justify-between text-sm"
-              >
-                <span className="text-slate-600 dark:text-slate-400">
-                  {domain}
-                </span>
-                <span className="font-medium text-slate-900 dark:text-slate-100">
-                  {count}x
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {/* Perguntas */}
-      <div className="mt-6 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
-        <h3 className="mb-4 text-sm font-semibold text-slate-700 dark:text-slate-300">
-          Perguntas monitoradas
-        </h3>
-
-        {queries.length === 0 ? (
-          <div className="flex flex-col items-center py-8 text-center">
-            <Bot size={32} className="mb-3 text-slate-300 dark:text-slate-600" />
-            <p className="text-sm text-slate-500 dark:text-slate-400">
-              Gere o conjunto de perguntas que um cliente faria a uma IA
-              antes de contratar você.
+          {delta !== null && (
+            <p className="mt-3 text-slate-600 dark:text-slate-400">
+              {delta === 0
+                ? "Sem mudança em relação à rodada anterior."
+                : `${delta > 0 ? "Subiu" : "Caiu"} ${Math.abs(delta)} pontos em relação à rodada anterior.`}
             </p>
-          </div>
-        ) : (
-          <ul className="divide-y divide-slate-100 dark:divide-slate-800">
-            {queries.map((q) => {
-              const check = latestByQuery.get(q.id);
-              return (
-                <li key={q.id} className="flex items-start gap-3 py-3">
-                  <span className="mt-0.5 shrink-0">
+          )}
+        </>
+      )}
+
+      <Secao>Perguntas monitoradas</Secao>
+      {queries.length === 0 ? (
+        <p className="mt-2 flex items-center gap-2 text-slate-500 dark:text-slate-400">
+          <Bot size={18} />
+          Nenhuma pergunta ainda. Gere o conjunto e rode a primeira análise.
+        </p>
+      ) : (
+        <ul className="mt-4">
+          {queries.map((q) => {
+            const check = latestByQuery.get(q.id);
+            return (
+              <Linha key={q.id}>
+                <div className="flex items-start gap-3">
+                  <span className="mt-1 shrink-0">
                     {!check ? (
                       <span className="block h-4 w-4 rounded-full border border-slate-300 dark:border-slate-600" />
                     ) : check.cited ? (
-                      <Check size={16} className="text-emerald-600 dark:text-emerald-400" />
+                      <Check size={16} className="text-nota-excelente" />
                     ) : (
-                      <X size={16} className="text-red-600 dark:text-red-400" />
+                      <X size={16} className="text-slate-400 dark:text-slate-600" />
                     )}
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm text-slate-800 dark:text-slate-200">
+                    <p className="text-slate-800 dark:text-slate-200">
                       {q.question}
                     </p>
-                    <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-400 dark:text-slate-500">
-                      {q.intent && (
-                        <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-2 py-0.5">
-                          {INTENT_LABEL[q.intent]}
-                        </span>
-                      )}
-                      {check?.cited && check.match_type === "domain" && (
-                        <span className="text-emerald-600 dark:text-emerald-400">
-                          Citado como fonte
-                          {check.position ? ` (posição ${check.position})` : ""}
-                        </span>
-                      )}
-                      {check?.cited && check.match_type === "brand" && (
-                        <span className="text-emerald-600 dark:text-emerald-400">
-                          Mencionado no texto
-                        </span>
-                      )}
-                      {check && !check.cited && (
-                        <span>Não apareceu</span>
-                      )}
-                    </div>
+                    <p className="mt-1 text-slate-500 dark:text-slate-400">
+                      {q.intent ? INTENT_LABEL[q.intent] : ""}
+                      {q.intent && check ? " · " : ""}
+                      {check?.cited && check.match_type === "domain"
+                        ? `Citado como fonte${check.position ? `, posição ${check.position}` : ""}`
+                        : check?.cited
+                          ? "Mencionado no texto"
+                          : check
+                            ? "Não apareceu"
+                            : "Ainda não consultada"}
+                    </p>
                   </div>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </div>
+                </div>
+              </Linha>
+            );
+          })}
+        </ul>
+      )}
     </div>
   );
 }

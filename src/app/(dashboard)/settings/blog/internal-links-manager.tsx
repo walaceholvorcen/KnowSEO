@@ -45,7 +45,7 @@ export function InternalLinksManager({
     setCrawling(false);
 
     if (!res.ok) {
-      setCrawlError(data.error ?? "No se pudo leer el sitio");
+      setCrawlError(data.error ?? "Não foi possível ler o site.");
       return;
     }
 
@@ -93,8 +93,8 @@ export function InternalLinksManager({
           </h3>
         </div>
         <p className="mb-4 text-sm text-slate-600 dark:text-slate-400">
-          Leemos el sitemap de tu web y guardamos las páginas para que la IA
-          pueda enlazarlas dentro de los artículos.
+          Lemos o sitemap do seu site e guardamos as páginas para que a IA
+          possa criar links para elas dentro dos artigos.
         </p>
 
         <div className="flex gap-2">
@@ -109,13 +109,13 @@ export function InternalLinksManager({
             disabled={crawling}
             className="whitespace-nowrap rounded-lg bg-cobalto-600 px-4 py-2 text-sm font-semibold text-white hover:bg-cobalto-700 disabled:opacity-50"
           >
-            {crawling ? "Analizando..." : "Analizar sitio"}
+            {crawling ? "Analisando..." : "Analisar site"}
           </button>
         </div>
 
         {crawling && (
           <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">
-            Puede tardar hasta un minuto en sitios grandes.
+            Pode levar até um minuto em sites grandes.
           </p>
         )}
         {crawlError && (
@@ -150,7 +150,7 @@ export function InternalLinksManager({
             disabled={saving}
             className="rounded-lg border border-slate-300 dark:border-slate-700 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50"
           >
-            Añadir
+            Adicionar
           </button>
         </form>
 
