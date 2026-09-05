@@ -15,9 +15,9 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="flex min-h-screen bg-slate-50 dark:bg-slate-950">
+    <div className="flex h-screen overflow-hidden bg-slate-50 dark:bg-slate-950">
       <Sidebar workspaceName={workspace.name} credits={workspace.credits} />
-      <main className="flex-1 overflow-y-auto">{children}</main>
+      <main className="h-full flex-1 overflow-y-auto">{children}</main>
     </div>
   );
 }
