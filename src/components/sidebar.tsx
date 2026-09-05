@@ -13,6 +13,7 @@ import {
   LogOut,
   Bot,
   Stethoscope,
+  MapPin,
 } from "lucide-react";
 
 const NAV_ITEMS = [
@@ -21,6 +22,7 @@ const NAV_ITEMS = [
   { href: "/audit", label: "Auditoria", icon: Stethoscope },
   { href: "/strategy", label: "Estratégia", icon: Search },
   { href: "/visibility", label: "Visibilidade IA", icon: Bot },
+  { href: "/gbp", label: "Google Meu Negócio", icon: MapPin },
   { href: "/reports", label: "Relatórios", icon: BarChart3 },
   { href: "/settings/brand", label: "Configurações", icon: Settings },
 ];

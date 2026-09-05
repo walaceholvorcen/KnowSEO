@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Lede, NotaCard } from "@/components/lede";
-import type { AuditRow, FindingRow } from "./page";
+import { Lede, NotaCard, Secao } from "@/components/lede";
+import type { GbpAuditRow, GbpFindingRow } from "./page";
 
 const SEVERITY_ORDER = ["critical", "high", "medium", "quick_win", "info"];
 
@@ -17,9 +17,8 @@ const SEVERITY_LABEL: Record<string, string> = {
   info: "Informativo",
 };
 
-// Fundo neutro em todas: a severidade fica na palavra e na cor do texto.
-// Antes cada pílula trazia seu próprio fundo colorido e a lista virava
-// confete - com quatro cores brigando, nenhuma chamava atenção.
+// Mesmo padrão da auditoria de site: fundo neutro em toda pílula, a
+// severidade fica na cor do texto - evita a lista virar confete.
 const SEVERITY_STYLE: Record<string, string> = {
   critical: "bg-slate-100 dark:bg-slate-800 text-nota-critico",
   high: "bg-slate-100 dark:bg-slate-800 text-nota-atencao",
@@ -28,28 +27,17 @@ const SEVERITY_STYLE: Record<string, string> = {
   info: "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400",
 };
 
-const CATEGORY_LABEL: Record<string, string> = {
-  crawlability: "Rastreamento",
-  indexation: "Indexação",
-  onpage: "On-page",
-  content: "Conteúdo",
-  geo: "Visibilidade em IA",
-  technical: "Técnico",
-};
-
-export function AuditBoard({
+export function GbpBoard({
   blogId,
-  audits,
   latest,
   findings,
 }: {
   blogId: string;
-  audits: AuditRow[];
-  latest: AuditRow | null;
-  findings: FindingRow[];
+  latest: GbpAuditRow | null;
+  findings: GbpFindingRow[];
 }) {
   const router = useRouter();
-  const [siteUrl, setSiteUrl] = useState(latest?.site_url ?? "");
+  const [query, setQuery] = useState(latest?.query ?? "");
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState<Set<number>>(new Set());
@@ -75,14 +63,14 @@ export function AuditBoard({
 
   async function handleRun(e: React.FormEvent) {
     e.preventDefault();
-    if (!siteUrl) return;
+    if (!query.trim()) return;
     setRunning(true);
     setError(null);
 
-    const res = await fetch("/api/audit/run", {
+    const res = await fetch("/api/gbp/run", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ blogId, siteUrl }),
+      body: JSON.stringify({ blogId, query }),
     });
     const data = await res.json();
     setRunning(false);
@@ -95,25 +83,22 @@ export function AuditBoard({
     <div className="mx-auto max-w-3xl px-8 py-12">
       <Lede
         apoio={
-          latest
-            ? `${findings.length} ${findings.length === 1 ? "achado" : "achados"} em ${latest.pages_analyzed} ${latest.pages_analyzed === 1 ? "página" : "páginas"} de ${latest.site_url}.`
-            : "Lemos robots, sitemap e até 25 páginas para dizer o que trava o site no Google e na IA."
+          latest?.status === "done"
+            ? `Encontramos ${latest.place_name} — ${latest.place_address ?? "endereço não informado"}. Não é o negócio certo? Refine a busca abaixo com bairro ou cidade.`
+            : "Buscamos o perfil público no Google (sem você conectar nada) e dizemos o que trava o negócio no mapa."
         }
       >
-        {latest
-          ? `O site tira ${latest.score_google} de 100 no Google e ${latest.score_ai} de 100 na prontidão para IA.`
-          : "Nenhum site auditado ainda. A análise leva menos de um minuto."}
+        {latest?.status === "done"
+          ? `O perfil no Google tira ${latest.score} de 100.`
+          : "Nenhum perfil auditado ainda. Digite o nome do negócio e a cidade."}
       </Lede>
 
-      {/* Bloco de ação em fundo azul competia com a frase de abertura: numa
-          tela só, duas coisas gritando é o mesmo que nenhuma. O formulário
-          fica neutro; a ousadia é do veredito. */}
       <form onSubmit={handleRun} className="mb-8">
         <div className="flex gap-2">
           <input
-            value={siteUrl}
-            onChange={(e) => setSiteUrl(e.target.value)}
-            placeholder="suempresa.com"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Nome do negócio, cidade"
             className="flex-1 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm outline-none focus:border-cobalto-500 dark:focus:border-cobalto-400"
           />
           <button
@@ -121,44 +106,37 @@ export function AuditBoard({
             disabled={running}
             className="whitespace-nowrap rounded-lg bg-cobalto-600 px-4 py-2 text-sm font-semibold text-white hover:bg-cobalto-700 disabled:opacity-50"
           >
-            {running ? "Analisando..." : "Analisar"}
+            {running ? "Buscando..." : "Analisar"}
           </button>
         </div>
-        {running && (
-          <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">
-            Lendo robots, sitemap e até 25 páginas. Pode levar até um minuto.
-          </p>
-        )}
-        {error && (
-          <p className="mt-3 text-nota-critico">
-            {error}
-          </p>
-        )}
+        {error && <p className="mt-3 text-nota-critico">{error}</p>}
       </form>
 
-      {latest && (
+      {latest?.status === "done" && (
         <>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <NotaCard
-              label="Nota Google"
-              score={latest.score_google}
-              hint="Rastreamento, indexação, on-page e conteúdo"
-            />
-            <NotaCard
-              label="Nota IA"
-              score={latest.score_ai}
-              hint="Prontidão para ser citado por ChatGPT e afins"
+              label="Perfil no Google"
+              score={latest.score}
+              hint="Completude e reputação, com o que é público sem login"
             />
             <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
               <p className="text-sm text-slate-500 dark:text-slate-400">
-                Páginas analisadas
+                Negócio encontrado
               </p>
-              <p className="tabular mt-2 font-display text-5xl leading-none text-slate-900 dark:text-slate-100">
-                {latest.pages_analyzed}
+              <p className="mt-2 font-display text-2xl leading-snug text-slate-900 dark:text-slate-100">
+                {latest.place_name}
               </p>
-              <p className="mt-1 truncate text-xs text-slate-500 dark:text-slate-400">
-                {latest.site_url}
-              </p>
+              {latest.maps_uri && (
+                <a
+                  href={latest.maps_uri}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-2 inline-flex items-center gap-1 text-sm text-cobalto-600 dark:text-cobalto-400 hover:underline"
+                >
+                  Ver no Google Maps <ExternalLink size={13} />
+                </a>
+              )}
             </div>
           </div>
 
@@ -178,10 +156,12 @@ export function AuditBoard({
             </div>
           )}
 
-          <div className="mt-6 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+          <Secao>Achados</Secao>
+          <div className="mt-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
             {sorted.length === 0 ? (
-              <p className="p-8 text-center text-sm text-slate-500 dark:text-slate-400">
-                Nenhum problema encontrado. O site está bem configurado.
+              <p className="p-8 text-center text-slate-500 dark:text-slate-400">
+                Nenhum problema encontrado no que é público. O perfil está
+                completo.
               </p>
             ) : (
               <ul className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -201,18 +181,13 @@ export function AuditBoard({
                           )}
                         </span>
                         <span className="min-w-0 flex-1">
-                          <span className="flex flex-wrap items-center gap-2">
-                            <span
-                              className={cn(
-                                "rounded-full px-2 py-0.5 text-xs font-semibold",
-                                SEVERITY_STYLE[f.severity],
-                              )}
-                            >
-                              {SEVERITY_LABEL[f.severity]}
-                            </span>
-                            <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-xs text-slate-600 dark:text-slate-400">
-                              {CATEGORY_LABEL[f.category] ?? f.category}
-                            </span>
+                          <span
+                            className={cn(
+                              "inline-block rounded-full px-2 py-0.5 text-xs font-semibold",
+                              SEVERITY_STYLE[f.severity],
+                            )}
+                          >
+                            {SEVERITY_LABEL[f.severity]}
                           </span>
                           <span className="mt-1.5 block font-medium text-slate-900 dark:text-slate-100">
                             {f.title}
@@ -235,7 +210,7 @@ export function AuditBoard({
                           {f.evidence && (
                             <div>
                               <p className="text-sm text-slate-500 dark:text-slate-400">
-                                Evidência
+                                O que encontramos
                               </p>
                               <p className="mt-0.5 text-slate-700 dark:text-slate-300">
                                 {f.evidence}
@@ -252,23 +227,6 @@ export function AuditBoard({
                               </p>
                             </div>
                           )}
-                          {f.affected_urls.length > 0 && (
-                            <div>
-                              <p className="text-sm text-slate-500 dark:text-slate-400">
-                                Páginas afetadas
-                              </p>
-                              <ul className="mt-0.5 space-y-0.5">
-                                {f.affected_urls.slice(0, 8).map((u) => (
-                                  <li
-                                    key={u}
-                                    className="truncate text-xs text-slate-500 dark:text-slate-400"
-                                  >
-                                    {u}
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
                         </div>
                       )}
                     </li>
@@ -278,40 +236,6 @@ export function AuditBoard({
             )}
           </div>
         </>
-      )}
-
-      {!latest && !running && (
-        <div className="rounded-xl border border-dashed border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 p-12 text-center text-sm text-slate-500 dark:text-slate-400">
-          Cole a URL de um site acima para receber o diagnóstico.
-        </div>
-      )}
-
-      {audits.length > 1 && (
-        <div className="mt-6 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
-          <h3 className="mb-3 text-sm font-semibold text-slate-700 dark:text-slate-300">
-            Histórico
-          </h3>
-          <ul className="space-y-1.5">
-            {audits.map((a) => (
-              <li
-                key={a.id}
-                className="flex items-center justify-between text-sm"
-              >
-                <span className="truncate text-slate-600 dark:text-slate-400">
-                  {new Date(a.created_at).toLocaleDateString("pt-BR")} ·{" "}
-                  {a.site_url}
-                </span>
-                <span className="shrink-0 font-medium text-slate-900 dark:text-slate-100">
-                  {a.status === "done"
-                    ? `${a.score_google}/100 · IA ${a.score_ai}/100`
-                    : a.status === "error"
-                      ? "falhou"
-                      : "rodando"}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
       )}
     </div>
   );

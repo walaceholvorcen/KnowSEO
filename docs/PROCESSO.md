@@ -486,3 +486,65 @@ Decisões que valem regra:
   banner de CTA e capa gerada.
 - O padrão do blog é tinta, não a cor do Know SEO — o blog é do cliente.
   Migration `0004` corrige o violeta pré-rebrand que sobrara no schema.
+
+---
+
+## 16. Google Meu Negócio (novo módulo)
+
+Auditoria do perfil público do negócio no Google — mesma filosofia da
+Auditoria SEO: determinística, sem precisar o cliente conectar nada.
+
+**Por que só auditoria, e não gestão completa (responder avaliação, criar
+post):** existem duas APIs do Google para isto, e são muito diferentes.
+
+| | Places API (New) | Business Profile API |
+|---|---|---|
+| Autorização | só a nossa chave (projeto no Google Cloud) | OAuth por cliente **+** aprovação de acesso do Google |
+| O que dá para ver | nome, endereço, status, telefone, site, horário, nota, nº de avaliações, fotos (contagem) | tudo isso + descrição, serviços, responder avaliação, criar post, métricas de ligação/rota |
+| Bloqueio | nenhum, cai no primeiro dia | aprovação do Google pode levar semanas — fora do nosso controle, igual foi a chave da Anthropic |
+
+Optamos pela Places API para o v1. **Não existe "descrição do negócio" nem
+"serviços cadastrados" nem "o dono respondeu essa avaliação" no que
+auditamos** — isso só a Business Profile API expõe, e exige o cliente
+autorizar.
+
+### Regras (7, determinísticas, sem rede — `src/lib/gbp/rules.ts`)
+
+| Achado | Severidade |
+|---|---|
+| Perfil fechado (temporária ou permanentemente) | Crítico |
+| Sem telefone | Alto |
+| Sem site vinculado | Alto |
+| Sem horário de funcionamento | Médio |
+| Menos de 3 fotos | Ganho rápido |
+| Menos de 10 avaliações | Ganho rápido |
+| Nota abaixo de 4.0 | Informativo — não é "corrigível" com um clique, então não teria sentido cobrar como se fosse |
+
+Nota final: peso fixo por severidade, sem diluição por alcance (aqui é um
+perfil só, não várias páginas — a proporcionalidade da Auditoria SEO não se
+aplica). Reutiliza as mesmas faixas nomeadas (Excelente/Bom/Precisa
+Atenção/Crítico) via `scoreBand()`.
+
+### Decisões de implementação
+
+- **`NotaCard` foi extraído** de dentro de `audit-board.tsx` para
+  `src/components/lede.tsx` — é o terceiro lugar que precisa de "nota de 0
+  a 100 + faixa" (Google, IA, agora perfil no Google). Regra de três:
+  na terceira repetição, vira componente compartilhado.
+- **Confirmação do negócio:** a busca por texto pode achar o lugar errado
+  (nome comum, cidade grande). A tela mostra nome + endereço encontrados
+  logo na abertura, para o cliente confirmar antes de confiar na nota.
+- **Custo:** cada campo pedido à Places API é cobrado. O field mask pede só
+  o que as regras usam — nada de "trazer tudo e filtrar depois".
+- **Credencial:** `GOOGLE_PLACES_API_KEY`, checada por `isGbpConfigured()`
+  no mesmo padrão de `isAiConfigured()` — 503 com mensagem clara quando
+  falta, resto do produto funciona normal.
+- Schema (`0005_gbp_audit.sql`) espelha `site_audits`/`audit_findings` de
+  propósito, sem `affected_urls`/`affected_count` (não fazem sentido para
+  um perfil só).
+
+### Pendências
+- Ligar este módulo à corrente do painel Início (`src/lib/gargalo.ts`) —
+  hoje ele fica de fora do diagnóstico de gargalo.
+- Fase 2 (gestão via Business Profile API) segue bloqueada por aprovação do
+  Google, fora do nosso controle.
