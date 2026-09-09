@@ -14,26 +14,24 @@ import {
   Bot,
   Stethoscope,
   MapPin,
+  Lock,
 } from "lucide-react";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Início", icon: LayoutGrid },
   { href: "/contents", label: "Conteúdos", icon: FileText },
-  { href: "/audit", label: "Auditoria", icon: Stethoscope },
+  { href: "/audit", label: "Auditoria - SEO", icon: Stethoscope },
   { href: "/strategy", label: "Estratégia", icon: Search },
-  { href: "/visibility", label: "Visibilidade IA", icon: Bot },
-  { href: "/gbp", label: "Google Meu Negócio", icon: MapPin },
+  { href: "/visibility", label: "Radar GEO", icon: Bot },
+  // Cadeado: recurso construído e pronto, guardado como upsell futuro em
+  // vez de liberado agora. A página em /gbp mostra o estado bloqueado, não
+  // o painel real - ver src/app/(dashboard)/gbp/page.tsx.
+  { href: "/gbp", label: "Google Meu Negócio", icon: MapPin, locked: true },
   { href: "/reports", label: "Relatórios", icon: BarChart3 },
   { href: "/settings/brand", label: "Configurações", icon: Settings },
 ];
 
-export function Sidebar({
-  workspaceName,
-  credits,
-}: {
-  workspaceName: string;
-  credits: number;
-}) {
+export function Sidebar({ credits }: { credits: number }) {
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
@@ -50,8 +48,8 @@ export function Sidebar({
         <span className="text-lg font-bold text-slate-900 dark:text-slate-100">
           Know<span className="text-cobalto-600 dark:text-cobalto-400">SEO</span>
         </span>
-        <p className="mt-0.5 truncate text-xs text-slate-400 dark:text-slate-500">
-          {workspaceName}
+        <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">
+          A evolução da busca começa aqui.
         </p>
       </div>
 
@@ -73,6 +71,12 @@ export function Sidebar({
             >
               <Icon size={18} />
               {item.label}
+              {item.locked && (
+                <Lock
+                  size={13}
+                  className="ml-auto shrink-0 text-slate-300 dark:text-slate-600"
+                />
+              )}
             </Link>
           );
         })}
