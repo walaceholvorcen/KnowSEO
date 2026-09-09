@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 const TABS = [
   { href: "/settings/brand", label: "DNA da Marca" },
   { href: "/settings/blog", label: "Blog e Domínio" },
+  { href: "/settings/integrations", label: "Integrações" },
   { href: "/settings/interface", label: "Interface" },
 ];
 

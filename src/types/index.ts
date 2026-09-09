@@ -56,6 +56,8 @@ export interface Blog {
   language: Language;
   theme: BlogTheme;
   cta_config: CtaConfig;
+  gsc_property: string | null;
+  ga4_property_id: string | null;
   created_at: string;
 }
 
