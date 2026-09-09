@@ -99,6 +99,7 @@ export interface Article {
   scheduled_at: string | null;
   published_at: string | null;
   generation_status: GenerationStatus;
+  carousel_slides: { headline: string; body?: string }[] | null;
   created_at: string;
   updated_at: string;
 }

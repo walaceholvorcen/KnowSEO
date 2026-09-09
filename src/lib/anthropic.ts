@@ -4,6 +4,75 @@ import { z } from "zod";
 import { buildBrandSystemPrompt } from "@/lib/brand-prompt";
 import type { BrandDna, Blog, InternalLink } from "@/types";
 
+// ----------------------------------------------------------------------------
+// CARROSSEL PARA INSTAGRAM
+// ----------------------------------------------------------------------------
+const CarouselSlideSchema = z.object({
+  headline: z
+    .string()
+    .describe(
+      "Frase de impacto do slide, direta, sem enrolação - pensada para caber num cartão quadrado. Não repita o título do artigo palavra por palavra.",
+    ),
+  body: z
+    .string()
+    .optional()
+    .describe("Uma frase curta de apoio, opcional - só quando agregar."),
+});
+
+const CarouselSchema = z.object({
+  slides: z
+    .array(CarouselSlideSchema)
+    .min(6)
+    .max(8)
+    .describe(
+      "O primeiro slide é o gancho que para o scroll - não é o título copiado, é a promessa do artigo reescrita para prender atenção em 1 segundo. Os do meio pegam um ponto forte por vez, extraído do conteúdo real. O último é a chamada para ação.",
+    ),
+});
+
+export type CarouselSlide = z.infer<typeof CarouselSlideSchema>;
+
+export async function generateCarouselSlides(params: {
+  blog: Blog;
+  dna: BrandDna | null;
+  title: string;
+  bodyText: string;
+  ctaText?: string | null;
+}): Promise<CarouselSlide[]> {
+  const client = getAnthropicClient();
+  const { blog, dna, title, bodyText, ctaText } = params;
+
+  const response = await client.messages.parse({
+    model: MODEL,
+    max_tokens: 8000,
+    system: [
+      {
+        type: "text",
+        text: buildBrandSystemPrompt(blog, dna),
+        cache_control: { type: "ephemeral" },
+      },
+    ],
+    output_config: {
+      effort: "medium",
+      format: zodOutputFormat(CarouselSchema),
+    },
+    messages: [
+      {
+        role: "user",
+        content: `Transforme o artigo abaixo num carrossel de Instagram (6 a 8 slides). Baseie-se só no conteúdo real - não invente dado, número ou afirmação que não esteja no texto.
+
+Título original: "${title}"
+
+Conteúdo:
+${bodyText.slice(0, 6000)}
+
+O último slide deve chamar para a ação: "${ctaText || "conhecer mais no blog"}".`,
+      },
+    ],
+  });
+
+  return response.parsed_output?.slides ?? [];
+}
+
 const MODEL = "claude-opus-5";
 
 export function getAnthropicClient() {
