@@ -6,9 +6,12 @@ import type { Blog } from "@/types";
 export function CtaBanner({
   blog,
   articleId,
+  preview = false,
 }: {
   blog: Blog;
   articleId: string;
+  /** Dentro do editor: o clique não pode virar conversa no relatório. */
+  preview?: boolean;
 }) {
   const { cta_config: cta } = blog;
   if (!cta.button_text || (!cta.button_url && !cta.whatsapp_number)) {
@@ -21,6 +24,8 @@ export function CtaBanner({
       : (cta.button_url ?? "#");
 
   function handleClick() {
+    if (preview) return;
+
     fetch("/api/track", {
       method: "POST",
       headers: { "Content-Type": "application/json" },

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -10,15 +10,33 @@ import {
   List,
   Heading2,
   Link as LinkIcon,
+  Monitor,
+  Smartphone,
+  ExternalLink,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { slugify } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import type { Article } from "@/types";
 
-export function ArticleEditor({ article }: { article: Article }) {
+// Largura lógica de cada aparelho. A prévia é renderizada nessa largura e
+// depois reduzida por escala - mostrar uma página de desktop espremida em
+// 600px daria uma leitura falsa do resultado.
+const LARGURA = { desktop: 1180, mobile: 390 };
+
+export function ArticleEditor({
+  article,
+  enderecoPublico,
+}: {
+  article: Article;
+  /** Endereço do artigo no blog do cliente, mostrado acima da prévia. */
+  enderecoPublico: string;
+}) {
   const router = useRouter();
   const supabase = createClient();
   const contentRef = useRef<HTMLDivElement>(null);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const molduraRef = useRef<HTMLDivElement>(null);
 
   const [title, setTitle] = useState(article.title);
   const [seoTitle, setSeoTitle] = useState(article.seo_title ?? "");
@@ -30,8 +48,58 @@ export function ArticleEditor({ article }: { article: Article }) {
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [aparelho, setAparelho] = useState<"desktop" | "mobile">("desktop");
+  const [escala, setEscala] = useState(1);
 
   const isGenerating = article.generation_status === "generating";
+
+  // Manda o conteúdo atual para a prévia. Chamado na pausa da digitação e
+  // quando o iframe avisa que terminou de montar.
+  function enviarParaPrevia() {
+    iframeRef.current?.contentWindow?.postMessage(
+      {
+        tipo: "knowseo:preview",
+        titulo: title,
+        corpo: contentRef.current?.innerHTML ?? "",
+      },
+      window.location.origin,
+    );
+  }
+
+  // A prévia avisa quando montou; sem isso o primeiro envio se perde no ar
+  // e o cliente vê o texto salvo, não o que acabou de escrever.
+  useEffect(() => {
+    function onMessage(event: MessageEvent) {
+      if (event.origin !== window.location.origin) return;
+      if (event.data?.tipo === "knowseo:preview-pronta") enviarParaPrevia();
+    }
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  });
+
+  // Espera a pausa na digitação: mandar a cada tecla trava a escrita em
+  // artigo longo, e ninguém lê a prévia enquanto digita mesmo.
+  useEffect(() => {
+    const id = setTimeout(enviarParaPrevia, 400);
+    return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [title]);
+
+  // Reduz a prévia até caber na coluna, sem cortar nada.
+  useEffect(() => {
+    const moldura = molduraRef.current;
+    if (!moldura) return;
+
+    const ajustar = () =>
+      setEscala(
+        Math.min(1, moldura.clientWidth / LARGURA[aparelho]),
+      );
+
+    ajustar();
+    const observer = new ResizeObserver(ajustar);
+    observer.observe(moldura);
+    return () => observer.disconnect();
+  }, [aparelho]);
 
   function exec(command: string, value?: string) {
     document.execCommand(command, false, value);
@@ -83,19 +151,17 @@ export function ArticleEditor({ article }: { article: Article }) {
       return;
     }
 
-    {
-      setSlug(slugFinal);
-      setStatus(finalStatus);
-      setSavedAt(new Date().toLocaleTimeString("pt-BR"));
+    setSlug(slugFinal);
+    setStatus(finalStatus);
+    setSavedAt(new Date().toLocaleTimeString("pt-BR"));
 
-      if (finalStatus === "published") {
-        await fetch("/api/onboarding/complete-step", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ step: "first_article_published" }),
-        });
-        router.refresh();
-      }
+    if (finalStatus === "published") {
+      await fetch("/api/onboarding/complete-step", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ step: "first_article_published" }),
+      });
+      router.refresh();
     }
   }
 
@@ -114,8 +180,8 @@ export function ArticleEditor({ article }: { article: Article }) {
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-8 py-8">
-      <div className="mb-6 flex items-center justify-between">
+    <div className="flex h-full flex-col">
+      <header className="flex shrink-0 items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 px-6 py-3">
         <Link
           href="/contents"
           className="flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100"
@@ -123,16 +189,16 @@ export function ArticleEditor({ article }: { article: Article }) {
           <ArrowLeft size={16} /> Voltar
         </Link>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           {savedAt && (
-            <span className="text-xs text-slate-400 dark:text-slate-500">
+            <span className="text-sm text-slate-400 dark:text-slate-500">
               Salvo {savedAt}
             </span>
           )}
           <button
             onClick={() => handleSave()}
             disabled={saving}
-            className="rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-1.5 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+            className="rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-1.5 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-50"
           >
             Salvar rascunho
           </button>
@@ -144,110 +210,192 @@ export function ArticleEditor({ article }: { article: Article }) {
             {status === "published" ? "Atualizar" : "Publicar"}
           </button>
         </div>
-      </div>
+      </header>
 
-      <input
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        placeholder="Título"
-        className="w-full border-none text-3xl font-bold text-slate-900 dark:text-slate-100 outline-none placeholder:text-slate-300"
-      />
+      <div className="flex min-h-0 flex-1">
+        {/* Escrita */}
+        <div className="min-w-0 flex-1 overflow-y-auto px-8 py-8">
+          <div className="mx-auto max-w-2xl">
+            <input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Título"
+              className="w-full border-none bg-transparent text-3xl font-bold text-slate-900 dark:text-slate-100 outline-none placeholder:text-slate-300"
+            />
 
-      <div className="mt-2 flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400">
-        <span>/</span>
-        <input
-          value={slug}
-          onChange={(e) => setSlug(e.target.value)}
-          placeholder="endereco-do-artigo"
-          className="min-w-0 flex-1 border-none bg-transparent outline-none focus:text-slate-900 dark:focus:text-slate-100"
-        />
-      </div>
-      {status === "published" && slug !== article.slug && (
-        <p className="mt-1 text-sm text-nota-atencao">
-          Mudar o endereço de um artigo publicado quebra os links que já
-          apontam para ele. O endereço atual é /{article.slug}.
-        </p>
-      )}
+            <div className="mt-2 flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400">
+              <span>/</span>
+              <input
+                value={slug}
+                onChange={(e) => setSlug(e.target.value)}
+                placeholder="endereco-do-artigo"
+                className="min-w-0 flex-1 border-none bg-transparent outline-none focus:text-slate-900 dark:focus:text-slate-100"
+              />
+            </div>
+            {status === "published" && slug !== article.slug && (
+              <p className="mt-1 text-sm text-nota-atencao">
+                Mudar o endereço de um artigo publicado quebra os links que já
+                apontam para ele. O endereço atual é /{article.slug}.
+              </p>
+            )}
 
-      {error && (
-        <p className="mt-3 rounded-lg bg-slate-100 dark:bg-slate-800 px-3 py-2 text-sm text-nota-critico">
-          {error}
-        </p>
-      )}
+            {error && (
+              <p className="mt-3 rounded-lg bg-slate-100 dark:bg-slate-800 px-3 py-2 text-sm text-nota-critico">
+                {error}
+              </p>
+            )}
 
-      <div className="mt-6 flex items-center gap-1 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-1.5">
-        <button
-          onClick={() => exec("bold")}
-          className="rounded p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700"
-          type="button"
-        >
-          <Bold size={16} />
-        </button>
-        <button
-          onClick={() => exec("italic")}
-          className="rounded p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700"
-          type="button"
-        >
-          <Italic size={16} />
-        </button>
-        <button
-          onClick={() => exec("formatBlock", "h2")}
-          className="rounded p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700"
-          type="button"
-        >
-          <Heading2 size={16} />
-        </button>
-        <button
-          onClick={() => exec("insertUnorderedList")}
-          className="rounded p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700"
-          type="button"
-        >
-          <List size={16} />
-        </button>
-        <button
-          onClick={() => {
-            const url = window.prompt("URL do link");
-            if (url) exec("createLink", url);
-          }}
-          className="rounded p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700"
-          type="button"
-        >
-          <LinkIcon size={16} />
-        </button>
-      </div>
+            <div className="mt-6 flex items-center gap-1 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-1.5">
+              <button
+                onClick={() => exec("bold")}
+                className="rounded p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700"
+                type="button"
+              >
+                <Bold size={16} />
+              </button>
+              <button
+                onClick={() => exec("italic")}
+                className="rounded p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700"
+                type="button"
+              >
+                <Italic size={16} />
+              </button>
+              <button
+                onClick={() => exec("formatBlock", "h2")}
+                className="rounded p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700"
+                type="button"
+              >
+                <Heading2 size={16} />
+              </button>
+              <button
+                onClick={() => exec("insertUnorderedList")}
+                className="rounded p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700"
+                type="button"
+              >
+                <List size={16} />
+              </button>
+              <button
+                onClick={() => {
+                  const url = window.prompt("URL do link");
+                  if (url) exec("createLink", url);
+                }}
+                className="rounded p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700"
+                type="button"
+              >
+                <LinkIcon size={16} />
+              </button>
+            </div>
 
-      <div
-        ref={contentRef}
-        contentEditable
-        suppressContentEditableWarning
-        dangerouslySetInnerHTML={{ __html: article.content_html ?? "" }}
-        className="prose dark:prose-invert prose-slate mt-4 min-h-[400px] max-w-none rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 outline-none focus:border-cobalto-400 dark:focus:border-cobalto-300 [&_h2]:text-xl [&_h2]:font-bold [&_h3]:text-lg [&_h3]:font-semibold [&_p]:my-3 [&_ul]:my-3 [&_ul]:list-disc [&_ul]:pl-6 [&_a]:text-cobalto-600 [&_a]:underline"
-      />
+            <div
+              ref={contentRef}
+              contentEditable
+              suppressContentEditableWarning
+              onInput={() => {
+                // Direto no evento, sem estado intermediário: guardar o HTML
+                // do corpo em useState a cada tecla faz o cursor pular.
+                clearTimeout(
+                  (window as unknown as { __previa?: number }).__previa,
+                );
+                (window as unknown as { __previa?: number }).__previa =
+                  window.setTimeout(enviarParaPrevia, 400);
+              }}
+              dangerouslySetInnerHTML={{ __html: article.content_html ?? "" }}
+              className="prose dark:prose-invert prose-slate mt-4 min-h-[400px] max-w-none rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 outline-none focus:border-cobalto-400 dark:focus:border-cobalto-300 [&_h2]:text-xl [&_h2]:font-bold [&_h3]:text-lg [&_h3]:font-semibold [&_p]:my-3 [&_ul]:my-3 [&_ul]:list-disc [&_ul]:pl-6 [&_a]:text-cobalto-600 [&_a]:underline"
+            />
 
-      <div className="mt-8 space-y-4 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
-        <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300">SEO</h3>
-        <div>
-          <label className="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">
-            Meta título ({seoTitle.length}/60)
-          </label>
-          <input
-            value={seoTitle}
-            maxLength={60}
-            onChange={(e) => setSeoTitle(e.target.value)}
-            className="w-full rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm outline-none focus:border-cobalto-500 dark:focus:border-cobalto-400"
-          />
+            <div className="mt-8 space-y-4 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
+              <h3 className="font-medium text-slate-900 dark:text-slate-100">
+                Como aparece no Google
+              </h3>
+              <div>
+                <label className="mb-1 block text-sm text-slate-500 dark:text-slate-400">
+                  Título da busca ({seoTitle.length}/60)
+                </label>
+                <input
+                  value={seoTitle}
+                  maxLength={60}
+                  onChange={(e) => setSeoTitle(e.target.value)}
+                  className="w-full rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm outline-none focus:border-cobalto-500 dark:focus:border-cobalto-400"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm text-slate-500 dark:text-slate-400">
+                  Descrição da busca ({seoDescription.length}/155)
+                </label>
+                <textarea
+                  value={seoDescription}
+                  maxLength={155}
+                  onChange={(e) => setSeoDescription(e.target.value)}
+                  rows={2}
+                  className="w-full rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm outline-none focus:border-cobalto-500 dark:focus:border-cobalto-400"
+                />
+              </div>
+            </div>
+          </div>
         </div>
-        <div>
-          <label className="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">
-            Meta descripción ({seoDescription.length}/155)
-          </label>
-          <textarea
-            value={seoDescription}
-            maxLength={155}
-            onChange={(e) => setSeoDescription(e.target.value)}
-            rows={2}
-            className="w-full rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm outline-none focus:border-cobalto-500 dark:focus:border-cobalto-400"
-          />
+
+        {/* Prévia */}
+        <div className="hidden w-[46%] shrink-0 flex-col border-l border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-950 lg:flex">
+          <div className="flex shrink-0 items-center gap-3 px-5 py-3">
+            <p className="min-w-0 flex-1 truncate text-sm text-slate-500 dark:text-slate-400">
+              {enderecoPublico}
+            </p>
+
+            <div className="flex items-center gap-0.5 rounded-lg border border-slate-300 dark:border-slate-700 p-0.5">
+              {(["desktop", "mobile"] as const).map((tipo) => {
+                const Icone = tipo === "desktop" ? Monitor : Smartphone;
+                return (
+                  <button
+                    key={tipo}
+                    type="button"
+                    onClick={() => setAparelho(tipo)}
+                    aria-label={
+                      tipo === "desktop" ? "Ver em computador" : "Ver em celular"
+                    }
+                    aria-pressed={aparelho === tipo}
+                    className={cn(
+                      "rounded-md p-1.5",
+                      aparelho === tipo
+                        ? "bg-cobalto-600 text-white"
+                        : "text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800",
+                    )}
+                  >
+                    <Icone size={15} />
+                  </button>
+                );
+              })}
+            </div>
+
+            {status === "published" && (
+              <a
+                href={enderecoPublico}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 text-sm text-cobalto-600 dark:text-cobalto-400 hover:underline"
+              >
+                Abrir <ExternalLink size={13} />
+              </a>
+            )}
+          </div>
+
+          <div
+            ref={molduraRef}
+            className="min-h-0 flex-1 overflow-hidden px-5 pb-5"
+          >
+            <div className="h-full overflow-hidden rounded-xl border border-slate-300 dark:border-slate-800 bg-white">
+              <iframe
+                ref={iframeRef}
+                src={`/preview/${article.id}`}
+                title="Prévia do artigo publicado"
+                className="origin-top-left border-0"
+                style={{
+                  width: LARGURA[aparelho],
+                  height: `${100 / escala}%`,
+                  transform: `scale(${escala})`,
+                }}
+              />
+            </div>
+          </div>
         </div>
       </div>
     </div>

@@ -3,6 +3,7 @@ import { Check, ArrowRight } from "lucide-react";
 import { requireUserAndWorkspace, getWorkspaceBlogs } from "@/lib/workspace";
 import { Lede, Linha, Secao } from "@/components/lede";
 import { encontrarGargalo, type Etapa } from "@/lib/gargalo";
+import { EvolucaoDosArtigos } from "./evolucao";
 import { scoreBand } from "@/lib/audit/rules";
 import type { AnalyticsEvent, OnboardingSteps } from "@/types";
 
@@ -69,6 +70,7 @@ export default async function DashboardHomePage() {
     { data: eventos },
     { count: perguntas },
     { data: checks },
+    { data: primeiroArtigo },
   ] = await Promise.all([
     supabase
       .from("site_audits")
@@ -103,6 +105,14 @@ export default async function DashboardHomePage() {
       .eq("blog_id", blog.id)
       .order("checked_at", { ascending: false })
       .limit(200),
+    supabase
+      .from("articles")
+      .select("published_at")
+      .eq("blog_id", blog.id)
+      .eq("status", "published")
+      .not("published_at", "is", null)
+      .order("published_at", { ascending: true })
+      .limit(1),
   ]);
 
   const auditoria = (
@@ -261,6 +271,13 @@ export default async function DashboardHomePage() {
           </ul>
         </>
       )}
+
+      <EvolucaoDosArtigos
+        primeiraPublicacao={
+          (primeiroArtigo as { published_at: string }[] | null)?.[0]
+            ?.published_at ?? null
+        }
+      />
 
       <Secao>A operação</Secao>
       <p className="text-slate-600 dark:text-slate-400">
