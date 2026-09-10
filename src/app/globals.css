@@ -56,8 +56,8 @@
      É o único gesto ousado da interface - o resto fica quieto. */
   --color-realce: #dde3ff;
 
-  --font-sans: var(--font-instrument-sans);
-  --font-display: var(--font-instrument-serif);
+  --font-sans: var(--font-plex-sans);
+  --font-display: var(--font-plex-mono);
 }
 
 :root {

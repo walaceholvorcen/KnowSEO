@@ -1,19 +1,23 @@
 import type { Metadata } from "next";
-import { Instrument_Sans, Instrument_Serif } from "next/font/google";
+import { IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
 import { THEME_INIT_SCRIPT } from "@/lib/theme";
 import "./globals.css";
 
 // Duas famílias, papéis separados: a sans carrega a interface inteira, a
-// serifada aparece só onde o número é o produto (a nota da auditoria, o
-// score de visibilidade). Nada de serifada como enfeite em título de card.
-const sans = Instrument_Sans({
-  variable: "--font-instrument-sans",
+// mono aparece só onde o número é o produto (a nota da auditoria, o score
+// de visibilidade) - lida como instrumento (radar, medidor), não como
+// manchete de revista. É por isso que trocamos a Instrument Serif: ela
+// carregava floreio editorial que destoava de um produto que existe para
+// medir coisa.
+const sans = IBM_Plex_Sans({
+  variable: "--font-plex-sans",
+  weight: ["400", "500", "600"],
   subsets: ["latin"],
 });
 
-const display = Instrument_Serif({
-  variable: "--font-instrument-serif",
-  weight: "400",
+const display = IBM_Plex_Mono({
+  variable: "--font-plex-mono",
+  weight: ["500", "600"],
   subsets: ["latin"],
 });
 
