@@ -10,7 +10,7 @@ export type FunnelStage = "top" | "middle" | "bottom";
 export type Difficulty = "baja" | "media" | "alta";
 export type OpportunityScore = "buena" | "muy_buena" | "excelente";
 export type KeywordStatus = "suggested" | "approved" | "rejected" | "written";
-export type KeywordSource = "ai" | "dataforseo" | "manual";
+export type KeywordSource = "ai" | "dataforseo" | "google_ads" | "manual";
 export type ArticleStatus = "draft" | "scheduled" | "published";
 export type GenerationStatus = "idle" | "generating" | "done" | "error";
 export type EventType = "pageview" | "cta_click" | "whatsapp_click";
@@ -79,6 +79,9 @@ export interface Keyword {
   suggested_title: string | null;
   funnel_stage: FunnelStage | null;
   search_volume: number | null;
+  /** Concorrência de anunciantes no Google Ads (0-100). Não é dificuldade
+   *  de SEO - ver supabase/migrations/0009_keyword_metrics.sql. */
+  competition_index: number | null;
   difficulty: Difficulty | null;
   opportunity_score: OpportunityScore | null;
   status: KeywordStatus;

@@ -691,3 +691,83 @@ Portal de notícia como concorrente polui o resultado (temas como "google
 wallet", "iab spain" apareceram ao testar com um). É problema de escolha
 de concorrente, não do cálculo — a tela orienta a apontar concorrentes
 diretos.
+
+---
+
+## 19. Volume de busca real — Planejador de Palavras-chave do Google Ads
+
+A Estratégia sempre foi o módulo mais frágil do produto pelo motivo escrito
+na seção 14: `difficulty` e `opportunity_score` são leitura do modelo, não
+dado de mercado. A DataForSEO resolveria, mas é paga e nunca foi ligada. O
+Planejador de Palavras-chave resolve de graça, então virou a fonte padrão.
+
+### A distinção que virou regra de esquema
+
+O Google Ads devolve `competition` / `competitionIndex`, e o caminho
+tentador era jogar isso no campo `difficulty` — "pronto, dificuldade agora é
+real". Seria dado errado com cara de dado certo.
+
+**`competition` é concorrência de ANUNCIANTES**: quantos estão dando lance
+naquele termo. Não é dificuldade de ranquear organicamente. As duas andam
+juntas em termo comercial ("advogado trabalhista madrid") e se separam por
+completo em termo informativo — ninguém anuncia em "o que é tag canonical",
+e ranquear ali pode ser dificílimo.
+
+Por isso a migration 0009 cria `competition_index` como coluna própria, com
+`comment on column` dizendo o que ela não é, e `difficulty` continua sendo
+o que sempre foi. Na tela, as duas aparecem em linhas separadas e nomeadas:
+o volume medido em cima, "Leitura da IA: ..." embaixo. Antes as duas se
+misturavam na mesma frase e não havia como o cliente saber o que era medido
+e o que era palpite.
+
+### País: o parâmetro que ninguém lembra e que muda tudo
+
+Volume de busca não existe solto — existe por país. "Agencia SEO" na Espanha
+e no Brasil são números completamente diferentes, e o produto não pergunta
+ao cliente onde ele vende.
+
+A dedução é: **TLD do domínio primeiro, idioma como reserva**. O caso real
+que forçou essa ordem está no banco — o blog `testando dataknow` tem
+`language = 'pt'` e domínio `dataknow.es`, uma agência espanhola. Deduzir
+pelo idioma traria volume do Brasil para decidir pauta na Espanha.
+
+A dedução nunca fica escondida: a linha da pauta diz "1.900 buscas por mês
+na Espanha". Palpite errado aparece na hora em vez de virar decisão em cima
+do país errado. Se algum dia aparecer cliente `.com` vendendo em outro país,
+aí sim vale um seletor por blog — não antes.
+
+A preposição ("na Espanha", "no Brasil", "em Portugal") mora na tabela de
+países junto do rótulo, não num `if` na interface: um ternário ali erraria
+em metade dos países.
+
+### Escopo somado à conexão existente
+
+`adwords` entrou nos SCOPES da mesma conexão Google que já servia Search
+Console e GA4. Uma tela de login para as três coisas. Consequência a lembrar
+**toda vez que um escopo mudar**: a autorização antiga continua valendo com
+os escopos velhos. Foi exatamente o que aconteceu com `userinfo.email` —
+diagnosticado consultando a API com o refresh token guardado, que devolveu
+apenas `webmasters.readonly` e `analytics.readonly`. Reconectar não basta se
+o Google reaproveitar o consentimento: tem que revogar em
+`myaccount.google.com/permissions` antes.
+
+### Detalhes operacionais
+
+- `GOOGLE_ADS_API_VERSION` é variável de ambiente porque o Google aposenta
+  versões a cada poucos meses; virar a versão não deve exigir deploy.
+- O corpo do erro do Google Ads é registrado no log (truncado em 800
+  caracteres). É lá que aparece a causa real — token sem acesso básico,
+  conta errada, versão morta. Sem isso a falha vira "não veio volume".
+- Falha de volume nunca derruba a geração de pauta: é enriquecimento.
+- `keywordSeed` aceita no máximo 20 termos por chamada; enviamos 8.
+- **Sem campanha ativa gastando, o Google devolve faixas** em vez do número
+  exato. Continua sendo medição do Google, e a tela de Integrações avisa.
+
+### Oportunidade que ficou registrada e não foi feita
+
+`generateKeywordIdeas` devolve, além dos termos que mandamos, **as ideias
+relacionadas que o próprio Google sugere, já com volume**. Isso permitiria
+inverter a Estratégia: em vez de a IA inventar keyword e o Google medir
+depois, o Google propõe os termos reais e a IA escolhe os ângulos. É a
+evolução natural do módulo — ficou de fora desta rodada só para não misturar
+duas mudanças grandes na mesma entrega.

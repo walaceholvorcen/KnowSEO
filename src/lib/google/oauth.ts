@@ -14,6 +14,10 @@ const SCOPES = [
   // userinfo e a tela ficava presa em "Conectado como (desconhecido)" -
   // achado testando a conexão real pela primeira vez.
   "https://www.googleapis.com/auth/userinfo.email",
+  // Planejador de Palavras-chave: volume de busca real na Estratégia. Entra
+  // na MESMA conexão de propósito - uma tela de login para as três coisas,
+  // em vez de pedir ao cliente que autorize o Google três vezes.
+  "https://www.googleapis.com/auth/adwords",
 ].join(" ");
 
 export function isGoogleIntegrationConfigured(): boolean {

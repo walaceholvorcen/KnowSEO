@@ -1,7 +1,8 @@
 import { requireUserAndWorkspace, getWorkspaceBlogs } from "@/lib/workspace";
 import { SettingsNav } from "../settings-nav";
-import { Lede } from "@/components/lede";
+import { Lede, Secao } from "@/components/lede";
 import { buscarConexao, isGoogleIntegrationConfigured } from "@/lib/google/oauth";
+import { isGoogleAdsConfigured } from "@/lib/google/ads";
 import { IntegrationsForm } from "./integrations-form";
 
 export default async function IntegrationsPage({
@@ -51,6 +52,20 @@ export default async function IntegrationsPage({
           gscPropertyAtual={blog.gsc_property}
           ga4PropertyAtual={blog.ga4_property_id}
         />
+      )}
+
+      <Secao>Volume de busca</Secao>
+      <p className="text-sm text-slate-600 dark:text-slate-400">
+        {isGoogleAdsConfigured()
+          ? "O Planejador de Palavras-chave do Google Ads está ligado. As pautas da Estratégia saem com volume de busca medido pelo Google, e não com estimativa do modelo."
+          : "Sem o Planejador de Palavras-chave, a Estratégia sugere pauta com leitura qualitativa do modelo — sem volume de busca. Para ligar, faltam duas credenciais no ambiente: GOOGLE_ADS_DEVELOPER_TOKEN e GOOGLE_ADS_CUSTOMER_ID."}
+      </p>
+      {isGoogleAdsConfigured() && (
+        <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+          Sem campanha ativa na conta, o Google devolve o volume em faixas
+          aproximadas em vez do número exato. Continua sendo medição do
+          Google, não palpite.
+        </p>
       )}
     </div>
   );

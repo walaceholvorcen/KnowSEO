@@ -118,14 +118,25 @@ Volume de busca real só com a DataForSEO ligada.
    estimativa.
 
 **De onde vem o dado:** a keyword, o título e a etapa de funil são gerados
-pelo Claude a cada clique. **A "dificuldade" e a "oportunidade" são
-opinião qualitativa da IA — não são dado de mercado real** enquanto a
-DataForSEO não estiver ligada. Vale deixar isso claro para quem for
-vender: hoje não é volume de busca do Google, é estimativa.
+pelo Claude a cada clique. Com o **Planejador de Palavras-chave do Google
+Ads** ligado, o volume de busca passa a ser medição do Google — a linha da
+pauta mostra "1.900 buscas por mês na Espanha", com o país sempre visível
+para você conferir que é o mercado certo.
+
+**O que continua sendo opinião, e a tela diz isso:** a "dificuldade" e a
+"oportunidade" seguem sendo leitura qualitativa da IA, numa linha separada
+que começa com "Leitura da IA:". Não foram substituídas de propósito — o
+Google Ads mede **concorrência de anunciantes** (quantos pagam por aquele
+termo), que não é a mesma coisa que dificuldade de ranquear sem pagar.
+Quando existe, esse número aparece com o nome certo, ao lado do volume.
+
+**Sem campanha ativa na conta do Google Ads**, o volume vem em faixas
+aproximadas em vez do número exato. Continua sendo medição do Google, e
+vale dizer isso a quem for vender.
 
 **O que falta para evoluir:**
-- Ativar a DataForSEO para trazer volume de busca real (a integração já
-  existe no código, só falta a credencial).
+- Deixar o Google propor as keywords, não só medir as da IA: a mesma
+  chamada já devolve as sugestões do próprio Google com volume.
 - Agrupar keywords por cluster de tema, em vez de lista solta.
 
 ---

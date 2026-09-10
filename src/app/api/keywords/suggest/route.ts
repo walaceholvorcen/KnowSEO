@@ -5,6 +5,9 @@ import {
   fetchRealKeywordMetrics,
   isDataForSeoConfigured,
 } from "@/lib/dataforseo";
+import { buscarVolumeDeBusca, isGoogleAdsConfigured } from "@/lib/google/ads";
+import { buscarConexao } from "@/lib/google/oauth";
+import { enriquecer, type MetricaReal } from "@/lib/keywords/metricas";
 import { isAiConfigured, AI_NOT_CONFIGURED_MESSAGE } from "@/lib/ai-config";
 import type { Blog, BrandDna, Keyword } from "@/types";
 
@@ -84,26 +87,66 @@ export async function POST(request: Request) {
     );
   }
 
-  // Enriquece com dados reais da DataForSEO quando configurado - senão
-  // fica só com a estimativa qualitativa de dificultad que la IA ya dio.
-  const realMetrics = isDataForSeoConfigured()
-    ? await fetchRealKeywordMetrics(
-        ideas.map((i) => i.keyword),
-        (blog as Blog).language === "pt" ? "co" : "es",
-      )
-    : new Map();
+  // Troca a opinião do modelo por medição do Google onde der. A ordem é
+  // deliberada: o Planejador de Palavras-chave é a fonte que o mercado usa
+  // como referência e sai de graça; a DataForSEO fica como caminho pago
+  // alternativo para quem já paga por ela.
+  const termos = ideas.map((i) => i.keyword);
+  const dominioDoBlog = (blog as Blog).custom_domain;
+  const idiomaDoTexto = (blog as Blog).language;
+
+  let metricas = new Map<string, MetricaReal>();
+  let paisMedido: string | null = null;
+
+  if (isGoogleAdsConfigured()) {
+    const conexao = await buscarConexao(workspace.id).catch(() => null);
+    if (conexao) {
+      try {
+        const resposta = await buscarVolumeDeBusca({
+          workspaceId: workspace.id,
+          keywords: termos,
+          dominio: dominioDoBlog,
+          idioma: idiomaDoTexto,
+        });
+        metricas = resposta.metricas;
+        paisMedido = resposta.pais;
+      } catch (err) {
+        // Volume é enriquecimento, não requisito: uma falha aqui não pode
+        // derrubar a geração de pauta inteira.
+        console.error("[keywords/suggest] Google Ads indisponível", err);
+      }
+    }
+  }
+
+  const usouGoogleAds = metricas.size > 0;
+
+  const legado =
+    !usouGoogleAds && isDataForSeoConfigured()
+      ? await fetchRealKeywordMetrics(
+          termos,
+          idiomaDoTexto === "pt" ? "co" : "es",
+        )
+      : new Map();
 
   const rows = ideas.map((idea) => {
-    const real = realMetrics.get(idea.keyword.toLowerCase());
+    const medido = usouGoogleAds
+      ? enriquecer(idea.keyword, metricas)
+      : null;
+    const antigo = legado.get(idea.keyword.toLowerCase());
+
     return {
       blog_id: blogId,
       keyword: idea.keyword,
       suggested_title: idea.suggested_title,
       funnel_stage: idea.funnel_stage,
+      // Continua sendo leitura do modelo de propósito: o que o Google Ads
+      // mede é concorrência de anunciantes, que é outra coisa.
       difficulty: idea.difficulty,
       opportunity_score: idea.opportunity_score,
-      search_volume: real?.search_volume ?? null,
-      source: real ? "dataforseo" : "ai",
+      search_volume: medido?.search_volume ?? antigo?.search_volume ?? null,
+      competition_index:
+        medido?.competition_index ?? antigo?.competition_index ?? null,
+      source: medido?.source ?? (antigo ? "dataforseo" : "ai"),
       status: "suggested" as const,
     };
   });
@@ -117,5 +160,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ keywords: inserted as Keyword[] });
+  return NextResponse.json({
+    keywords: inserted as Keyword[],
+    // A tela mostra o país junto do volume: dedução errada precisa aparecer
+    // na hora, não virar decisão de pauta com número do país errado.
+    pais: paisMedido,
+  });
 }

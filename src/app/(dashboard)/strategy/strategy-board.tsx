@@ -40,10 +40,12 @@ export function StrategyBoard({
   blogId,
   initialKeywords,
   credits,
+  pais,
 }: {
   blogId: string;
   initialKeywords: Keyword[];
   credits: number;
+  pais: string;
 }) {
   const router = useRouter();
   const supabase = createClient();
@@ -137,24 +139,50 @@ export function StrategyBoard({
               <p className="mt-1 text-slate-600 dark:text-slate-400">
                 {kw.keyword}
                 {kw.funnel_stage && <>. {FUNNEL_LABEL[kw.funnel_stage]}</>}
+              </p>
+
+              {/* Medição e opinião em linhas separadas, e nomeadas. Antes as
+                  duas se misturavam na mesma frase e o cliente não tinha como
+                  saber que o volume era do Google e a dificuldade era palpite
+                  do modelo. */}
+              {kw.search_volume != null && (
+                <p className="mt-1.5 text-slate-700 dark:text-slate-300">
+                  <span className="tabular font-display">
+                    {kw.search_volume.toLocaleString("pt-BR")}
+                  </span>{" "}
+                  buscas por mês {pais}
+                  {kw.competition_index != null && (
+                    <>
+                      {" "}
+                      · concorrência de anunciantes{" "}
+                      <span className="tabular font-display">
+                        {kw.competition_index}
+                      </span>
+                      /100
+                    </>
+                  )}
+                </p>
+              )}
+
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                {kw.search_volume == null && "Sem volume medido. "}
+                Leitura da IA:
                 {kw.difficulty && (
                   <>
-                    , dificuldade{" "}
+                    {" "}
+                    dificuldade{" "}
                     <span className={DIFFICULTY_COLOR[kw.difficulty]}>
                       {DIFFICULTY_LABEL[kw.difficulty].toLowerCase()}
                     </span>
                   </>
                 )}
-                {kw.search_volume != null && (
+                {kw.opportunity_score && (
                   <>
-                    {" "}
-                    · {kw.search_volume.toLocaleString("pt-BR")} buscas por
-                    mês
+                    {kw.difficulty && ","} oportunidade{" "}
+                    {OPPORTUNITY_LABEL[kw.opportunity_score]}
                   </>
                 )}
-                {kw.opportunity_score && (
-                  <>. Oportunidade {OPPORTUNITY_LABEL[kw.opportunity_score]}.</>
-                )}
+                .
               </p>
 
               <div className="mt-3 flex items-center gap-2">

@@ -121,8 +121,10 @@ export function IntegrationsForm({
         </select>
         {!carregandoPropriedades && gscOpcoes.length === 0 && (
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            Nenhuma propriedade visível. Peça para o cliente adicionar a
-            conta conectada como usuário no Search Console dele.
+            Nenhuma propriedade visível. Ou o site ainda não foi adicionado
+            ao Search Console por ninguém, ou está sob outra conta Google —
+            nesse caso, quem administra precisa entrar em Configurações →
+            Usuários e permissões e adicionar a conta conectada aqui.
           </p>
         )}
       </div>
