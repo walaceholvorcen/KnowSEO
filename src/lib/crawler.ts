@@ -59,16 +59,44 @@ export function isPublicHttpUrl(raw: string): boolean {
   return true;
 }
 
+const USER_AGENT =
+  "KnowSEO-Crawler/1.0 (+https://know-seo.vercel.app; auditoria de SEO)";
+
 export async function safeFetch(url: string): Promise<Response | null> {
+  const resposta = await fetchComStatus(url);
+  return resposta?.res.ok ? resposta.res : null;
+}
+
+export interface RespostaCrawler {
+  res: Response;
+  status: number;
+  /** URL depois de seguir redirecionamentos. Diferente da pedida = houve
+   *  redirect - informação que antes se perdia em silêncio. */
+  finalUrl: string;
+}
+
+// Igual ao safeFetch, mas NÃO descarta o que não é 2xx.
+//
+// `safeFetch` devolvia null para qualquer resposta fora da faixa de sucesso,
+// e isso apagava, por construção, a categoria inteira de SEO técnico: sem
+// status não há como detectar 404, 500, cadeia de redirecionamento ou URL
+// morta no sitemap. Pior, produzia um efeito perverso na nota - as páginas
+// quebradas sumiam da amostra, então quanto mais quebrado o site, mais limpa
+// a amostra que sobrava para avaliar.
+export async function fetchComStatus(
+  url: string,
+): Promise<RespostaCrawler | null> {
   if (!isPublicHttpUrl(url)) return null;
   try {
     const res = await fetch(url, {
       redirect: "follow",
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-      headers: { "User-Agent": "KnowSEO-Crawler/1.0 (+internal-linking)" },
+      headers: { "User-Agent": USER_AGENT },
     });
-    return res.ok ? res : null;
+    return { res, status: res.status, finalUrl: res.url || url };
   } catch {
+    // Timeout, DNS, TLS: a requisição não chegou a acontecer. É diferente de
+    // uma resposta de erro, e quem chama precisa poder distinguir.
     return null;
   }
 }

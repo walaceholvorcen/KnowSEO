@@ -79,16 +79,25 @@ export function AuditBoard({
     setRunning(true);
     setError(null);
 
-    const res = await fetch("/api/audit/run", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ blogId, siteUrl }),
-    });
-    const data = await res.json();
-    setRunning(false);
-
-    if (!res.ok) setError(data.error ?? "Algo deu errado. Tente de novo.");
-    else router.refresh();
+    // Sem try/catch, uma auditoria que estourasse o tempo limite deixava o
+    // botão preso em "Analisando..." até recarregar a página - e estourar é
+    // plausível: site grande com sitemap lento chega perto dos 120s.
+    try {
+      const res = await fetch("/api/audit/run", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ blogId, siteUrl }),
+      });
+      const data = await res.json();
+      if (!res.ok) setError(data.error ?? "Algo deu errado. Tente de novo.");
+      else router.refresh();
+    } catch {
+      setError(
+        "A auditoria demorou mais do que o limite ou a conexão caiu. Tente de novo; se repetir, o site pode estar lento para responder.",
+      );
+    } finally {
+      setRunning(false);
+    }
   }
 
   return (

@@ -854,3 +854,81 @@ verificáveis, porque modelo não cita folheto.
 É o único fosso disponível aqui. Profound, Peec e Otterly medem GEO melhor
 que nós e **nenhuma delas escreve o conteúdo**. Medir é commodity; responder
 não é.
+
+---
+
+## 21. Auditoria — de conferidor de tags para auditoria técnica
+
+Mesma revisão crítica da seção 20. A evidência que abriu o caso foi empírica:
+rodando contra dois sites reais, `dataknow.es` tirava 93 e
+`isocialweb.agency` tirava 94 — duas empresas diferentes, notas quase
+idênticas, ambas em "Excelente", com três e seis achados cosméticos. **A nota
+não discriminava.**
+
+### A linha que apagava metade do SEO técnico
+
+`crawler.ts` fazia `return res.ok ? res : null`. Tudo fora da faixa de
+sucesso era descartado, e isso eliminava por construção a categoria inteira:
+sem status não há 404, não há 500, não há cadeia de redirecionamento, não há
+comparação entre o que o sitemap anuncia e o que o site entrega.
+
+E produzia um efeito perverso na nota: as páginas quebradas sumiam da
+amostra e `totalPages` encolhia junto. **Quanto mais quebrado o site, mais
+limpa a amostra que sobrava para avaliar.**
+
+`fetchComStatus()` agora devolve status e URL final sem descartar nada.
+`safeFetch` continua existindo com o mesmo contrato de antes, construído em
+cima dele, para não mexer na linkagem interna.
+
+Duas regras novas nascem desse dado, e as duas trazem **o valor medido na
+evidência** em vez de repetir a definição da regra:
+
+- `URLS_QUEBRADAS` — separa "respondeu erro" de "não respondeu" (timeout,
+  DNS, TLS são problemas diferentes de um 404), e sobe para crítico quando
+  há 5xx, porque erro de servidor faz o Google reduzir o rastreamento do
+  site inteiro.
+- `URLS_REDIRECIONADAS` — o endereço anunciado não é o final. Pegou de
+  primeira, em site real: `isocialweb.agency → www.isocialweb.agency/`.
+
+### Falsos positivos que estavam em pé
+
+**`ROBOTS_BLOCKS_ALL` ignorava o agrupamento por User-agent.** Procurava
+`Disallow: /` em qualquer lugar do arquivo. Um site que bloqueia rastreador
+de IA — hoje comum — era acusado de bloquear o site inteiro, severidade
+crítica, **−30 pontos**. Site saudável caía de 100 para 70.
+`robotsBloqueiaTudo()` agora monta os grupos e respeita a precedência real:
+se existe grupo do Googlebot ele manda, senão vale o curinga. Grupo de outro
+agente não diz nada sobre indexação no Google.
+
+**`alt=""` era contado como imagem sem alt** — e `alt=""` é a marcação
+*correta* de imagem decorativa em WCAG. O próprio texto de correção da regra
+dizia isso, e havia um teste congelando o comportamento errado. Corrigido o
+código e o teste. Efeito medido: `dataknow.es` perdia 9 achados falsos e
+subiu de 93 para 96.
+
+**O botão travava.** `handleRun` não tinha `try/catch`: auditoria que
+estourasse os 120s deixava "Analisando..." preso até recarregar a página — e
+estourar é plausível num site grande.
+
+### O que a mudança fez com as notas
+
+| Site | Antes | Depois | Por quê |
+|---|---|---|---|
+| dataknow.es | 93 | 96 | sumiram 9 achados falsos de `alt=""` |
+| isocialweb.agency | 94 | 90 | apareceu um redirecionamento real |
+
+As duas notas se moveram em **direções opostas**. É exatamente isso que
+poder de discriminação significa: antes as duas eram 93 e não diziam nada.
+
+### O que continua faltando (ordem de retorno)
+
+1. Link quebrado de verdade: os `<a href>` ainda são só contados, nunca
+   requisitados. O `fetchComStatus` já é a peça que faltava.
+2. Peso por importância de página — `noindex` na home de um site de 25
+   páginas ainda dilui para 4,5 pontos e a nota fica "Excelente".
+3. Piso da nota IA. Sem `llms.txt`, sem schema e sem H2, o pior caso ainda
+   é ≈70, que é faixa "Bom".
+4. `LOW_INTERNAL_LINKS` mede outlink e o texto fala de inlink — mede a coisa
+   errada e quase nunca dispara.
+5. SPA client-side ainda vira relatório de lixo (título duplicado e H1
+   ausente em tudo). Precisa detectar o padrão e avisar, não pontuar.

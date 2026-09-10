@@ -1,7 +1,7 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
 import { parsePage } from "./parse.ts";
-import { runRules, computeScores } from "./rules.ts";
+import { runRules, computeScores, robotsBloqueiaTudo } from "./rules.ts";
 import type { PageSnapshot, SiteSignals } from "./types.ts";
 
 const ORIGIN = "https://cliente.es";
@@ -62,9 +62,11 @@ describe("parsePage", () => {
     assert.equal(p.metaDescription, "Olá");
   });
 
-  test("conta imagem com alt vazio como sem alt", () => {
+  test("alt vazio é imagem decorativa, não falta de alt", () => {
+    // `alt=""` é a marcação correta em WCAG para imagem que não carrega
+    // informação. Contá-la como falta acusava justamente quem fez certo.
     const p = page(`<html><body><img src="a.jpg" alt=""><img src="b.jpg"></body></html>`);
-    assert.equal(p.imagesWithoutAlt, 2);
+    assert.equal(p.imagesWithoutAlt, 1);
   });
 
   test("não conta link externo nem âncora como link interno", () => {
@@ -291,5 +293,170 @@ describe("computeScores", () => {
     );
     assert.ok(scores.google >= 0);
     assert.ok(scores.ai >= 0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Agrupamento por User-agent no robots.txt.
+//
+// A regra antiga procurava "Disallow: /" em qualquer lugar do arquivo, sem
+// olhar a quem a diretiva se aplicava. Um site que bloqueia rastreador de IA
+// - hoje comum - era acusado de bloquear o site inteiro e perdia 30 pontos.
+// ---------------------------------------------------------------------------
+describe("robotsBloqueiaTudo", () => {
+  test("bloqueio do curinga é bloqueio de verdade", () => {
+    assert.equal(robotsBloqueiaTudo("User-agent: *\nDisallow: /"), true);
+  });
+
+  test("bloquear só o GPTBot não é bloquear o site", () => {
+    const robots = [
+      "User-agent: *",
+      "Allow: /",
+      "",
+      "User-agent: GPTBot",
+      "Disallow: /",
+    ].join("\n");
+    assert.equal(robotsBloqueiaTudo(robots), false);
+  });
+
+  test("grupo do Googlebot tem precedência sobre o curinga", () => {
+    const bloqueado = [
+      "User-agent: *",
+      "Allow: /",
+      "",
+      "User-agent: Googlebot",
+      "Disallow: /",
+    ].join("\n");
+    assert.equal(robotsBloqueiaTudo(bloqueado), true);
+
+    const liberado = [
+      "User-agent: *",
+      "Disallow: /",
+      "",
+      "User-agent: Googlebot",
+      "Allow: /",
+    ].join("\n");
+    assert.equal(robotsBloqueiaTudo(liberado), false);
+  });
+
+  test("user-agents seguidos compartilham o mesmo bloco", () => {
+    const robots = [
+      "User-agent: GPTBot",
+      "User-agent: CCBot",
+      "Disallow: /",
+    ].join("\n");
+    assert.equal(robotsBloqueiaTudo(robots), false);
+  });
+
+  test("bloquear um caminho não é bloquear tudo", () => {
+    assert.equal(
+      robotsBloqueiaTudo("User-agent: *\nDisallow: /admin/\nDisallow: /tmp"),
+      false,
+    );
+  });
+
+  test("comentário e caixa alta não confundem", () => {
+    assert.equal(
+      robotsBloqueiaTudo("# bloqueio geral\nUSER-AGENT: *\nDISALLOW: /"),
+      true,
+    );
+  });
+
+  test("robots vazio não acusa nada", () => {
+    assert.equal(robotsBloqueiaTudo(""), false);
+  });
+
+  test("disallow sem grupo declarado não derruba a análise", () => {
+    assert.equal(robotsBloqueiaTudo("Disallow: /"), false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// URLs que o site anuncia e não entrega.
+//
+// Categoria que não existia: o crawler descartava tudo que não fosse 2xx, e
+// as páginas quebradas sumiam da amostra - a nota MELHORAVA conforme o site
+// piorava.
+// ---------------------------------------------------------------------------
+describe("runRules - URLs quebradas e redirecionadas", () => {
+  test("404 no sitemap vira achado com o status na evidência", () => {
+    const achados = runRules(
+      signals({
+        pages: [page(GOOD_HTML)],
+        urlsQuebradas: [{ url: `${ORIGIN}/antiga`, status: 404 }],
+      }),
+    );
+    const f = achados.find((a) => a.code === "URLS_QUEBRADAS");
+    assert.ok(f, "esperava o achado de URL quebrada");
+    assert.equal(f.severity, "high");
+    assert.match(f.evidence!, /404/);
+    assert.match(f.evidence!, /\/antiga/);
+  });
+
+  test("erro de servidor é mais grave que 404", () => {
+    const achados = runRules(
+      signals({
+        pages: [page(GOOD_HTML)],
+        urlsQuebradas: [{ url: `${ORIGIN}/x`, status: 503 }],
+      }),
+    );
+    assert.equal(
+      achados.find((a) => a.code === "URLS_QUEBRADAS")?.severity,
+      "critical",
+    );
+  });
+
+  test("URL que não respondeu é descrita como tal, não como 404", () => {
+    const achados = runRules(
+      signals({
+        pages: [page(GOOD_HTML)],
+        urlsQuebradas: [{ url: `${ORIGIN}/lenta`, status: null }],
+      }),
+    );
+    assert.match(
+      achados.find((a) => a.code === "URLS_QUEBRADAS")!.evidence!,
+      /não respondeu/,
+    );
+  });
+
+  test("redirecionamento aparece com origem e destino", () => {
+    const achados = runRules(
+      signals({
+        pages: [page(GOOD_HTML)],
+        urlsRedirecionadas: [
+          { url: `${ORIGIN}/velha`, status: null, destino: `${ORIGIN}/nova` },
+        ],
+      }),
+    );
+    const f = achados.find((a) => a.code === "URLS_REDIRECIONADAS");
+    assert.ok(f);
+    assert.match(f.evidence!, /\/velha → .*\/nova/);
+  });
+
+  test("site sem URL quebrada não ganha achado nenhum", () => {
+    const c = codes(signals({ pages: [page(GOOD_HTML)] }));
+    assert.ok(!c.includes("URLS_QUEBRADAS"));
+    assert.ok(!c.includes("URLS_REDIRECIONADAS"));
+  });
+
+  test("URL quebrada derruba a nota em vez de sumir da amostra", () => {
+    const limpo = computeScores(
+      runRules(signals({ pages: [page(GOOD_HTML)] })),
+      1,
+    );
+    const comErro = computeScores(
+      runRules(
+        signals({
+          pages: [page(GOOD_HTML)],
+          urlsQuebradas: [{ url: `${ORIGIN}/a`, status: 404 }],
+        }),
+      ),
+      1,
+    );
+    assert.equal(limpo.google, 100);
+    assert.ok(
+      comErro.google < limpo.google,
+      `esperava nota menor com URL quebrada, veio ${comErro.google}`,
+    );
   });
 });

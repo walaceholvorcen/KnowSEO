@@ -43,6 +43,16 @@ export interface PageSnapshot {
   hasJsScripts: boolean;
 }
 
+/** URL que o site anuncia (no sitemap ou como home) e não entrega. */
+export interface UrlComProblema {
+  url: string;
+  /** Status HTTP devolvido, ou null quando nem houve resposta (timeout,
+   *  DNS, TLS). São problemas diferentes e o achado precisa separá-los. */
+  status: number | null;
+  /** Destino final, quando a URL redirecionou. */
+  destino?: string;
+}
+
 export interface SiteSignals {
   origin: string;
   isHttps: boolean;
@@ -51,4 +61,9 @@ export interface SiteSignals {
   sitemapFound: boolean;
   llmsTxtFound: boolean;
   pages: PageSnapshot[];
+  /** URLs que responderam 4xx/5xx ou não responderam. Opcional para não
+   *  quebrar chamadas antigas de teste. */
+  urlsQuebradas?: UrlComProblema[];
+  /** URLs anunciadas que redirecionam para outro endereço. */
+  urlsRedirecionadas?: UrlComProblema[];
 }

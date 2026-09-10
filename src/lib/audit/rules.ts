@@ -33,6 +33,59 @@ function duplicatesBy(
   return new Map([...groups].filter(([, group]) => group.length > 1));
 }
 
+// O robots.txt agrupa diretivas por User-agent, e a regra antiga ignorava o
+// agrupamento: procurava "Disallow: /" em qualquer lugar do arquivo.
+//
+// Isso produzia um falso positivo caro num cenário que hoje é comum. Um site
+// que bloqueia rastreador de IA...
+//
+//   User-agent: GPTBot
+//   Disallow: /
+//
+// ...era acusado de "bloquear o site inteiro", severidade crítica, e perdia
+// 30 pontos. Site perfeitamente saudável caía de 100 para 70.
+//
+// Aqui só interessa quem rastreia para a busca: se existe um grupo do
+// Googlebot ele manda, senão vale o grupo do curinga. Grupos de outros
+// agentes não dizem nada sobre a indexação no Google.
+export function robotsBloqueiaTudo(body: string): boolean {
+  const grupos: { agentes: string[]; bloqueia: boolean }[] = [];
+  let atual: { agentes: string[]; bloqueia: boolean } | null = null;
+  let ultimaFoiAgente = false;
+
+  for (const bruta of body.split(/\r?\n/)) {
+    const linha = bruta.replace(/#.*/, "").trim();
+    if (!linha) continue;
+
+    const separador = linha.indexOf(":");
+    if (separador === -1) continue;
+
+    const campo = linha.slice(0, separador).trim().toLowerCase();
+    const valor = linha.slice(separador + 1).trim();
+
+    if (campo === "user-agent") {
+      // User-agents seguidos compartilham o mesmo bloco de regras.
+      if (!ultimaFoiAgente) {
+        atual = { agentes: [], bloqueia: false };
+        grupos.push(atual);
+      }
+      atual?.agentes.push(valor.toLowerCase());
+      ultimaFoiAgente = true;
+      continue;
+    }
+
+    ultimaFoiAgente = false;
+    if (campo === "disallow" && valor === "/" && atual) {
+      atual.bloqueia = true;
+    }
+  }
+
+  const doGoogle = grupos.filter((g) => g.agentes.includes("googlebot"));
+  if (doGoogle.length) return doGoogle.some((g) => g.bloqueia);
+
+  return grupos.filter((g) => g.agentes.includes("*")).some((g) => g.bloqueia);
+}
+
 export function runRules(signals: SiteSignals): Finding[] {
   const findings: Finding[] = [];
   const { pages } = signals;
@@ -70,7 +123,7 @@ export function runRules(signals: SiteSignals): Finding[] {
     });
   } else {
     const body = signals.robotsTxt.body ?? "";
-    if (/^\s*disallow:\s*\/\s*$/im.test(body)) {
+    if (robotsBloqueiaTudo(body)) {
       add({
         code: "ROBOTS_BLOCKS_ALL",
         severity: "critical",
@@ -98,6 +151,62 @@ export function runRules(signals: SiteSignals): Finding[] {
       affectedCount: 1,
       });
     }
+  }
+
+  // --------------------------------------------------- URLs que não entregam
+  //
+  // Categoria que simplesmente não existia: o crawler descartava tudo que
+  // não fosse 2xx, então 404, 500 e cadeia de redirecionamento eram
+  // invisíveis para a auditoria. Pior, as páginas quebradas sumiam da
+  // amostra e a nota MELHORAVA conforme o site piorava.
+  const quebradas = signals.urlsQuebradas ?? [];
+  if (quebradas.length > 0) {
+    const semResposta = quebradas.filter((u) => u.status === null);
+    const comErro = quebradas.filter((u) => u.status !== null);
+    const servidor = comErro.filter((u) => (u.status ?? 0) >= 500);
+
+    add({
+      code: "URLS_QUEBRADAS",
+      severity: servidor.length > 0 ? "critical" : "high",
+      category: "crawlability",
+      title: `${quebradas.length} ${quebradas.length === 1 ? "endereço anunciado não responde" : "endereços anunciados não respondem"}`,
+      impact:
+        servidor.length > 0
+          ? "Erro de servidor faz o Google reduzir o ritmo de rastreamento do site inteiro, não só das páginas com erro. E quem chega pelo link encontra uma página morta."
+          : "O site anuncia estes endereços no sitemap e não os entrega. O Google gasta rastreamento em página que não existe, e o visitante que chega pelo link bate numa porta fechada.",
+      // Evidência com o dado medido, não a definição da regra: o cliente
+      // manda esta lista direto para quem cuida do site.
+      evidence: [
+        ...comErro
+          .slice(0, 10)
+          .map((u) => `${u.url} devolveu HTTP ${u.status}`),
+        ...semResposta
+          .slice(0, 5)
+          .map((u) => `${u.url} não respondeu (tempo esgotado ou DNS)`),
+      ].join(" · "),
+      fix: "Corrija o endereço, publique a página que falta ou redirecione para o destino certo — e tire do sitemap o que não deve mais existir.",
+      affectedUrls: quebradas.map((u) => u.url),
+      affectedCount: quebradas.length,
+    });
+  }
+
+  const redirecionadas = signals.urlsRedirecionadas ?? [];
+  if (redirecionadas.length > 0) {
+    add({
+      code: "URLS_REDIRECIONADAS",
+      severity: "medium",
+      category: "crawlability",
+      title: `${redirecionadas.length} ${redirecionadas.length === 1 ? "endereço anunciado redireciona" : "endereços anunciados redirecionam"}`,
+      impact:
+        "Cada salto gasta orçamento de rastreamento e dilui a força do link. O sitemap deve listar o endereço final, não o antigo.",
+      evidence: redirecionadas
+        .slice(0, 10)
+        .map((u) => `${u.url} → ${u.destino}`)
+        .join(" · "),
+      fix: "Troque no sitemap (e nos links internos) o endereço antigo pelo destino final.",
+      affectedUrls: redirecionadas.map((u) => u.url),
+      affectedCount: redirecionadas.length,
+    });
   }
 
   if (!signals.sitemapFound) {

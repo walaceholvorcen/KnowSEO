@@ -1,5 +1,6 @@
 import {
   safeFetch,
+  fetchComStatus,
   normalizeSiteUrl,
   isPublicHttpUrl,
   discoverSitemaps,
@@ -7,7 +8,12 @@ import {
 } from "@/lib/crawler";
 import { parsePage } from "./parse";
 import { runRules, computeScores } from "./rules";
-import type { Finding, PageSnapshot, SiteSignals } from "./types";
+import type {
+  Finding,
+  PageSnapshot,
+  SiteSignals,
+  UrlComProblema,
+} from "./types";
 
 const MAX_PAGES = 25;
 const CONCURRENCY = 6;
@@ -38,18 +44,44 @@ async function mapWithConcurrency<T, R>(
   return results;
 }
 
-async function fetchSnapshot(
-  url: string,
-  origin: string,
-): Promise<PageSnapshot | null> {
-  const res = await safeFetch(url);
-  if (!res) return null;
+type Leitura =
+  | { tipo: "pagina"; snapshot: PageSnapshot; redirecionou: string | null }
+  | { tipo: "quebrada"; problema: UrlComProblema }
+  | { tipo: "ignorada" };
 
-  const contentType = res.headers.get("content-type") ?? "";
-  if (!contentType.includes("text/html")) return null;
+// Uma URL pode terminar de três formas, e as três importam: virou página
+// legível, respondeu erro (ou não respondeu), ou não é HTML e sai da conta.
+// Antes as três viravam `null` e só a primeira sobrevivia.
+async function lerUrl(url: string, origin: string): Promise<Leitura> {
+  const resposta = await fetchComStatus(url);
 
-  const html = (await res.text()).slice(0, 400_000);
-  return parsePage({ url, statusCode: res.status, html, origin });
+  if (!resposta) {
+    return { tipo: "quebrada", problema: { url, status: null } };
+  }
+
+  if (!resposta.res.ok) {
+    return {
+      tipo: "quebrada",
+      problema: { url, status: resposta.status },
+    };
+  }
+
+  const contentType = resposta.res.headers.get("content-type") ?? "";
+  if (!contentType.includes("text/html")) return { tipo: "ignorada" };
+
+  const html = (await resposta.res.text()).slice(0, 400_000);
+
+  // Compara sem a barra final para não acusar redirecionamento onde só
+  // houve normalização de caminho.
+  const semBarra = (u: string) => u.replace(/\/$/, "");
+  const redirecionou =
+    semBarra(resposta.finalUrl) !== semBarra(url) ? resposta.finalUrl : null;
+
+  return {
+    tipo: "pagina",
+    redirecionou,
+    snapshot: parsePage({ url, statusCode: resposta.status, html, origin }),
+  };
 }
 
 export async function auditSite(siteUrl: string): Promise<AuditResult | null> {
@@ -71,12 +103,34 @@ export async function auditSite(siteUrl: string): Promise<AuditResult | null> {
     MAX_PAGES,
   );
 
-  const snapshots = (
-    await mapWithConcurrency(candidates, CONCURRENCY, (url) =>
-      fetchSnapshot(url, origin),
-    )
-  ).filter((p): p is PageSnapshot => p !== null);
+  const leituras = await mapWithConcurrency(candidates, CONCURRENCY, (url) =>
+    lerUrl(url, origin),
+  );
 
+  const snapshots: PageSnapshot[] = [];
+  const urlsQuebradas: UrlComProblema[] = [];
+  const urlsRedirecionadas: UrlComProblema[] = [];
+
+  for (const leitura of leituras) {
+    if (leitura.tipo === "quebrada") {
+      urlsQuebradas.push(leitura.problema);
+    } else if (leitura.tipo === "pagina") {
+      snapshots.push(leitura.snapshot);
+      if (leitura.redirecionou) {
+        // Sem o código do redirect: seguimos a cadeia, então o status que
+        // chega é o do destino. O que importa ao cliente é que a URL
+        // anunciada não é a URL final.
+        urlsRedirecionadas.push({
+          url: leitura.snapshot.url,
+          status: null,
+          destino: leitura.redirecionou,
+        });
+      }
+    }
+  }
+
+  // Site que não entregou uma página legível sequer: não há o que auditar,
+  // e devolver zero achados seria pior que devolver erro.
   if (snapshots.length === 0) return null;
 
   const signals: SiteSignals = {
@@ -87,6 +141,8 @@ export async function auditSite(siteUrl: string): Promise<AuditResult | null> {
     sitemapFound: sitemapUrls.length > 0,
     llmsTxtFound: Boolean(llmsRes),
     pages: snapshots,
+    urlsQuebradas,
+    urlsRedirecionadas,
   };
 
   const findings = runRules(signals);

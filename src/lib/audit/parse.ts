@@ -118,10 +118,13 @@ export function parsePage(params: {
 
   const titleMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
   const images = html.match(/<img[^>]*>/gi) ?? [];
-  const imagesWithoutAlt = images.filter((img) => {
-    const alt = attr(img, "alt");
-    return alt === null || alt.trim() === "";
-  }).length;
+  // `alt=""` é a marcação CORRETA de imagem decorativa em WCAG - o próprio
+  // texto de correção da regra diz isso. Contá-la como falta gerava achado
+  // falso justamente nos sites que fizeram a coisa certa. Só a ausência do
+  // atributo conta.
+  const imagesWithoutAlt = images.filter(
+    (img) => attr(img, "alt") === null,
+  ).length;
 
   const bodyMatch = html.match(/<body[^>]*>([\s\S]*)<\/body>/i);
   const bodyText = cleanText(stripTags(bodyMatch ? bodyMatch[1] : html));
