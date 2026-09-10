@@ -26,6 +26,23 @@ export function IntegrationsForm({
   const [salvando, setSalvando] = useState(false);
   const [salvo, setSalvo] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
+  const [desconectando, setDesconectando] = useState(false);
+
+  async function desconectar() {
+    if (!window.confirm("Desconectar a conta Google deste workspace?")) return;
+
+    setDesconectando(true);
+    const res = await fetch("/api/integrations/google/disconnect", {
+      method: "POST",
+    });
+    setDesconectando(false);
+
+    if (!res.ok) {
+      setErro("Não foi possível desconectar. Tente de novo.");
+      return;
+    }
+    router.refresh();
+  }
 
   // Só busca a lista de propriedades depois de conectado - antes disso a
   // chamada falharia sem token nenhum para usar.
@@ -137,13 +154,23 @@ export function IntegrationsForm({
         )}
       </div>
 
-      <button
-        onClick={salvar}
-        disabled={salvando}
-        className="rounded-lg bg-cobalto-600 px-4 py-2 text-sm font-semibold text-white hover:bg-cobalto-700 disabled:opacity-50"
-      >
-        {salvando ? "Salvando..." : salvo ? "Salvo" : "Salvar"}
-      </button>
+      <div className="flex items-center gap-3">
+        <button
+          onClick={salvar}
+          disabled={salvando}
+          className="rounded-lg bg-cobalto-600 px-4 py-2 text-sm font-semibold text-white hover:bg-cobalto-700 disabled:opacity-50"
+        >
+          {salvando ? "Salvando..." : salvo ? "Salvo" : "Salvar"}
+        </button>
+        <button
+          type="button"
+          onClick={desconectar}
+          disabled={desconectando}
+          className="ml-auto text-sm text-slate-500 dark:text-slate-400 hover:text-nota-critico disabled:opacity-50"
+        >
+          {desconectando ? "Desconectando..." : "Desconectar conta"}
+        </button>
+      </div>
 
       {erro && <p className="text-nota-critico">{erro}</p>}
     </div>
