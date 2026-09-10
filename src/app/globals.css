@@ -58,6 +58,9 @@
 
   --font-sans: var(--font-plex-sans);
   --font-display: var(--font-plex-mono);
+  /* Frase de veredito e nome próprio de destaque - papel diferente do
+     número. Ver o porquê em layout.tsx. */
+  --font-title: var(--font-plex-serif);
 }
 
 :root {

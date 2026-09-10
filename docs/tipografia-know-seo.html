@@ -1,6 +1,6 @@
 <title>Tipografia Know SEO</title>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=Instrument+Serif&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&family=Public+Sans:wght@400;500;600&family=Fraunces:opsz,wght@9..144,400;9..144,500&family=Archivo:wght@400;500;600;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Serif:wght@500;600&display=swap">
 <style>
   :root {
     --canvas: #ececE7;
@@ -14,7 +14,6 @@
     --secundario: #5a625c;
     --cobalto: #1b3fcb;
     --excelente: #1f6b45;
-    --atencao: #8a5b0f;
   }
 
   @media (prefers-color-scheme: dark) {
@@ -30,7 +29,6 @@
       --secundario: #a9afa8;
       --cobalto: #6c82f0;
       --excelente: #5fbf8d;
-      --atencao: #d9a441;
     }
   }
 
@@ -46,15 +44,13 @@
     --secundario: #a9afa8;
     --cobalto: #6c82f0;
     --excelente: #5fbf8d;
-    --atencao: #d9a441;
   }
 
   * { box-sizing: border-box; }
-
   body { background: var(--canvas); }
 
   .pagina {
-    max-width: 760px;
+    max-width: 720px;
     margin: 0 auto;
     padding: 2.5rem 1.5rem 4rem;
     font-family: ui-monospace, "SF Mono", Menlo, monospace;
@@ -71,9 +67,7 @@
     border-bottom: 1px solid var(--canvas-line);
   }
 
-  .prova {
-    margin-bottom: 3rem;
-  }
+  .prova { margin-bottom: 2.5rem; }
 
   .ficha {
     display: flex;
@@ -88,182 +82,94 @@
   }
 
   .ficha b { color: var(--label-strong); font-weight: 600; }
+  .ficha .defeito { color: #b3543f; text-transform: none; letter-spacing: 0; font-family: ui-monospace, monospace; }
 
   .tela {
     background: var(--papel);
     border: 1px solid var(--borda);
     border-radius: 12px;
-    padding: 1.75rem 1.75rem 1.5rem;
+    padding: 1.75rem;
   }
 
-  .headline {
-    font-family: var(--f-display);
-    font-weight: var(--f-display-weight, 400);
+  .veredito {
+    font-family: var(--f-titulo);
+    font-weight: var(--f-titulo-peso, 500);
     color: var(--tinta);
-    font-size: 26px;
+    font-size: 30px;
     line-height: 1.25;
     text-wrap: balance;
-    margin: 0 0 1.25rem;
-    max-width: 32ch;
+    margin: 0 0 0.6rem;
+    max-width: 30ch;
   }
 
-  .notas {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-    margin-bottom: 1.25rem;
-  }
-
-  .nota {
-    border: 1px solid var(--borda);
-    border-radius: 10px;
-    padding: 0.9rem 1rem;
-  }
-
-  .nota p {
+  .apoio {
+    font-family: 'IBM Plex Sans', ui-sans-serif, sans-serif;
+    font-size: 14px;
+    color: var(--secundario);
     margin: 0;
-    font-family: var(--f-sans);
+  }
+
+  .apoio b { color: var(--cobalto); font-weight: 500; }
+
+  .mini {
+    margin-top: 1.25rem;
+    padding-top: 1.1rem;
+    border-top: 1px solid var(--borda);
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+
+  .mini p {
+    margin: 0;
+    font-family: 'IBM Plex Sans', ui-sans-serif, sans-serif;
     font-size: 13px;
     color: var(--secundario);
   }
 
-  .nota .valor {
-    font-family: var(--f-mono, var(--f-display));
+  .mini .valor {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
     font-variant-numeric: tabular-nums;
+    font-weight: 600;
     color: var(--tinta);
-    font-size: 34px;
-    line-height: 1;
-    margin: 0.35rem 0 0.3rem;
-    display: flex;
-    align-items: baseline;
-    gap: 4px;
+    font-size: 22px;
   }
-
-  .nota .valor span { font-size: 13px; color: var(--secundario); font-weight: 400; }
-
-  .nota .faixa { font-size: 13px; }
-  .faixa.bom { color: var(--excelente); }
-  .faixa.atencao { color: var(--atencao); }
-
-  .nav {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem 1.1rem;
-    padding-top: 1rem;
-    border-top: 1px solid var(--borda);
-  }
-
-  .nav span {
-    font-family: var(--f-sans);
-    font-weight: 500;
-    font-size: 14px;
-    color: var(--secundario);
-  }
-
-  .nav span.ativo { color: var(--cobalto); }
 </style>
 
 <div class="pagina">
   <p class="intro">
-    Prova tipográfica — a mesma tela real da Auditoria, recriada quatro
-    vezes, trocando só a fonte. Papel, tinta e cobalto são os tokens de
-    verdade do Know SEO; o que muda em cada prova é a fonte do corpo, do
-    número e do menu.
+    A frase de veredito e o número da nota são papéis diferentes — o
+    primeiro é a peça de atenção da tela, o segundo é dado lido como
+    instrumento. Usar a mesma fonte mono nos dois (como estava) funciona
+    para "88", mas quebra o ritmo de uma frase inteira. Sem sair da família
+    Plex: Sans para interface, Mono só para o número, e agora um terceiro
+    papel para o veredito.
   </p>
 
   <div class="prova">
-    <p class="ficha"><b>Atual</b> — Instrument Sans + Instrument Serif</p>
-    <div class="tela" style="--f-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif; --f-display: 'Instrument Serif', Georgia, serif;">
-      <p class="headline">O site tira 55 de 100 no Google e 88 de 100 na prontidão para IA.</p>
-      <div class="notas">
-        <div class="nota">
-          <p>Nota Google</p>
-          <p class="valor">55<span>de 100</span></p>
-          <p class="faixa atencao">Precisa atenção</p>
-        </div>
-        <div class="nota">
-          <p>Nota IA</p>
-          <p class="valor">88<span>de 100</span></p>
-          <p class="faixa bom">Bom</p>
-        </div>
-      </div>
-      <div class="nav" style="--f-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;">
-        <span class="ativo">Auditoria - SEO</span>
-        <span>Radar GEO</span>
-        <span>Relatórios</span>
-      </div>
+    <p class="ficha"><b>Como estava</b> <span class="defeito">— Plex Mono na frase inteira, o defeito que você notou</span></p>
+    <div class="tela" style="--f-titulo: 'IBM Plex Mono', ui-monospace, monospace; --f-titulo-peso: 600;">
+      <p class="veredito">Em 15 perguntas do seu setor, a IA não citou você nenhuma vez.</p>
+      <p class="apoio">No seu lugar apareceu <b>agencies.semrush.com</b>, 3 vezes.</p>
+      <div class="mini"><p>Citações</p><span class="valor">0</span><p>de 15</p></div>
     </div>
   </div>
 
   <div class="prova">
-    <p class="ficha"><b>Instrumento</b> — IBM Plex Sans + IBM Plex Mono</p>
-    <div class="tela" style="--f-sans: 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif; --f-display: 'IBM Plex Sans', ui-sans-serif, sans-serif; --f-display-weight: 500; --f-mono: 'IBM Plex Mono', ui-monospace, monospace;">
-      <p class="headline">O site tira 55 de 100 no Google e 88 de 100 na prontidão para IA.</p>
-      <div class="notas">
-        <div class="nota">
-          <p>Nota Google</p>
-          <p class="valor">55<span>de 100</span></p>
-          <p class="faixa atencao">Precisa atenção</p>
-        </div>
-        <div class="nota">
-          <p>Nota IA</p>
-          <p class="valor">88<span>de 100</span></p>
-          <p class="faixa bom">Bom</p>
-        </div>
-      </div>
-      <div class="nav" style="--f-sans: 'IBM Plex Sans', ui-sans-serif, sans-serif;">
-        <span class="ativo">Auditoria - SEO</span>
-        <span>Radar GEO</span>
-        <span>Relatórios</span>
-      </div>
+    <p class="ficha"><b>Proposta</b> — IBM Plex Serif, semibold</p>
+    <div class="tela" style="--f-titulo: 'IBM Plex Serif', Georgia, serif; --f-titulo-peso: 600;">
+      <p class="veredito">Em 15 perguntas do seu setor, a IA não citou você nenhuma vez.</p>
+      <p class="apoio">No seu lugar apareceu <b>agencies.semrush.com</b>, 3 vezes.</p>
+      <div class="mini"><p>Citações</p><span class="valor">0</span><p>de 15</p></div>
     </div>
   </div>
 
   <div class="prova">
-    <p class="ficha"><b>Editorial contida</b> — Public Sans + Fraunces</p>
-    <div class="tela" style="--f-sans: 'Public Sans', ui-sans-serif, system-ui, sans-serif; --f-display: 'Fraunces', Georgia, serif;">
-      <p class="headline">O site tira 55 de 100 no Google e 88 de 100 na prontidão para IA.</p>
-      <div class="notas">
-        <div class="nota">
-          <p>Nota Google</p>
-          <p class="valor">55<span>de 100</span></p>
-          <p class="faixa atencao">Precisa atenção</p>
-        </div>
-        <div class="nota">
-          <p>Nota IA</p>
-          <p class="valor">88<span>de 100</span></p>
-          <p class="faixa bom">Bom</p>
-        </div>
-      </div>
-      <div class="nav" style="--f-sans: 'Public Sans', ui-sans-serif, sans-serif;">
-        <span class="ativo">Auditoria - SEO</span>
-        <span>Radar GEO</span>
-        <span>Relatórios</span>
-      </div>
-    </div>
-  </div>
-
-  <div class="prova">
-    <p class="ficha"><b>Sinal único</b> — Archivo, uma família só</p>
-    <div class="tela" style="--f-sans: 'Archivo', ui-sans-serif, system-ui, sans-serif; --f-display: 'Archivo', ui-sans-serif, sans-serif; --f-display-weight: 800;">
-      <p class="headline">O site tira 55 de 100 no Google e 88 de 100 na prontidão para IA.</p>
-      <div class="notas">
-        <div class="nota">
-          <p>Nota Google</p>
-          <p class="valor">55<span>de 100</span></p>
-          <p class="faixa atencao">Precisa atenção</p>
-        </div>
-        <div class="nota">
-          <p>Nota IA</p>
-          <p class="valor">88<span>de 100</span></p>
-          <p class="faixa bom">Bom</p>
-        </div>
-      </div>
-      <div class="nav" style="--f-sans: 'Archivo', ui-sans-serif, sans-serif;">
-        <span class="ativo">Auditoria - SEO</span>
-        <span>Radar GEO</span>
-        <span>Relatórios</span>
-      </div>
+    <p class="ficha"><b>Alternativa</b> — IBM Plex Sans, peso 700, mesma família da interface</p>
+    <div class="tela" style="--f-titulo: 'IBM Plex Sans', ui-sans-serif, sans-serif; --f-titulo-peso: 700;">
+      <p class="veredito">Em 15 perguntas do seu setor, a IA não citou você nenhuma vez.</p>
+      <p class="apoio">No seu lugar apareceu <b>agencies.semrush.com</b>, 3 vezes.</p>
+      <div class="mini"><p>Citações</p><span class="valor">0</span><p>de 15</p></div>
     </div>
   </div>
 </div>

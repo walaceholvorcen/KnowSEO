@@ -30,7 +30,7 @@ export function Lede({
 }) {
   return (
     <header className="mb-10 border-b border-slate-200 dark:border-slate-800 pb-8">
-      <p className="max-w-[36ch] font-display text-3xl leading-[1.25] text-slate-900 dark:text-slate-100 sm:text-4xl">
+      <p className="max-w-[36ch] font-title text-3xl leading-[1.25] text-slate-900 dark:text-slate-100 sm:text-4xl">
         {children}
       </p>
       {apoio && (
