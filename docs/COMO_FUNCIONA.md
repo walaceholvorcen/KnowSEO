@@ -67,6 +67,45 @@ da Anthropic configurada.
 
 ---
 
+## 2b. Análise de Mercado — a etapa antes da pauta
+
+**Jornada:**
+1. Você aponta de 2 a 4 concorrentes diretos. A tela já sugere os domínios
+   que o Radar GEO viu sendo citados no lugar da sua marca.
+2. O sistema lê o sitemap público de cada um e pega o título das primeiras
+   60 páginas — o mesmo crawler da linkagem interna, sem login e sem API.
+3. As suas páginas não são rastreadas de novo: reaproveita o que a
+   linkagem interna já leu.
+4. Extrai os temas de cada título (pares de palavras, descartando palavras
+   vazias) e conta quantos artigos cada lado publicou sobre cada tema.
+5. Se o Search Console estiver conectado, soma uma segunda camada: termos
+   em que o Google já mostra o seu site.
+
+**O que a tela mostra:**
+- **Onde você já quase ganha** — termos em que você aparece na página 2
+  (tem demanda e relevância, falta empurrão) ou aparece na primeira página
+  e ninguém clica (o problema é o título, não o conteúdo).
+- **Onde o mercado escreve** — uma barra por tema com quantos artigos são
+  seus e quantos são deles, mais os títulos reais que eles publicaram.
+- Cada tema tem "Gerar pauta", que leva o tema e os exemplos reais para a
+  Estratégia.
+
+**De onde vem o dado:** cobertura é lida ao vivo do sitemap dos
+concorrentes; a camada de busca é do Search Console. **Nenhuma IA no
+cálculo** — a IA só entra depois, quando você pede a pauta.
+
+**A limitação que precisa ser dita ao cliente:** isto conta **artigos
+publicados**, não volume de busca. Mostra o que o mercado achou que valia
+escrever — bom para decidir pauta, e honesto porque não inventa número.
+Volume de busca real só com a DataForSEO ligada.
+
+**O que falta para evoluir:**
+- Histórico entre rodadas (a lacuna diminuiu depois que publicamos?).
+- Avisar quando o concorrente apontado é portal de notícia, que polui os
+  temas.
+
+---
+
 ## 3. Estratégia — de onde vêm as pautas
 
 **Jornada:**

@@ -10,7 +10,10 @@ import type { Blog, BrandDna, Keyword } from "@/types";
 
 export async function POST(request: Request) {
   const { supabase, workspace } = await requireUserAndWorkspace();
-  const { blogId } = await request.json();
+  const { blogId, temaId } = (await request.json()) as {
+    blogId: string;
+    temaId?: number;
+  };
 
   if (!isAiConfigured()) {
     return NextResponse.json(
@@ -45,12 +48,26 @@ export async function POST(request: Request) {
     (k) => k.keyword,
   ) ?? [];
 
+  // Pauta pedida a partir de um tema da Análise de Mercado. A RLS de
+  // market_themes já limita a leitura aos blogs do workspace, então um id de
+  // outra conta simplesmente não devolve linha.
+  let tema: { termo: string; exemplos: string[] } | null = null;
+  if (temaId) {
+    const { data } = await supabase
+      .from("market_themes")
+      .select("termo,exemplos")
+      .eq("id", temaId)
+      .maybeSingle();
+    tema = (data as { termo: string; exemplos: string[] } | null) ?? null;
+  }
+
   let ideas;
   try {
     ideas = await generateKeywordIdeas({
       blog: blog as Blog,
       dna: dna as BrandDna | null,
       existingKeywords,
+      tema,
     });
   } catch (err) {
     console.error("[keywords/suggest] falha na IA", err);

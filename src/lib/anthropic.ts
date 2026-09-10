@@ -106,9 +106,22 @@ export async function generateKeywordIdeas(params: {
   dna: BrandDna | null;
   existingKeywords: string[];
   count?: number;
+  /** Tema vindo da Análise de Mercado, com títulos reais que os
+   *  concorrentes publicaram sobre ele. Quando existe, a sugestão deixa de
+   *  ser palpite no vácuo e passa a responder a uma lacuna medida. */
+  tema?: { termo: string; exemplos: string[] } | null;
 }): Promise<KeywordIdea[]> {
   const client = getAnthropicClient();
-  const { blog, dna, existingKeywords, count = 8 } = params;
+  const { blog, dna, existingKeywords, count = 8, tema = null } = params;
+
+  const foco = tema
+    ? `\n\nEste pedido nace de un análisis de mercado real: los competidores de esta marca ya publican sobre "${tema.termo}" y la marca no tiene nada. Enfoca TODAS las sugerencias en ese territorio, con ángulos que la marca pueda ganar.
+${
+  tema.exemplos.length
+    ? `\nTítulos que los competidores ya publicaron sobre el tema (no los copies - encuentra el ángulo que falta):\n${tema.exemplos.map((e) => `- ${e}`).join("\n")}`
+    : ""
+}`
+    : "";
 
   const response = await client.messages.parse({
     model: MODEL,
@@ -132,7 +145,7 @@ export async function generateKeywordIdeas(params: {
 Ya existen (o fueron descartadas) estas keywords - NO las repitas ni sugieras variantes triviales de ellas:
 ${existingKeywords.length ? existingKeywords.map((k) => `- ${k}`).join("\n") : "(ninguna todavía)"}
 
-Prioriza keywords donde un artículo bien escrito pueda razonablemente competir (evita términos ultra-genéricos dominados por marcas globales).`,
+Prioriza keywords donde un artículo bien escrito pueda razonablemente competir (evita términos ultra-genéricos dominados por marcas globales).${foco}`,
       },
     ],
   });

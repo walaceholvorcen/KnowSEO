@@ -15,12 +15,16 @@ import {
   Stethoscope,
   MapPin,
   Lock,
+  Radar,
 } from "lucide-react";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Início", icon: LayoutGrid },
   { href: "/contents", label: "Conteúdos", icon: FileText },
   { href: "/audit", label: "Auditoria - SEO", icon: Stethoscope },
+  // Antes da Estratégia de propósito: a ordem da barra é a ordem do
+  // trabalho. Olhar o mercado vem antes de escolher pauta.
+  { href: "/market", label: "Mercado", icon: Radar },
   { href: "/strategy", label: "Estratégia", icon: Search },
   { href: "/visibility", label: "Radar GEO", icon: Bot },
   // Cadeado: recurso construído e pronto, guardado como upsell futuro em

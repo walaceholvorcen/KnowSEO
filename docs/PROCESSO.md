@@ -601,3 +601,93 @@ Configurações) usa o mesmo vocabulário de `src/components/lede.tsx`:
 `Lede` (abertura com veredito), `Linha` (item de lista com filete),
 `Secao` (rótulo de subseção), `NotaCard` (nota de 0-100 com faixa). Tela
 nova deve usar essas peças antes de inventar layout próprio.
+
+---
+
+## 18. Análise de Mercado — a etapa que faltava antes da pauta
+
+Pedido do cliente: "antes de fazer os blogs, fazer uma análise de mercado e
+encontrar as maiores oportunidades, até visualmente, para agregar valor
+para quem assinou o plano de SEO".
+
+### A decisão que definiu o módulo: não inventar número
+
+A Estratégia já sugeria pauta, mas `difficulty` e `opportunity_score` são
+**opinião do modelo**, não dado de mercado (seção 14 e COMO_FUNCIONA). O
+caminho fácil aqui era montar um quadrante bonito com esses campos e
+chamar de análise de mercado. Isso seria um painel que mente — e num
+produto que vende prova, o cliente descobre no primeiro cruzamento com
+uma ferramenta de verdade.
+
+Então o módulo só usa o que dá para medir sem comprar dado:
+
+| Fonte | O que mede | Real? |
+|---|---|---|
+| Sitemap público dos concorrentes | quantos artigos cada um publicou por tema | sim, lido ao vivo |
+| Search Console do cliente | impressão, clique e posição por termo | sim, dado do Google |
+| `internal_links` do próprio cliente | o que ele já cobre | sim, do crawl que já existia |
+
+**Volume de busca continua não existindo** enquanto a DataForSEO não for
+ligada. A interface fala em "artigos publicados", nunca em "buscas" — a
+regra está escrita no topo de `src/lib/mercado/temas.ts` porque é o tipo
+de precisão que se perde numa refatoração distraída.
+
+### Como o tema é extraído (tudo cálculo, zero IA)
+
+Bigramas dos `<title>`, sem palavras vazias (pt + es). Bigrama em vez de
+palavra solta porque "google ads" é tema e "google" é ruído.
+
+Dois defeitos apareceram só ao rodar contra sites reais, e os dois viraram
+teste:
+
+1. **Assinatura variável no fim do título.** A remoção de boilerplate
+   original casava a cauda inteira, e um concorrente real assinava
+   "| Ranking comparado", "| Ranking actualizado", "| Ranking 2026" —
+   caudas diferentes, mesma assinatura. Resultado: "ranking comparado"
+   subia como tema de mercado. Agora a contagem é **por palavra da cauda**:
+   "ranking" se revela repetida e cai.
+2. **Um site sozinho abafando o mercado.** Um concorrente tinha 22 páginas
+   de serviço com "agências SEO" e isso ficava em primeiro lugar. A
+   ordenação passou a ser **largura antes de volume**: um tema que três
+   concorrentes diferentes cobrem é evidência de demanda; um tema que só um
+   cobre é o posicionamento dele — e a tela diz isso na própria linha.
+
+Também não existe "oceano azul" aqui: tema que nenhum concorrente cobre
+não entra. Cobertura zero num crawl não prova demanda nenhuma, prova só
+que ninguém escreveu.
+
+### A camada do Search Console
+
+Duas situações de leitura direta, sem modelo no meio:
+
+- **Página 2** (posição 11–20, ≥10 impressões): tem demanda, tem
+  relevância reconhecida, e ninguém clica porque ninguém rola até lá.
+- **Sem clique** (posição ≤10, ≥30 impressões, CTR <1%): o problema não é
+  o conteúdo, é o título e a descrição no resultado.
+
+Essa camada é extra, não requisito: se o token do Google falhar, o erro é
+engolido e a análise de cobertura ainda vale.
+
+### Detalhes que valem lembrar
+
+- Os concorrentes sugeridos vêm do **Radar GEO** — domínios realmente
+  citados no lugar da marca. Melhor ponto de partida que uma caixa vazia.
+- As páginas do cliente são reaproveitadas de `internal_links` em vez de
+  rastrear o mesmo site duas vezes; só cai no crawl ao vivo se aquela
+  etapa nunca rodou.
+- A barra de cada tema é normalizada pelo **maior total da lista**, não
+  por linha: normalizada por linha, um tema com 2 artigos pareceria do
+  mesmo tamanho de um com 22.
+- "Gerar pauta" leva o tema e os títulos reais dos concorrentes para o
+  prompt da Estratégia — a sugestão deixa de ser palpite no vácuo e passa
+  a responder a uma lacuna medida.
+- Medido em produção: 3 concorrentes de porte médio, ~18s.
+- `Mercado` entra na barra lateral **antes** de Estratégia: a ordem da
+  barra é a ordem do trabalho.
+
+### Limite conhecido
+
+Portal de notícia como concorrente polui o resultado (temas como "google
+wallet", "iab spain" apareceram ao testar com um). É problema de escolha
+de concorrente, não do cálculo — a tela orienta a apontar concorrentes
+diretos.
