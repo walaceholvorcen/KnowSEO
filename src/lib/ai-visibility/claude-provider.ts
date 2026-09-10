@@ -12,6 +12,7 @@ const MODEL = "claude-opus-5";
 
 export class ClaudeProvider implements AiProvider {
   name = "claude";
+  label = "Claude";
 
   isConfigured() {
     const key = process.env.ANTHROPIC_API_KEY;

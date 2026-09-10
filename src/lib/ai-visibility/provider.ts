@@ -25,7 +25,10 @@ export interface AiAnswer {
 }
 
 export interface AiProvider {
+  /** Identificador gravado em cada checagem ('claude', 'chatgpt', ...). */
   name: string;
+  /** Como o motor aparece para o cliente. */
+  label: string;
   isConfigured(): boolean;
   ask(question: string): Promise<AiAnswer>;
 }

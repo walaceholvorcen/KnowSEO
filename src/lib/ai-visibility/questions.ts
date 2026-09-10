@@ -24,7 +24,9 @@ export async function generateProbeQuestions(params: {
   dna: BrandDna | null;
   count?: number;
 }) {
-  const { blog, dna, count = 15 } = params;
+  // Dez: com três motores por pergunta, cada pergunta a mais custa três
+  // consultas com busca na web. Ver MAX_PERGUNTAS em runner.ts.
+  const { blog, dna, count = 10 } = params;
   const client = new Anthropic();
 
   const response = await client.messages.parse({

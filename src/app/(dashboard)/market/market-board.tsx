@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChevronDown, ChevronRight, Plus, Radar, X } from "lucide-react";
 import { Lede, Linha, Secao } from "@/components/lede";
@@ -263,12 +264,29 @@ export function MarketBoard({
         </>
       )}
 
-      {analise?.status === "done" && !analise.gsc_conectado && (
+      {/* Aparece antes da primeira análise também: é a camada de dado real
+          do Google, e o cliente precisa saber que ela existe antes de rodar,
+          não descobrir depois que faltou. */}
+      {!gscPronto ? (
         <p className="mt-8 rounded-lg border border-slate-200 dark:border-slate-800 px-4 py-3 text-sm text-slate-600 dark:text-slate-400">
-          {gscPronto
-            ? "O Search Console foi conectado depois desta análise. Refaça para ver também os termos em que você já aparece."
-            : "Conecte o Search Console em Configurações › Integrações para ver, além disto, os termos em que o Google já mostra o seu site."}
+          <Link
+            href="/settings/integrations"
+            className="font-medium text-cobalto-600 dark:text-cobalto-400 hover:underline"
+          >
+            Conecte o Search Console
+          </Link>{" "}
+          para ver, além da cobertura dos concorrentes, os termos em que o
+          Google já mostra o seu site — e onde você está a um passo da
+          primeira página.
         </p>
+      ) : (
+        analise?.status === "done" &&
+        !analise.gsc_conectado && (
+          <p className="mt-8 rounded-lg border border-slate-200 dark:border-slate-800 px-4 py-3 text-sm text-slate-600 dark:text-slate-400">
+            O Search Console foi conectado depois desta análise. Refaça para
+            ver também os termos em que você já aparece.
+          </p>
+        )
       )}
 
       {/* Cobertura de conteúdo ------------------------------------------ */}

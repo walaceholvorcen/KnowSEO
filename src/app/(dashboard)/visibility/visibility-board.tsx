@@ -1,9 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Bot, Check, X, Play, Sparkles } from "lucide-react";
 import { Lede, Linha, Secao } from "@/components/lede";
+import { cn } from "@/lib/utils";
+import {
+  ROTULO_MOTOR,
+  perguntasComCitacao,
+  perguntasDaRodada,
+  placarPorMotor,
+} from "@/lib/ai-visibility/resumo";
 import type { AiQuery, AiVisibilityCheck } from "@/types";
 
 const INTENT_LABEL: Record<string, string> = {
@@ -13,10 +20,22 @@ const INTENT_LABEL: Record<string, string> = {
   problem: "Problema",
 };
 
+// Os três assistentes que o produto sabe consultar, sempre na mesma ordem.
+// Os que ainda não têm chave aparecem apagados: o cliente vê onde a medição
+// existe e onde ainda não chega, em vez de achar que "a IA" é um lugar só.
+const TODOS_OS_MOTORES = ["chatgpt", "perplexity", "claude"];
+
+export interface RodadaResumo {
+  id: string;
+  status: "running" | "done" | "error";
+  total: number;
+  concluidas: number;
+  error_message: string | null;
+}
+
 // Chave da rodada. O `run_id` é a resposta certa; a data existe só para as
 // checagens gravadas antes de ele existir. Agrupar por dia fundia duas
-// análises do mesmo dia num ponto só - "15 perguntas" virava "30" - e partia
-// em dois uma rodada que atravessasse a meia-noite.
+// análises do mesmo dia num ponto só.
 function chaveDaRodada(c: AiVisibilityCheck): string {
   return c.run_id ?? c.checked_at.slice(0, 10);
 }
@@ -36,8 +55,6 @@ function buildTimeline(checks: AiVisibilityCheck[]) {
     };
     entry.total++;
     if (c.cited) entry.cited++;
-    // A rodada é datada pela checagem mais antiga dela, para o eixo do
-    // gráfico não pular quando a análise atravessa a meia-noite.
     if (c.checked_at < entry.quando) entry.quando = c.checked_at;
     porRodada.set(chave, entry);
   }
@@ -52,29 +69,98 @@ function buildTimeline(checks: AiVisibilityCheck[]) {
     .slice(-12);
 }
 
+function listaDeMotores(nomes: string[]): string {
+  const rotulos = nomes.map((n) => ROTULO_MOTOR[n] ?? n);
+  if (rotulos.length <= 1) return rotulos.join("");
+  return `${rotulos.slice(0, -1).join(", ")} e ${rotulos[rotulos.length - 1]}`;
+}
+
 export function VisibilityBoard({
   blogId,
   queries,
   checks,
+  rodada,
+  motores,
 }: {
   blogId: string;
   queries: AiQuery[];
   checks: AiVisibilityCheck[];
+  rodada: RodadaResumo | null;
+  motores: string[];
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState<"questions" | "run" | null>(null);
   const [gerando, setGerando] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(
+    rodada?.status === "error" ? rodada.error_message : null,
+  );
   const [aberta, setAberta] = useState<string | null>(null);
+
+  // Rodada acompanhada pela tela. Nasce do servidor quando o cliente volta
+  // no meio de uma análise - é o que faz a tela reabrir em "12 de 30" em vez
+  // de mostrar um botão parado convidando a recomeçar.
+  const [runAtivo, setRunAtivo] = useState<string | null>(
+    rodada?.status === "running" ? rodada.id : null,
+  );
+  const [progresso, setProgresso] = useState({
+    concluidas: rodada?.status === "running" ? rodada.concluidas : 0,
+    total: rodada?.status === "running" ? rodada.total : 0,
+  });
+
+  useEffect(() => {
+    if (!runAtivo) return;
+    let ultimo = 0;
+
+    const timer = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/ai-visibility/status?runId=${runAtivo}`);
+        if (!res.ok) return;
+        const data = (await res.json()) as {
+          status: string;
+          total: number;
+          concluidas: number;
+          error_message: string | null;
+        };
+
+        if (data.status !== "running") {
+          clearInterval(timer);
+          setRunAtivo(null);
+          if (data.status === "error") {
+            setError(data.error_message ?? "A análise falhou.");
+          }
+          router.refresh();
+          return;
+        }
+
+        setProgresso({ concluidas: data.concluidas, total: data.total });
+        // As respostas aparecem conforme chegam, sem esperar a rodada toda.
+        if (data.concluidas > ultimo) {
+          ultimo = data.concluidas;
+          router.refresh();
+        }
+      } catch {
+        // Rede oscilou: o próximo ciclo tenta de novo. A análise não depende
+        // desta tela, então perder uma consulta de progresso não perde nada.
+      }
+    }, 3000);
+
+    return () => clearInterval(timer);
+  }, [runAtivo, router]);
 
   const latestRun = checks[0] ? chaveDaRodada(checks[0]) : null;
   const latest = checks.filter((c) => chaveDaRodada(c) === latestRun);
+
+  const placar = placarPorMotor(latest);
+  const porMotor = new Map(placar.map((p) => [p.provider, p]));
+  const perguntasMedidas = perguntasDaRodada(latest);
+  const perguntasCitadas = perguntasComCitacao(latest);
+
   const score = latest.length
     ? Math.round((latest.filter((c) => c.cited).length / latest.length) * 100)
     : null;
-
   const timeline = buildTimeline(checks);
-  const previous = timeline.length > 1 ? timeline[timeline.length - 2].score : null;
+  const previous =
+    timeline.length > 1 ? timeline[timeline.length - 2].score : null;
   const delta = score !== null && previous !== null ? score - previous : null;
 
   function contar(pegar: (c: AiVisibilityCheck) => string[]) {
@@ -90,18 +176,41 @@ export function VisibilityBoard({
   const topCompetitors = contar((c) => c.competitors);
   const topDirectories = contar((c) => c.directories ?? []);
 
-  const latestByQuery = new Map<string, AiVisibilityCheck>();
-  for (const c of checks) {
-    if (!latestByQuery.has(c.query_id)) latestByQuery.set(c.query_id, c);
+  const porPergunta = new Map<string, AiVisibilityCheck[]>();
+  for (const c of latest) {
+    const lista = porPergunta.get(c.query_id) ?? [];
+    lista.push(c);
+    porPergunta.set(c.query_id, lista);
   }
 
-  async function call(endpoint: string, kind: "questions" | "run") {
-    setBusy(kind);
+  async function analisar() {
+    setBusy("run");
     setError(null);
-    // Sem try/catch, uma função que estourasse o tempo limite deixava o
-    // botão preso em "Analisando..." até o cliente recarregar a página.
     try {
-      const res = await fetch(`/api/ai-visibility/${endpoint}`, {
+      const res = await fetch("/api/ai-visibility/run", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ blogId }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error ?? "Algo deu errado. Tente de novo.");
+        return;
+      }
+      setProgresso({ concluidas: 0, total: data.total ?? 0 });
+      setRunAtivo(data.runId);
+    } catch {
+      setError("Não foi possível iniciar a análise agora. Tente de novo.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function gerarPerguntas() {
+    setBusy("questions");
+    setError(null);
+    try {
+      const res = await fetch("/api/ai-visibility/questions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ blogId }),
@@ -110,17 +219,14 @@ export function VisibilityBoard({
       if (!res.ok) setError(data.error ?? "Algo deu errado. Tente de novo.");
       else router.refresh();
     } catch {
-      setError(
-        "A análise demorou demais ou a conexão caiu. As perguntas já respondidas foram salvas; rode de novo para completar.",
-      );
+      setError("Não foi possível gerar as perguntas agora.");
     } finally {
       setBusy(null);
     }
   }
 
-  // O laço que faltava: a pergunta perdida vira pauta. Isto é o que nenhuma
-  // ferramenta de GEO faz - elas medem e param aí; aqui o módulo seguinte
-  // escreve a resposta.
+  // O laço que faltava: a pergunta perdida vira pauta. Ferramentas de GEO
+  // medem e param aí; aqui o módulo seguinte escreve a resposta.
   async function responderComArtigo(pergunta: string) {
     setGerando(pergunta);
     setError(null);
@@ -143,41 +249,40 @@ export function VisibilityBoard({
     }
   }
 
-  const citadas = latest.filter((c) => c.cited).length;
   const achadoSemCitar = latest.filter(
     (c) => !c.cited && c.found_in_search,
   ).length;
   const [primeiroRival, vezesRival] = topCompetitors[0] ?? [null, 0];
+  const motoresMedidos = placar.map((p) => p.provider);
 
-  // O motor medido, dito com todas as letras. A tela já afirmou "quando
-  // alguém pergunta ao ChatGPT" enquanto media o Claude - afirmação falsa
-  // numa tela que serve de prova comercial.
-  const MOTOR: Record<string, string> = { claude: "Claude" };
-  const motor = MOTOR[latest[0]?.provider ?? ""] ?? latest[0]?.provider ?? null;
-
-  // A frase que o cliente manda para o chefe. O número sozinho ("0%") não
-  // diz nada; quem a IA cita no lugar dele, sim.
   const veredito =
     queries.length === 0
       ? "Ninguém sabe ainda se a IA cita você. Gere as perguntas que um cliente faria antes de contratar."
       : latest.length === 0
-        ? `${queries.length} perguntas prontas para consultar. Falta rodar a primeira análise.`
-        : citadas === 0
-          ? `Em ${latest.length} perguntas do seu setor, a IA não citou você nenhuma vez.`
-          : `A IA citou você em ${citadas} das ${latest.length} perguntas do seu setor.`;
+        ? runAtivo
+          ? "Consultando os assistentes de IA. As primeiras respostas aparecem em instantes."
+          : `${queries.length} perguntas prontas para consultar. Falta rodar a primeira análise.`
+        : perguntasCitadas.size === 0
+          ? `Em ${perguntasMedidas.size} perguntas do seu setor, nenhum assistente de IA citou você.`
+          : `Você apareceu em ${perguntasCitadas.size} das ${perguntasMedidas.size} perguntas do seu setor.`;
 
-  const apoio = !motor ? (
-    "Perguntamos a um assistente de IA com busca na web ativa o que um cliente perguntaria antes de contratar."
-  ) : (
-    <>
-      {primeiroRival && citadas < latest.length
-        ? `No seu lugar apareceu ${primeiroRival}, ${vezesRival} ${vezesRival === 1 ? "vez" : "vezes"}. `
-        : ""}
-      {achadoSemCitar > 0 &&
-        `Em ${achadoSemCitar} ${achadoSemCitar === 1 ? "pergunta a busca encontrou" : "perguntas a busca encontrou"} o seu site e a IA escolheu outro. `}
-      Medido no {motor}, com busca na web ativa.
-    </>
-  );
+  const apoio =
+    latest.length === 0 ? (
+      `A análise pergunta a ${listaDeMotores(motores.length ? motores : ["claude"])}, com busca na web ativa, o que um comprador perguntaria antes de contratar.`
+    ) : (
+      <>
+        {primeiroRival && perguntasCitadas.size < perguntasMedidas.size
+          ? `No seu lugar apareceu ${primeiroRival}, ${vezesRival} ${vezesRival === 1 ? "vez" : "vezes"}. `
+          : ""}
+        {achadoSemCitar > 0 &&
+          `Em ${achadoSemCitar} ${achadoSemCitar === 1 ? "resposta a busca encontrou" : "respostas a busca encontrou"} o seu site e a IA escolheu outro. `}
+        Medido em {listaDeMotores(motoresMedidos)}, com busca na web ativa.
+      </>
+    );
+
+  const pct = progresso.total
+    ? Math.min(100, Math.round((progresso.concluidas / progresso.total) * 100))
+    : 0;
 
   return (
     <div className="mx-auto max-w-3xl px-8 py-12">
@@ -186,17 +291,17 @@ export function VisibilityBoard({
         acao={
           <>
             <button
-              onClick={() => call("run", "run")}
-              disabled={busy !== null || queries.length === 0}
-              className="flex items-center gap-1.5 rounded-lg bg-cobalto-600 px-4 py-2 font-semibold text-white hover:bg-cobalto-700 disabled:opacity-50"
+              onClick={analisar}
+              disabled={busy !== null || runAtivo !== null || queries.length === 0}
+              className="flex items-center gap-1.5 rounded-lg bg-cobalto-600 px-4 py-2 text-sm font-semibold text-white hover:bg-cobalto-700 disabled:opacity-50"
             >
               <Play size={15} />
-              {busy === "run" ? "Analisando..." : "Analisar agora"}
+              {runAtivo ? "Analisando..." : busy === "run" ? "Iniciando..." : "Analisar agora"}
             </button>
             <button
-              onClick={() => call("questions", "questions")}
-              disabled={busy !== null}
-              className="flex items-center gap-1.5 rounded-lg border border-slate-300 dark:border-slate-700 px-4 py-2 font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-50"
+              onClick={gerarPerguntas}
+              disabled={busy !== null || runAtivo !== null}
+              className="flex items-center gap-1.5 rounded-lg border border-slate-300 dark:border-slate-700 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-50"
             >
               <Sparkles size={15} />
               {busy === "questions" ? "Gerando..." : "Gerar perguntas"}
@@ -207,18 +312,80 @@ export function VisibilityBoard({
         {veredito}
       </Lede>
 
+      {runAtivo && (
+        <div className="mb-8" role="status" aria-live="polite">
+          <div className="flex items-baseline justify-between gap-4 text-sm">
+            <span className="text-slate-700 dark:text-slate-300">
+              Consultando {listaDeMotores(motores)}
+            </span>
+            <span className="tabular font-display text-slate-900 dark:text-slate-100">
+              {progresso.concluidas} de {progresso.total}
+            </span>
+          </div>
+          <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
+            <div
+              className="h-full rounded-full bg-cobalto-600 transition-[width] duration-500 motion-reduce:transition-none"
+              style={{ width: `${Math.max(pct, 3)}%` }}
+            />
+          </div>
+          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+            Pode sair desta tela: a análise continua sozinha e as respostas
+            aparecem aqui conforme chegam.
+          </p>
+        </div>
+      )}
+
       {error && (
-        <p className="mb-8 rounded-lg bg-slate-100 dark:bg-slate-800 px-4 py-3 text-nota-critico">
+        <p className="mb-8 rounded-lg bg-slate-100 dark:bg-slate-800 px-4 py-3 text-sm text-nota-critico">
           {error}
         </p>
+      )}
+
+      {/* Um placar por assistente. A divergência entre eles é a informação:
+          cada um busca num índice diferente, e aparecer no Perplexity e
+          sumir no ChatGPT é diagnóstico, não erro de medição. */}
+      {latest.length > 0 && (
+        <dl className="mb-2 grid grid-cols-3 divide-x divide-slate-200 dark:divide-slate-800 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+          {TODOS_OS_MOTORES.map((nome) => {
+            const p = porMotor.get(nome);
+            const ligado = motores.includes(nome);
+            return (
+              <div key={nome} className="px-4 py-3">
+                <dt className="text-sm text-slate-500 dark:text-slate-400">
+                  {ROTULO_MOTOR[nome]}
+                </dt>
+                <dd
+                  className={cn(
+                    "mt-1",
+                    p ? "text-slate-900 dark:text-slate-100" : "text-slate-400 dark:text-slate-600",
+                  )}
+                >
+                  {p ? (
+                    <span className="tabular font-display">
+                      <span className="text-2xl">{p.citadas}</span>
+                      <span className="text-sm text-slate-400 dark:text-slate-500">
+                        {" "}
+                        de {p.total}
+                      </span>
+                    </span>
+                  ) : (
+                    <span className="text-sm">
+                      {ligado ? "Entra na próxima análise" : "Sem chave configurada"}
+                    </span>
+                  )}
+                </dd>
+              </div>
+            );
+          })}
+        </dl>
       )}
 
       {topCompetitors.length > 0 && (
         <>
           <Secao>Quem a IA cita no seu lugar</Secao>
           <p className="text-sm text-slate-600 dark:text-slate-400">
-            Empresas que o modelo usou como fonte ao responder. Cada uma é uma
-            resposta que poderia ter sido sua.
+            Empresas que os assistentes usaram como fonte ao responder. Cada
+            uma é uma resposta que poderia ter sido sua.
           </p>
           <ul className="mt-4">
             {topCompetitors.map(([domain, count]) => (
@@ -273,10 +440,10 @@ export function VisibilityBoard({
           <div className="mt-4 flex h-32 items-end gap-3">
             {timeline.map((t) => (
               <div
-                key={t.day}
+                key={t.chave}
                 className="flex h-full flex-1 flex-col items-center justify-end gap-1.5"
               >
-                <span className="tabular text-slate-600 dark:text-slate-400">
+                <span className="tabular text-sm text-slate-600 dark:text-slate-400">
                   {t.score}%
                 </span>
                 {/* Trilho com altura definida: sem ele o % da barra não
@@ -287,14 +454,14 @@ export function VisibilityBoard({
                     style={{ height: `${Math.max(t.score, 2)}%` }}
                   />
                 </div>
-                <span className="tabular text-slate-400 dark:text-slate-500">
+                <span className="tabular text-sm text-slate-400 dark:text-slate-500">
                   {t.day.slice(5)}
                 </span>
               </div>
             ))}
           </div>
           {delta !== null && (
-            <p className="mt-3 text-slate-600 dark:text-slate-400">
+            <p className="mt-3 text-sm text-slate-600 dark:text-slate-400">
               {delta === 0
                 ? "Sem mudança em relação à rodada anterior."
                 : `${delta > 0 ? "Subiu" : "Caiu"} ${Math.abs(delta)} pontos em relação à rodada anterior.`}
@@ -312,14 +479,15 @@ export function VisibilityBoard({
       ) : (
         <ul className="mt-4">
           {queries.map((q) => {
-            const check = latestByQuery.get(q.id);
+            const respostas = porPergunta.get(q.id) ?? [];
+            const citou = respostas.some((r) => r.cited);
             return (
               <Linha key={q.id}>
                 <div className="flex items-start gap-3">
                   <span className="mt-1 shrink-0">
-                    {!check ? (
+                    {respostas.length === 0 ? (
                       <span className="block h-4 w-4 rounded-full border border-slate-300 dark:border-slate-600" />
-                    ) : check.cited ? (
+                    ) : citou ? (
                       <Check size={16} className="text-nota-excelente" />
                     ) : (
                       <X size={16} className="text-slate-400 dark:text-slate-600" />
@@ -329,23 +497,35 @@ export function VisibilityBoard({
                     <p className="text-slate-800 dark:text-slate-200">
                       {q.question}
                     </p>
-                    <p className="mt-1 text-slate-500 dark:text-slate-400">
+                    <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                       {q.intent ? INTENT_LABEL[q.intent] : ""}
-                      {q.intent && check ? " · " : ""}
-                      {check?.cited && check.match_type === "domain"
-                        ? `Citado como fonte${check.position ? `, ${check.position}ª fonte da resposta` : ""}`
-                        : check?.cited
-                          ? "Mencionado no texto"
-                          : check?.found_in_search
-                            ? "A busca achou seu site e a IA citou outro"
-                            : check
-                              ? "Não apareceu"
-                              : "Ainda não consultada"}
+                      {respostas.length === 0 &&
+                        (q.intent ? " · " : "") +
+                          (runAtivo ? "Aguardando resposta" : "Ainda não consultada")}
+                      {respostas.map((r) => (
+                        <span key={r.id}>
+                          {" · "}
+                          <span
+                            className={cn(
+                              r.cited && "font-medium text-nota-excelente",
+                            )}
+                          >
+                            {ROTULO_MOTOR[r.provider] ?? r.provider}:{" "}
+                            {r.cited
+                              ? r.match_type === "domain" && r.position
+                                ? `citou você (${r.position}ª fonte)`
+                                : "citou você"
+                              : r.found_in_search
+                                ? "achou seu site e citou outro"
+                                : "não citou"}
+                          </span>
+                        </span>
+                      ))}
                     </p>
 
-                    {check && (
+                    {respostas.length > 0 && (
                       <div className="mt-2 flex flex-wrap items-center gap-2">
-                        {check.answer_excerpt && (
+                        {respostas.some((r) => r.answer_excerpt) && (
                           <button
                             onClick={() =>
                               setAberta(aberta === q.id ? null : q.id)
@@ -354,11 +534,11 @@ export function VisibilityBoard({
                             className="rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-1.5 text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800"
                           >
                             {aberta === q.id
-                              ? "Ocultar resposta"
-                              : "Ver o que a IA respondeu"}
+                              ? "Ocultar respostas"
+                              : "Ver o que responderam"}
                           </button>
                         )}
-                        {!check.cited && (
+                        {!citou && (
                           <button
                             onClick={() => responderComArtigo(q.question)}
                             disabled={gerando !== null}
@@ -372,10 +552,21 @@ export function VisibilityBoard({
                       </div>
                     )}
 
-                    {aberta === q.id && check?.answer_excerpt && (
-                      <blockquote className="mt-3 border-l-2 border-slate-200 dark:border-slate-700 pl-3 text-sm whitespace-pre-line text-slate-600 dark:text-slate-400">
-                        {check.answer_excerpt}
-                      </blockquote>
+                    {aberta === q.id && (
+                      <div className="mt-3 space-y-3">
+                        {respostas
+                          .filter((r) => r.answer_excerpt)
+                          .map((r) => (
+                            <div key={r.id}>
+                              <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                                {ROTULO_MOTOR[r.provider] ?? r.provider}
+                              </p>
+                              <blockquote className="mt-1 whitespace-pre-line border-l-2 border-slate-200 dark:border-slate-700 pl-3 text-sm text-slate-600 dark:text-slate-400">
+                                {r.answer_excerpt}
+                              </blockquote>
+                            </div>
+                          ))}
+                      </div>
                     )}
                   </div>
                 </div>

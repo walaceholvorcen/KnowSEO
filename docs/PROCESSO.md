@@ -932,3 +932,113 @@ poder de discriminação significa: antes as duas eram 93 e não diziam nada.
    errada e quase nunca dispara.
 5. SPA client-side ainda vira relatório de lixo (título duplicado e H1
    ausente em tudo). Precisa detectar o padrão e avisar, não pontuar.
+
+---
+
+## 22. Radar GEO em segundo plano, três assistentes, e a auditoria que se acompanha
+
+Três pedidos do cliente numa mensagem só: o GEO "é muito demorado, e se eu
+sair do radar ele para e se clicar em analisar volta de novo"; "precisamos
+nos encontrar também fora do Claude, ChatGPT e Perplexity"; e, na
+Auditoria, "como auditoria o cliente pode fazer umas 3 e não querer mais —
+o que fazemos para ter recorrência?".
+
+### Por que o GEO "parava"
+
+Não parava por acaso: era a arquitetura. A rota rodava a análise **dentro
+da requisição do navegador**, as perguntas **uma de cada vez**, e só
+gravava no banco **no fim**. Quinze perguntas com busca na web, ~20s cada,
+davam cinco minutos. Sair da tela ou estourar o tempo perdia a rodada
+inteira, inclusive o que já tinha respondido — e ao voltar, nada dizia que
+havia algo rodando, então o clique recomeçava do zero.
+
+Quatro mudanças, cada uma matando um pedaço do problema:
+
+1. **`after()` do Next 16** — a rota cria a rodada, responde na hora com o
+   identificador, e o trabalho continua depois que a resposta voltou
+   (`maxDuration = 300` vale para o `after`). A análise deixou de depender
+   da tela aberta.
+2. **Paralelo, seis por vez** — trinta consultas (dez perguntas × três
+   motores) em cerca de dois minutos, contra cinco minutos para quinze
+   consultas em série.
+3. **Grava a cada resposta** — rodada interrompida deixa no banco tudo o
+   que chegou até ali.
+4. **`ai_visibility_runs`** (migração 0011) — a rodada tem registro próprio.
+   A tela reabre em "12 de 30" quando o cliente volta, consulta o progresso
+   a cada 3s em `/api/ai-visibility/status`, e mostra as respostas
+   conforme chegam. Clique duplo devolve a rodada em curso em vez de abrir
+   outra. Rodada "rodando" há mais de 10 minutos é órfã — morreu sem fechar
+   — e é encerrada como erro para não travar o botão para sempre.
+
+**Dez perguntas, não quinze.** Com três motores, cada pergunta custa três
+consultas com busca. Gerar perguntas novas agora **substitui** o conjunto
+(desativa as antigas): antes elas se acumulavam, e como a nota é "citadas /
+total da rodada", o denominador mudava e a evolução deixava de ser
+comparável.
+
+### Três assistentes
+
+`OpenAiProvider` (API de Responses com `web_search`) e `PerplexityProvider`
+(`sonar`), ao lado do Claude, cada um ligado por uma chave de ambiente —
+sem chave, o motor simplesmente não entra na rodada. A separação entre
+citação e resultado de busca da seção 20 vale nos três: no ChatGPT, as
+anotações `url_citation` são citação e `web_search_call.action.sources` é
+busca; no Perplexity, `citations` e `search_results`.
+
+Formatos confirmados na documentação oficial de cada um antes de escrever.
+Duas proteções porque os dois trocam de interface com frequência: o modelo
+da OpenAI e o endpoint do Perplexity ficam em variável de ambiente, e o
+Perplexity cai para o endpoint histórico se o atual devolver 404.
+
+**O Claude continua no Opus 5.** A regra do projeto é não trocar modelo sem
+o dono pedir. O ganho de velocidade veio do paralelismo, que era o gargalo
+real — não do modelo. O Sonnet 5 suporta a mesma ferramenta de busca e fica
+como opção se o custo por rodada pesar.
+
+**A tela passou a ler a rodada em duas camadas.** Com três motores, "citado
+em 3 de 30" não diz nada: o cliente pensa em perguntas. O veredito conta
+perguntas em que a marca apareceu em *pelo menos um* assistente, e um
+placar mostra cada motor separado — a divergência entre eles é a
+informação, porque cada um busca num índice diferente. Motor sem chave
+aparece apagado com "Sem chave configurada", em vez de sumir.
+
+### A auditoria que se acompanha
+
+A resposta à pergunta da recorrência não é uma feature, é uma mudança de
+natureza: **auditoria é um exame; o que se vende é acompanhamento.** SEO
+não muda na hora — a correção de hoje aparece em semanas. Sem comparação,
+cada auditoria nova é uma lista parecida com a anterior, "adiantou?" fica
+sem resposta, e é por isso que o cliente para de voltar.
+
+- **`compararAuditorias()`** casa achados pelo `code` (o título muda com o
+  número de páginas; o código não) e devolve resolvidos, novos, e os que
+  persistem — marcando os que estão atingindo menos páginas (correção em
+  andamento) ou mais (piorando). A tela abre dizendo "Desde a auditoria
+  anterior: 2 problemas resolvidos, 1 novo" e mostra a nota antes → depois.
+  A anterior é sempre do **mesmo site**: comparar domínios diferentes
+  fabricaria "resolvidos" que nunca foram corrigidos.
+- **Acompanhamento semanal** (`/api/cron/semanal`, toda segunda às 7h UTC,
+  `vercel.json`) reaudita o último site auditado e refaz o Radar GEO de
+  cada blog, sem ninguém clicar. Critério "rodou há mais de seis dias", não
+  "é segunda-feira" — o que não coube num disparo entra no seguinte.
+  Protegido por `CRON_SECRET`: sem ele a rota recusa tudo, e a tela **não
+  promete** reauditoria automática (a página só mostra a frase quando o
+  segredo existe).
+- **`registrarAuditoria()`** saiu da rota para `src/lib/audit/salvar.ts`:
+  agora são dois caminhos que auditam, e duas cópias do fluxo divergiriam
+  na primeira correção. A auditoria manual não escreve a coluna `origem`,
+  então continua funcionando mesmo antes de a 0011 ser aplicada.
+
+### Mercado
+
+O aviso do Search Console aparecia só depois de uma análise concluída —
+o cliente descobria que faltou dado depois de rodar. Agora aparece desde o
+início, como link direto para Integrações.
+
+### Pendências registradas
+
+- Alerta por e-mail quando a reauditoria semanal encontra algo **novo**
+  (404, `noindex` que apareceu). É o que traz o cliente de volta sem ele
+  lembrar de abrir o painel — precisa de provedor de e-mail.
+- Crédito por rodada do Radar GEO. Continua sem débito, e agora é a
+  operação mais cara do produto: até trinta consultas com busca na web.

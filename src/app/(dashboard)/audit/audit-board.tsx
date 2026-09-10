@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { Check, ChevronDown, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Lede, NotaCard } from "@/components/lede";
+import { Lede, Linha, NotaCard, Secao } from "@/components/lede";
+import { resumirComparacao, type Comparacao } from "@/lib/audit/comparar";
 import type { AuditRow, FindingRow } from "./page";
 
 const SEVERITY_ORDER = ["critical", "high", "medium", "quick_win", "info"];
@@ -42,11 +43,17 @@ export function AuditBoard({
   audits,
   latest,
   findings,
+  anterior,
+  comparacao,
+  acompanhamentoAtivo,
 }: {
   blogId: string;
   audits: AuditRow[];
   latest: AuditRow | null;
   findings: FindingRow[];
+  anterior: AuditRow | null;
+  comparacao: Comparacao | null;
+  acompanhamentoAtivo: boolean;
 }) {
   const router = useRouter();
   const [siteUrl, setSiteUrl] = useState(latest?.site_url ?? "");
@@ -105,7 +112,7 @@ export function AuditBoard({
       <Lede
         apoio={
           latest
-            ? `${findings.length} ${findings.length === 1 ? "achado" : "achados"} em ${latest.pages_analyzed} ${latest.pages_analyzed === 1 ? "página" : "páginas"} de ${latest.site_url}.`
+            ? `${comparacao ? `${resumirComparacao(comparacao)} ` : ""}${findings.length} ${findings.length === 1 ? "achado" : "achados"} em ${latest.pages_analyzed} ${latest.pages_analyzed === 1 ? "página" : "páginas"} de ${latest.site_url}.`
             : "Lemos robots, sitemap e até 25 páginas para dizer o que trava o site no Google e na IA."
         }
       >
@@ -170,6 +177,98 @@ export function AuditBoard({
               </p>
             </div>
           </div>
+
+          {/* O que transforma a auditoria de coisa que se roda três vezes em
+              coisa que se acompanha. SEO não muda na hora; sem comparação,
+              cada auditoria nova é uma lista parecida com a anterior e a
+              pergunta "adiantou alguma coisa?" fica sem resposta. */}
+          {comparacao && anterior && (
+            <>
+              <Secao>
+                O que mudou desde{" "}
+                {new Date(anterior.created_at).toLocaleDateString("pt-BR")}
+              </Secao>
+              <p className="text-sm text-slate-600 dark:text-slate-400">
+                Nota Google{" "}
+                <span className="tabular font-display text-slate-900 dark:text-slate-100">
+                  {anterior.score_google} → {latest.score_google}
+                </span>
+                {" · "}Nota IA{" "}
+                <span className="tabular font-display text-slate-900 dark:text-slate-100">
+                  {anterior.score_ai} → {latest.score_ai}
+                </span>
+                . Correção de SEO leva de uma a duas semanas para aparecer aqui.
+              </p>
+
+              {comparacao.resolvidos.length +
+                comparacao.novos.length +
+                comparacao.persistem.filter((p) => p.melhorou || p.piorou)
+                  .length ===
+              0 ? (
+                <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">
+                  Os mesmos achados, atingindo as mesmas páginas.
+                </p>
+              ) : (
+                <ul className="mt-3">
+                  {comparacao.resolvidos.map((f) => (
+                    <Linha key={`resolvido-${f.code}`}>
+                      <p className="flex items-start gap-2 text-sm">
+                        <Check
+                          size={16}
+                          className="mt-0.5 shrink-0 text-nota-excelente"
+                        />
+                        <span>
+                          <span className="font-medium text-nota-excelente">
+                            Resolvido
+                          </span>{" "}
+                          <span className="text-slate-700 dark:text-slate-300">
+                            {f.title}
+                          </span>
+                        </span>
+                      </p>
+                    </Linha>
+                  ))}
+                  {comparacao.novos.map((f) => (
+                    <Linha key={`novo-${f.code}`}>
+                      <p className="text-sm">
+                        <span className="font-medium text-nota-critico">
+                          Novo
+                        </span>{" "}
+                        <span className="text-slate-700 dark:text-slate-300">
+                          {f.title}
+                        </span>
+                      </p>
+                    </Linha>
+                  ))}
+                  {comparacao.persistem
+                    .filter((p) => p.melhorou || p.piorou)
+                    .map((p) => (
+                      <Linha key={`mudou-${p.atual.code}`}>
+                        <p className="text-sm">
+                          <span
+                            className={cn(
+                              "font-medium",
+                              p.melhorou
+                                ? "text-nota-excelente"
+                                : "text-nota-atencao",
+                            )}
+                          >
+                            {p.melhorou ? "Diminuindo" : "Aumentando"}
+                          </span>{" "}
+                          <span className="text-slate-700 dark:text-slate-300">
+                            {p.atual.title}
+                          </span>{" "}
+                          <span className="tabular font-display text-slate-500 dark:text-slate-400">
+                            ({p.anterior.affected_count} →{" "}
+                            {p.atual.affected_count} páginas)
+                          </span>
+                        </p>
+                      </Linha>
+                    ))}
+                </ul>
+              )}
+            </>
+          )}
 
           {counts.length > 0 && (
             <div className="mt-4 flex flex-wrap gap-2">
@@ -295,32 +394,35 @@ export function AuditBoard({
         </div>
       )}
 
-      {audits.length > 1 && (
-        <div className="mt-6 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
-          <h3 className="mb-3 text-sm font-semibold text-slate-700 dark:text-slate-300">
-            Histórico
-          </h3>
-          <ul className="space-y-1.5">
+      {(audits.length > 1 || acompanhamentoAtivo) && latest && (
+        <>
+          <Secao>Histórico</Secao>
+          <p className="text-sm text-slate-600 dark:text-slate-400">
+            {acompanhamentoAtivo
+              ? "Reauditamos este site toda segunda-feira, sem você precisar clicar, e mostramos aqui o que mudou. As rodadas automáticas aparecem marcadas."
+              : "Cada auditoria fica guardada para ser comparada com a próxima."}
+          </p>
+          <ul className="mt-3">
             {audits.map((a) => (
-              <li
-                key={a.id}
-                className="flex items-center justify-between text-sm"
-              >
-                <span className="truncate text-slate-600 dark:text-slate-400">
-                  {new Date(a.created_at).toLocaleDateString("pt-BR")} ·{" "}
-                  {a.site_url}
-                </span>
-                <span className="shrink-0 font-medium text-slate-900 dark:text-slate-100">
-                  {a.status === "done"
-                    ? `${a.score_google}/100 · IA ${a.score_ai}/100`
-                    : a.status === "error"
-                      ? "falhou"
-                      : "rodando"}
-                </span>
-              </li>
+              <Linha key={a.id}>
+                <div className="flex items-baseline justify-between gap-4 text-sm">
+                  <span className="min-w-0 truncate text-slate-600 dark:text-slate-400">
+                    {new Date(a.created_at).toLocaleDateString("pt-BR")} ·{" "}
+                    {a.site_url}
+                    {a.origem === "agendada" && " · semanal"}
+                  </span>
+                  <span className="tabular shrink-0 font-display text-slate-900 dark:text-slate-100">
+                    {a.status === "done"
+                      ? `${a.score_google} · IA ${a.score_ai}`
+                      : a.status === "error"
+                        ? "falhou"
+                        : "rodando"}
+                  </span>
+                </div>
+              </Linha>
             ))}
           </ul>
-        </div>
+        </>
       )}
     </div>
   );

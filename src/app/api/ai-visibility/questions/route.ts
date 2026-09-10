@@ -43,6 +43,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "no questions generated" }, { status: 502 });
   }
 
+  // Um conjunto novo SUBSTITUI o anterior. Antes as perguntas se acumulavam
+  // (clicar duas vezes deixava trinta ativas), e como a nota é "citadas /
+  // total da rodada", o denominador mudava e a evolução deixava de ser
+  // comparável. As antigas ficam no banco, desativadas, porque o histórico
+  // de checagens aponta para elas.
+  await supabase
+    .from("ai_queries")
+    .update({ active: false })
+    .eq("blog_id", blogId);
+
   const { data: inserted, error } = await supabase
     .from("ai_queries")
     .upsert(
@@ -51,6 +61,7 @@ export async function POST(request: Request) {
         question: q.question,
         intent: q.intent,
         source: "ai" as const,
+        active: true,
       })),
       { onConflict: "blog_id,question" },
     )
