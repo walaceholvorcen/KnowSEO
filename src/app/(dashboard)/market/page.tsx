@@ -1,5 +1,6 @@
 import { requireUserAndWorkspace, getWorkspaceBlogs } from "@/lib/workspace";
 import { buscarConexao } from "@/lib/google/oauth";
+import { extractDomain, isDirectory } from "@/lib/citation";
 import { MarketBoard } from "./market-board";
 
 export interface MarketAnalysisRow {
@@ -73,10 +74,21 @@ export default async function MarketPage() {
     .eq("blog_id", blog.id)
     .limit(60);
 
+  // Filtra na leitura, não só na gravação: as checagens feitas antes da
+  // separação entre citação e resultado de busca ainda têm agregador e
+  // domínio próprio misturados, e sugerir sortlist.com como concorrente
+  // envenenaria os temas da análise inteira.
+  const proprios = [
+    ...(blog.brand_domains ?? []),
+    blog.custom_domain,
+  ].filter((d): d is string => Boolean(d));
+
   const contagem = new Map<string, number>();
   for (const linha of (citacoes as { competitors: string[] | null }[]) ?? []) {
-    for (const dominio of linha.competitors ?? []) {
-      if (dominio === blog.custom_domain) continue;
+    for (const bruto of linha.competitors ?? []) {
+      const dominio = extractDomain(bruto);
+      if (!dominio || isDirectory(dominio)) continue;
+      if (proprios.some((p) => dominio === extractDomain(p))) continue;
       contagem.set(dominio, (contagem.get(dominio) ?? 0) + 1);
     }
   }

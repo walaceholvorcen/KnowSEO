@@ -771,3 +771,86 @@ inverter a Estratégia: em vez de a IA inventar keyword e o Google medir
 depois, o Google propõe os termos reais e a IA escolhe os ângulos. É a
 evolução natural do módulo — ficou de fora desta rodada só para não misturar
 duas mudanças grandes na mesma entrega.
+
+---
+
+## 20. Radar GEO — o dia em que o diferencial parou de mentir
+
+Revisão crítica do módulo (auditoria linha a linha, setembro/2026) encontrou
+um defeito que invalidava a métrica que o produto vende como prova.
+
+### O defeito
+
+`claude-provider.ts` juntava **duas coisas diferentes no mesmo array**: as
+fontes que o modelo de fato citou, e **todos os resultados brutos da busca**
+— inclusive o que ele leu e descartou. O comentário no próprio código dizia
+"Resultados brutos da ferramenta de busca" e logo abaixo fazia
+`citationUrls.push(item.url)`.
+
+Três consequências, todas graves num produto que vende prova de citação:
+
+1. **Falso positivo direto.** Bastava o site do cliente aparecer no resultado
+   de uma busca para a tela escrever "Citado como fonte, posição 1". O modelo
+   podia nunca tê-lo mencionado.
+2. **`position` não significava nada.** Era o índice num array misturado, e
+   os blocos de busca entram antes do texto — ou seja, era aproximadamente a
+   posição no SERP que o Claude consultou, vendida como posição na resposta.
+3. **A lista de "concorrentes" era raspagem de SERP.** Por isso apareciam
+   `semrush.com`, `sortlist.com`, `agencies.semrush.com` no banco real. E o
+   lixo vazava: o painel Início chegava a anunciar "a IA cita semrush.com no
+   seu lugar", e a Análise de Mercado usava essa lista para **sugerir
+   concorrentes** — a ferramenta se auto-envenenava.
+
+### A correção
+
+`AiAnswer` passou a ter `citationUrls` **e** `searchResultUrls`, separados.
+Só o primeiro prova citação.
+
+O segundo não foi jogado fora, porque tem valor próprio e oposto:
+`found_in_search` marca quando a busca **encontrou** a marca e o modelo
+**escolheu outro**. É o diagnóstico mais acionável do módulo — o problema
+não é ser descoberto, é o conteúdo da página. A tela diz isso com essas
+palavras.
+
+### Outras correções da mesma rodada
+
+- **Diretório não é concorrente.** `isDirectory()` classifica agregadores,
+  redes e enciclopédias numa lista própria (`directories`). Não são
+  escondidos: viram uma seção com leitura própria — "quando a IA recorre a
+  diretório é porque não achou empresa com resposta boa o bastante, e essa é
+  a lacuna mais fácil de ocupar". Filtrado **na leitura também**, porque as
+  checagens antigas continuam sujas no banco.
+- **A tela afirmava algo falso.** Dizia "quando alguém pergunta ao ChatGPT"
+  sobre dado 100% do Claude. Agora nomeia o motor medido, tirado do próprio
+  registro (`provider`).
+- **O detector estava cego.** `brand_names` e `brand_domains` existiam no
+  schema desde o primeiro dia e **nunca tiveram tela** — o detector caía no
+  nome do blog, que no banco de teste era "testando dataknow". Nenhuma
+  menção real casaria nunca. O formulário agora vive em Configurações →
+  Marca.
+- **O blog hospedado contava como concorrente do próprio cliente.** Só
+  `custom_domain` entrava nos domínios da marca; `dominiosDaMarca()` agora
+  inclui `subdominio.ROOT_DOMAIN`.
+- **Menção pelo endereço escrito.** "Visite clinicamadrid.es" no corpo da
+  resposta não casava, porque só o *nome* era procurado no texto.
+- **`run_id`.** A rodada era deduzida agrupando por `checked_at::date`. Duas
+  análises no mesmo dia viravam um ponto só com totais somados — "15
+  perguntas" virava "30" — e uma rodada que atravessasse a meia-noite se
+  partia em duas. Agora cada rodada tem identidade; a data segue valendo
+  como reserva para as linhas antigas.
+- **O botão travava.** `call()` não tinha `try/catch`: função que estourasse
+  o tempo limite deixava "Analisando..." preso até recarregar a página.
+- **`answer_excerpt` era gravado e nunca exibido.** Agora é a prova do
+  veredito, dentro da linha da pergunta. Subiu de 500 para 2000 caracteres,
+  porque 500 cortavam no meio da frase que recomendava o concorrente.
+
+### O laço que faltava
+
+O módulo media a derrota e parava ali, com o gerador de artigo na tela ao
+lado. Agora cada pergunta perdida tem **"Escrever a resposta"**, que leva a
+pergunta ao prompt da Estratégia com instrução própria: ângulos concretos e
+verificáveis, porque modelo não cita folheto.
+
+É o único fosso disponível aqui. Profound, Peec e Otterly medem GEO melhor
+que nós e **nenhuma delas escreve o conteúdo**. Medir é commodity; responder
+não é.

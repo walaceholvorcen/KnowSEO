@@ -41,11 +41,14 @@ export class ClaudeProvider implements AiProvider {
 
     const answerText: string[] = [];
     const citationUrls: string[] = [];
+    const searchResultUrls: string[] = [];
 
     for (const block of response.content) {
       if (block.type === "text") {
         answerText.push(block.text);
-        // Citações associadas ao texto (quando a busca web foi usada)
+        // Fonte amarrada ao texto: isto é citação de verdade. A ordem em que
+        // aparece aqui é a ordem em que o modelo apoiou a resposta, e é o
+        // que dá sentido ao campo "posição" mostrado ao cliente.
         for (const citation of block.citations ?? []) {
           if ("url" in citation && typeof citation.url === "string") {
             citationUrls.push(citation.url);
@@ -53,13 +56,14 @@ export class ClaudeProvider implements AiProvider {
         }
       }
 
-      // Resultados brutos da ferramenta de busca
+      // O que a busca devolveu, não o que o modelo citou. Vai para a outra
+      // lista - misturar as duas fabricava citação que nunca existiu.
       if (block.type === "web_search_tool_result") {
         const content = block.content;
         if (Array.isArray(content)) {
           for (const item of content) {
             if ("url" in item && typeof item.url === "string") {
-              citationUrls.push(item.url);
+              searchResultUrls.push(item.url);
             }
           }
         }
@@ -70,6 +74,7 @@ export class ClaudeProvider implements AiProvider {
       provider: this.name,
       answerText: answerText.join("\n"),
       citationUrls: [...new Set(citationUrls)],
+      searchResultUrls: [...new Set(searchResultUrls)],
     };
   }
 }

@@ -5,6 +5,7 @@ import { Lede, Linha, Secao } from "@/components/lede";
 import { encontrarGargalo, type Etapa } from "@/lib/gargalo";
 import { EvolucaoDosArtigos } from "./evolucao";
 import { scoreBand } from "@/lib/audit/rules";
+import { extractDomain, isDirectory } from "@/lib/citation";
 import type { AnalyticsEvent, OnboardingSteps } from "@/types";
 
 // O passo "veja as primeiras visitas" saiu: ver um número não é
@@ -101,7 +102,7 @@ export default async function DashboardHomePage() {
       .eq("active", true),
     supabase
       .from("ai_visibility_checks")
-      .select("cited,competitors,checked_at")
+      .select("cited,competitors,checked_at,run_id")
       .eq("blog_id", blog.id)
       .order("checked_at", { ascending: false })
       .limit(200),
@@ -130,18 +131,31 @@ export default async function DashboardHomePage() {
   // Só a rodada mais recente conta: misturar rodadas antigas faria a taxa
   // de citação parecer melhor (ou pior) do que a situação de hoje.
   const rodadas = (checks as
-    | { cited: boolean; competitors: string[] | null; checked_at: string }[]
+    | {
+        cited: boolean;
+        competitors: string[] | null;
+        checked_at: string;
+        run_id: string | null;
+      }[]
     | null) ?? [];
-  const ultimaRodada = rodadas[0]?.checked_at.slice(0, 10);
-  const daRodada = rodadas.filter(
-    (c) => c.checked_at.slice(0, 10) === ultimaRodada,
-  );
+  // Identidade da rodada quando existe; data só para o que foi gravado antes
+  // do run_id existir. Agrupar por dia fundia duas análises do mesmo dia.
+  const chave = (c: (typeof rodadas)[number]) =>
+    c.run_id ?? c.checked_at.slice(0, 10);
+  const ultimaRodada = rodadas[0] ? chave(rodadas[0]) : null;
+  const daRodada = rodadas.filter((c) => chave(c) === ultimaRodada);
   const citacoes = daRodada.length ? daRodada.filter((c) => c.cited).length : null;
 
+  // Diretório não é rival: sem este filtro o painel chegava a anunciar "a IA
+  // cita semrush.com no seu lugar", que é uma frase sem sentido para o
+  // cliente. Filtrado na leitura porque as checagens antigas continuam sujas.
   const porRival = new Map<string, number>();
   for (const c of daRodada) {
-    for (const d of c.competitors ?? [])
+    for (const bruto of c.competitors ?? []) {
+      const d = extractDomain(bruto);
+      if (!d || isDirectory(d)) continue;
       porRival.set(d, (porRival.get(d) ?? 0) + 1);
+    }
   }
   const rivalCitado =
     [...porRival.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;

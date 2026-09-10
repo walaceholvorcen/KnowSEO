@@ -110,18 +110,35 @@ export async function generateKeywordIdeas(params: {
    *  concorrentes publicaram sobre ele. Quando existe, a sugestão deixa de
    *  ser palpite no vácuo e passa a responder a uma lacuna medida. */
   tema?: { termo: string; exemplos: string[] } | null;
+  /** Pergunta que a marca perdeu no Radar GEO: um assistente de IA
+   *  respondeu a isto e citou outra empresa. Fecha o laço entre medir a
+   *  derrota e escrever a resposta. */
+  perguntaPerdida?: string | null;
 }): Promise<KeywordIdea[]> {
   const client = getAnthropicClient();
-  const { blog, dna, existingKeywords, count = 8, tema = null } = params;
+  const {
+    blog,
+    dna,
+    existingKeywords,
+    count = 8,
+    tema = null,
+    perguntaPerdida = null,
+  } = params;
 
-  const foco = tema
-    ? `\n\nEste pedido nace de un análisis de mercado real: los competidores de esta marca ya publican sobre "${tema.termo}" y la marca no tiene nada. Enfoca TODAS las sugerencias en ese territorio, con ángulos que la marca pueda ganar.
+  const foco = perguntaPerdida
+    ? `\n\nEste pedido nace de una medición real: cuando alguien le hace esta pregunta a un asistente de IA, el asistente recomienda a OTRAS empresas y no a esta marca.
+
+Pregunta perdida: "${perguntaPerdida}"
+
+Sugiere keywords para artículos que respondan esa pregunta mejor que nadie - contenido que un asistente de IA citaría como fuente. Prioriza ángulos concretos y verificables (criterios de elección, rangos de precio, comparativas honestas, errores comunes), no texto promocional: un modelo no cita folletos.`
+    : tema
+      ? `\n\nEste pedido nace de un análisis de mercado real: los competidores de esta marca ya publican sobre "${tema.termo}" y la marca no tiene nada. Enfoca TODAS las sugerencias en ese territorio, con ángulos que la marca pueda ganar.
 ${
   tema.exemplos.length
     ? `\nTítulos que los competidores ya publicaron sobre el tema (no los copies - encuentra el ángulo que falta):\n${tema.exemplos.map((e) => `- ${e}`).join("\n")}`
     : ""
 }`
-    : "";
+      : "";
 
   const response = await client.messages.parse({
     model: MODEL,

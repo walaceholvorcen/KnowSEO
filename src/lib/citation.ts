@@ -9,14 +9,54 @@ export interface CitationResult {
   cited: boolean;
   matchType: MatchType;
   position: number | null; // 1 = primeira fonte citada
-  competitors: string[]; // outros domínios citados
+  competitors: string[]; // empresas citadas que não são a marca
+  /** Domínios citados que são diretório, agregador ou plataforma. Ficam
+   *  separados dos concorrentes porque perder para o sortlist.com não é a
+   *  mesma notícia que perder para uma agência rival - e listar os dois
+   *  juntos transformava a tela num ranking de agregadores. */
+  directories: string[];
+  /** A marca apareceu no resultado da busca e mesmo assim não foi citada.
+   *  É o diagnóstico mais acionável do módulo: a IA te encontrou e escolheu
+   *  outro, então o problema é o conteúdo da página, não a descoberta. */
+  foundInSearch: boolean;
 }
 
 export interface DetectInput {
   answerText: string;
   citationUrls: string[];
+  /** Resultados brutos da busca. Nunca provam citação - ver AiAnswer. */
+  searchResultUrls?: string[];
   brandNames: string[];
   brandDomains: string[];
+}
+
+// Domínios que aparecem em resposta de IA sem serem concorrentes do
+// cliente: diretórios, marketplaces de serviço, redes sociais, enciclopédias
+// e publishers de marketing. Sem esta separação, "quem a IA cita no seu
+// lugar" virava uma lista de sortlist.com e semrush.com - e o painel Início
+// chegava a escrever "a IA cita semrush.com em vez de você".
+//
+// Casa por domínio registrável e por sufixo, então "agencies.semrush.com"
+// entra por causa de "semrush.com".
+const DIRETORIOS = new Set([
+  "sortlist.com", "clutch.co", "goodfirms.co", "designrush.com",
+  "agencyspotter.com", "trustpilot.com", "yelp.com", "paginasamarillas.es",
+  "doctoralia.es", "doctoralia.com.br", "tripadvisor.com", "g2.com",
+  "capterra.com", "crunchbase.com", "glassdoor.com", "indeed.com",
+  "producthunt.com", "semrush.com", "ahrefs.com", "moz.com", "hubspot.com",
+  "similarweb.com", "wikipedia.org", "reddit.com", "quora.com",
+  "youtube.com", "linkedin.com", "facebook.com", "instagram.com",
+  "twitter.com", "x.com", "tiktok.com", "pinterest.com", "medium.com",
+  "github.com", "amazon.com", "amazon.es", "google.com", "blogspot.com",
+  "wordpress.com", "wix.com", "substack.com",
+]);
+
+export function isDirectory(domain: string): boolean {
+  if (DIRETORIOS.has(domain)) return true;
+  for (const conhecido of DIRETORIOS) {
+    if (domain.endsWith(`.${conhecido}`)) return true;
+  }
+  return false;
 }
 
 // Sufixos societários que não fazem parte do nome real da marca.
@@ -73,46 +113,59 @@ function brandAppearsInText(text: string, brand: string): boolean {
 }
 
 export function detectCitation(input: DetectInput): CitationResult {
-  const { answerText, citationUrls, brandNames, brandDomains } = input;
+  const {
+    answerText,
+    citationUrls,
+    searchResultUrls = [],
+    brandNames,
+    brandDomains,
+  } = input;
 
   const ownDomains = brandDomains
     .map(extractDomain)
     .filter((d): d is string => Boolean(d));
 
+  const ehDaMarca = (dominio: string) =>
+    ownDomains.some((own) => domainsMatch(dominio, own));
+
+  // Só as fontes citadas entram aqui. Resultado de busca não prova nada.
   const citedDomains = citationUrls
     .map(extractDomain)
     .filter((d): d is string => Boolean(d));
 
-  // 1) Citação por domínio - sinal mais forte
-  let position: number | null = null;
+  const outros = [...new Set(citedDomains.filter((d) => !ehDaMarca(d)))];
+  const competitors = outros.filter((d) => !isDirectory(d));
+  const directories = outros.filter((d) => isDirectory(d));
+
+  const foundInSearch = searchResultUrls
+    .map(extractDomain)
+    .filter((d): d is string => Boolean(d))
+    .some(ehDaMarca);
+
+  const base = { competitors, directories, foundInSearch };
+
+  // 1) Citação por domínio - sinal mais forte. A posição agora é a ordem
+  //    entre as fontes que o modelo realmente usou, e não o índice num
+  //    array que misturava citação com página de resultado.
   for (let i = 0; i < citedDomains.length; i++) {
-    if (ownDomains.some((own) => domainsMatch(citedDomains[i], own))) {
-      position = i + 1;
-      break;
+    if (ehDaMarca(citedDomains[i])) {
+      return { cited: true, matchType: "domain", position: i + 1, ...base };
     }
   }
 
-  const competitors = [
-    ...new Set(
-      citedDomains.filter(
-        (d) => !ownDomains.some((own) => domainsMatch(d, own)),
-      ),
-    ),
-  ];
-
-  if (position !== null) {
-    return { cited: true, matchType: "domain", position, competitors };
-  }
-
-  // 2) Menção da marca no texto, mesmo sem link
+  // 2) Menção no texto, mesmo sem link. Vale tanto o nome quanto o domínio
+  //    escrito por extenso ("visite clinicamadrid.es") - antes só o nome era
+  //    procurado, e uma menção com o endereço escrito passava batido.
   const normalizedAnswer = normalizeText(answerText);
-  const mentioned = brandNames.some((name) =>
-    brandAppearsInText(normalizedAnswer, name),
-  );
+  const mentioned =
+    brandNames.some((name) => brandAppearsInText(normalizedAnswer, name)) ||
+    ownDomains.some((dominio) =>
+      normalizedAnswer.includes(dominio.toLowerCase()),
+    );
 
   if (mentioned) {
-    return { cited: true, matchType: "brand", position: null, competitors };
+    return { cited: true, matchType: "brand", position: null, ...base };
   }
 
-  return { cited: false, matchType: "none", position: null, competitors };
+  return { cited: false, matchType: "none", position: null, ...base };
 }

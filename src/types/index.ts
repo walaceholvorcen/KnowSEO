@@ -51,6 +51,11 @@ export interface Blog {
   workspace_id: string;
   name: string;
   subdomain: string;
+  /** Grafias da marca que uma IA poderia usar. Alimenta o detector de
+   *  citação do Radar GEO; vazio faz cair no nome do blog. */
+  brand_names: string[];
+  /** Domínios que são da marca, além do próprio e do blog hospedado. */
+  brand_domains: string[];
   custom_domain: string | null;
   domain_status: DomainStatus;
   language: Language;
@@ -154,6 +159,13 @@ export interface AiVisibilityCheck {
   match_type: CitationMatchType | null;
   position: number | null;
   competitors: string[];
+  /** Diretórios e plataformas citados. Separados de competitors - ver
+   *  supabase/migrations/0010_geo_precisao.sql. */
+  directories: string[];
+  /** A busca devolveu a marca ao modelo e ele não a citou. */
+  found_in_search: boolean;
+  /** Identifica a rodada. Nulo nas checagens gravadas antes da 0010. */
+  run_id: string | null;
   answer_excerpt: string | null;
   checked_at: string;
 }

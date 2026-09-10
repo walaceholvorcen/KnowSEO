@@ -13,9 +13,10 @@ import type { Blog, BrandDna, Keyword } from "@/types";
 
 export async function POST(request: Request) {
   const { supabase, workspace } = await requireUserAndWorkspace();
-  const { blogId, temaId } = (await request.json()) as {
+  const { blogId, temaId, pergunta } = (await request.json()) as {
     blogId: string;
     temaId?: number;
+    pergunta?: string;
   };
 
   if (!isAiConfigured()) {
@@ -64,6 +65,11 @@ export async function POST(request: Request) {
     tema = (data as { termo: string; exemplos: string[] } | null) ?? null;
   }
 
+  // Pauta pedida a partir de uma pergunta que a marca perdeu no Radar GEO.
+  // É o laço que o produto não fechava: o módulo media a derrota e parava
+  // ali, com o gerador de artigo na tela ao lado.
+  const perguntaPerdida = pergunta?.trim() || null;
+
   let ideas;
   try {
     ideas = await generateKeywordIdeas({
@@ -71,6 +77,7 @@ export async function POST(request: Request) {
       dna: dna as BrandDna | null,
       existingKeywords,
       tema,
+      perguntaPerdida,
     });
   } catch (err) {
     console.error("[keywords/suggest] falha na IA", err);

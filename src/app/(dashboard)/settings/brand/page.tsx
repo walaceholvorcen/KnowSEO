@@ -2,7 +2,8 @@ import { requireUserAndWorkspace, getWorkspaceBlogs } from "@/lib/workspace";
 import type { BrandDna } from "@/types";
 import { SettingsNav } from "../settings-nav";
 import { BrandDnaForm } from "./brand-dna-form";
-import { Lede } from "@/components/lede";
+import { IdentidadeForm } from "./identidade-form";
+import { Lede, Secao } from "@/components/lede";
 
 // Campos opcionais que realmente mudam o tom do artigo. "tone" fica de fora
 // porque nasce com valor padrão - vazio nele seria bug, não sinal de
@@ -43,6 +44,21 @@ export default async function BrandDnaPage() {
         {veredito}
       </Lede>
       <BrandDnaForm blogId={blog.id} initial={perfil} />
+
+      <Secao>Identidade da marca</Secao>
+      <p className="text-sm text-slate-600 dark:text-slate-400">
+        Usado pelo Radar GEO para reconhecer você numa resposta de IA. Se a
+        marca tiver apelido, grafia alternativa ou outro domínio e eles não
+        estiverem aqui, uma citação real passa despercebida e conta como
+        derrota.
+      </p>
+      <IdentidadeForm
+        blogId={blog.id}
+        nomeDoBlog={blog.name}
+        dominioProprio={blog.custom_domain}
+        initialNames={blog.brand_names ?? []}
+        initialDomains={blog.brand_domains ?? []}
+      />
     </div>
   );
 }
