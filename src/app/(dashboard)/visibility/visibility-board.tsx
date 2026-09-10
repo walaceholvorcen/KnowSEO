@@ -141,7 +141,7 @@ export function VisibilityBoard({
       {topCompetitors.length > 0 && (
         <>
           <Secao>Quem a IA cita no seu lugar</Secao>
-          <p className="text-slate-600 dark:text-slate-400">
+          <p className="text-sm text-slate-600 dark:text-slate-400">
             Cada um destes é uma resposta que poderia ter sido sua.
           </p>
           <ul className="mt-4">

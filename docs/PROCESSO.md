@@ -469,10 +469,15 @@ Os neutros substituem os **valores** do `slate` do Tailwind em vez de
 renomear ~500 classes: o slate padrão puxa para azul e brigava com o
 cobalto. O `navy-*` virou `cobalto-*` por renomeação mecânica.
 
-Tipografia: **Instrument Sans** na interface, **Instrument Serif**
-(`font-display`) só onde o número é o produto — nota da auditoria, páginas
-analisadas. Números levam a classe `.tabular` para não dançarem ao mudar de
-valor.
+Tipografia: **IBM Plex Sans** na interface, **IBM Plex Mono**
+(`font-display`) só onde o número é o produto — nota da auditoria, score.
+Números levam a classe `.tabular`. **Regra que virou lei depois de
+feedback real ("parece uma revista"): serifada e manchete editorial não
+entram no painel.** O produto mede posicionamento - a referência visual é
+instrumento (radar, medidor), não editorial. O veredito que abre cada tela
+é sans semibold com a ação à direita, header de ferramenta; já foi frase
+gigante serifada duas vezes (Instrument Serif, depois Plex Serif) e as
+duas vezes leu como capa de matéria.
 
 Decisões que valem regra:
 - A cor fica na faixa, nunca no número. Pintar o "55" de vermelho obriga o

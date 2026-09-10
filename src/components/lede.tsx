@@ -28,17 +28,26 @@ export function Lede({
   apoio?: ReactNode;
   acao?: ReactNode;
 }) {
+  // Header de ferramenta, não manchete. A primeira versão abria toda tela
+  // com uma frase enorme em serifada - e o produto inteiro passou a parecer
+  // revista, como o feedback apontou. O veredito continua sendo a primeira
+  // coisa lida, mas agora no tom de painel: sans, peso, ação à direita na
+  // mesma faixa - "o que está acontecendo e o que fazer", lado a lado.
   return (
-    <header className="mb-10 border-b border-slate-200 dark:border-slate-800 pb-8">
-      <p className="max-w-[36ch] font-title text-3xl leading-[1.25] text-slate-900 dark:text-slate-100 sm:text-4xl">
-        {children}
-      </p>
-      {apoio && (
-        <p className="mt-3 max-w-[60ch] text-slate-600 dark:text-slate-400">
-          {apoio}
+    <header className="mb-8 flex flex-wrap items-start justify-between gap-x-8 gap-y-4 border-b border-slate-200 dark:border-slate-800 pb-6">
+      <div className="min-w-0 max-w-[52ch]">
+        <p className="text-xl font-semibold leading-snug tracking-tight text-slate-900 dark:text-slate-100 sm:text-2xl">
+          {children}
         </p>
+        {apoio && (
+          <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+            {apoio}
+          </p>
+        )}
+      </div>
+      {acao && (
+        <div className="flex shrink-0 flex-wrap items-center gap-2">{acao}</div>
       )}
-      {acao && <div className="mt-6 flex flex-wrap gap-3">{acao}</div>}
     </header>
   );
 }
@@ -54,7 +63,7 @@ export function Linha({
 }) {
   return (
     <li
-      className={`border-b border-slate-200 dark:border-slate-800 py-4 last:border-0 ${className}`}
+      className={`border-b border-slate-200 dark:border-slate-800 py-3 last:border-0 ${className}`}
     >
       {children}
     </li>
@@ -65,7 +74,7 @@ export function Linha({
 // não decoração.
 export function Secao({ children }: { children: ReactNode }) {
   return (
-    <h2 className="mb-1 mt-12 text-lg font-medium text-slate-900 dark:text-slate-100">
+    <h2 className="mb-1 mt-10 text-sm font-semibold text-slate-900 dark:text-slate-100">
       {children}
     </h2>
   );

@@ -1,17 +1,13 @@
 import type { Metadata } from "next";
-import { IBM_Plex_Sans, IBM_Plex_Mono, IBM_Plex_Serif } from "next/font/google";
+import { IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
 import { THEME_INIT_SCRIPT } from "@/lib/theme";
 import "./globals.css";
 
-// Três famílias da mesma superfamília Plex (a IBM desenhou as três para
-// funcionar juntas), cada uma com um papel só:
-// - Sans: toda a interface.
-// - Mono: só onde o conteúdo é número lido como instrumento (a nota da
-//   auditoria, o score de visibilidade) - nunca frase inteira, mono em
-//   sentença longa lê mecânico, sem ritmo.
-// - Serif: a frase de veredito que abre cada tela (Lede) e nomes próprios
-//   de destaque (o negócio encontrado no Google Meu Negócio) - o papel que
-//   a Instrument Serif tinha antes, só que sem o floreio editorial dela.
+// Duas famílias da mesma superfamília Plex, papéis separados:
+// - Sans: toda a interface, inclusive o veredito que abre cada tela.
+// - Mono: só onde o conteúdo é número lido como instrumento (nota, score).
+// Serifada saiu de vez do painel: com ela no veredito o produto parecia
+// revista - feedback real de usuário - e não ferramenta de medição.
 const sans = IBM_Plex_Sans({
   variable: "--font-plex-sans",
   weight: ["400", "500", "600", "700"],
@@ -20,12 +16,6 @@ const sans = IBM_Plex_Sans({
 
 const mono = IBM_Plex_Mono({
   variable: "--font-plex-mono",
-  weight: ["500", "600"],
-  subsets: ["latin"],
-});
-
-const serif = IBM_Plex_Serif({
-  variable: "--font-plex-serif",
   weight: ["500", "600"],
   subsets: ["latin"],
 });
@@ -40,7 +30,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="es"
       suppressHydrationWarning
-      className={`${sans.variable} ${mono.variable} ${serif.variable} h-full antialiased`}
+      className={`${sans.variable} ${mono.variable} h-full antialiased`}
     >
       <head>
         {/* Aplica el modo oscuro antes del primer paint, evitando el flash

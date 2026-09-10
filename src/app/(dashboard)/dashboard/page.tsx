@@ -232,7 +232,7 @@ export default async function DashboardHomePage() {
       {configurando && (
         <>
           <Secao>Configuração</Secao>
-          <p className="text-slate-600 dark:text-slate-400">
+          <p className="text-sm text-slate-600 dark:text-slate-400">
             {STEPS.length - faltando.length} de {STEPS.length} prontos. Cada
             passo concluído libera mais um artigo.
           </p>
@@ -280,7 +280,7 @@ export default async function DashboardHomePage() {
       />
 
       <Secao>A operação</Secao>
-      <p className="text-slate-600 dark:text-slate-400">
+      <p className="text-sm text-slate-600 dark:text-slate-400">
         Uma coisa depende da anterior. A ordem é a da corrente.
       </p>
 

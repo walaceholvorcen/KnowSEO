@@ -124,7 +124,7 @@ export function GbpBoard({
               <p className="text-sm text-slate-500 dark:text-slate-400">
                 Negócio encontrado
               </p>
-              <p className="mt-2 font-title text-2xl leading-snug text-slate-900 dark:text-slate-100">
+              <p className="mt-2 text-xl font-semibold leading-snug text-slate-900 dark:text-slate-100">
                 {latest.place_name}
               </p>
               {latest.maps_uri && (
