@@ -10,6 +10,10 @@ import { createAdminClient } from "@/lib/supabase/admin";
 const SCOPES = [
   "https://www.googleapis.com/auth/webmasters.readonly",
   "https://www.googleapis.com/auth/analytics.readonly",
+  // Sem isto, buscarEmailDaConta() não tinha permissão para chamar o
+  // userinfo e a tela ficava presa em "Conectado como (desconhecido)" -
+  // achado testando a conexão real pela primeira vez.
+  "https://www.googleapis.com/auth/userinfo.email",
 ].join(" ");
 
 export function isGoogleIntegrationConfigured(): boolean {
