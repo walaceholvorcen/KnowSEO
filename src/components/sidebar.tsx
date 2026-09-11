@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
+import { Logotipo } from "@/components/marca";
 import {
   LayoutGrid,
   FileText,
@@ -148,9 +149,7 @@ export function Sidebar({
   }
 
   const marca = (
-    <span className="text-lg font-bold tracking-tight text-slate-900 dark:text-slate-100">
-      Know<span className="text-cobalto-600 dark:text-cobalto-400">SEO</span>
-    </span>
+    <Logotipo className="text-base text-slate-900 dark:text-slate-100" />
   );
 
   return (

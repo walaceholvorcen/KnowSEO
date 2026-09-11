@@ -153,16 +153,19 @@ const LIMIARES = [50, 70, 90];
 //
 // O marcador colorido substitui o filete antigo como a forma da faixa; a
 // palavra logo abaixo continua lá para quem não distingue as cores.
-function Regua({
+// Exportada: o Início lê a mesma nota em miniatura na linha "Saúde do site".
+export function Regua({
   score,
   corMarcador,
+  className,
 }: {
   score: number;
   corMarcador: string;
+  className?: string;
 }) {
   const posicao = Math.min(100, Math.max(0, score));
   return (
-    <div className="relative mt-4 h-3.5" aria-hidden="true">
+    <div className={cn("relative mt-4 h-3.5", className)} aria-hidden="true">
       <div className="absolute inset-x-0 bottom-0 h-px bg-slate-300 dark:bg-slate-700" />
       {Array.from({ length: 11 }, (_, i) => i * 10).map((valor) => (
         <span
