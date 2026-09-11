@@ -1291,3 +1291,65 @@ do dado da tela — e resposta visual imediata.
 
 Atenção: o pré-carregamento só existe em produção (`next dev` não
 pré-carrega). Testar a sensação de velocidade no deploy, não local.
+
+## 27. A jornada do site — auditoria que retém
+
+Pedido do dono, pela segunda vez: "o cliente faz 2 ou 3 auditorias, a nota
+sobe e pra ele está bom". O histórico real confirma o padrão — o blog de
+teste foi de 55 para 96 e parou. A seção 22 já tinha a comparação e a
+reauditoria semanal; faltava **dizer ao cliente por que continuar, e
+quando**.
+
+### A tese
+
+Nota alta é o começo da parte que dá resultado, por dois motivos que a
+tela agora diz com data:
+
+1. **O Google não reage na hora.** A correção vale no site no minuto em que
+   é feita; a posição muda de 2 a 8 semanas depois. Quem para no dia em que
+   a nota sobe perde a janela em que o efeito aparece.
+2. **Site não fica parado.** Página nova, plugin, link que quebra — e
+   ninguém avisa.
+
+### O que entrou — `src/lib/audit/jornada.ts` (função pura, 6 testes)
+
+- **Quatro etapas em sequência real**: Diagnóstico → Correção → Efeito no
+  Google → Manutenção. A correção termina na primeira auditoria depois da
+  qual nenhuma outra voltou a ter item crítico ou alto (se um alto
+  reapareceu, conta da recuperação). O efeito é a janela de 14 a 56 dias
+  depois dela, com as datas escritas. Manutenção começa quando a janela
+  fecha.
+- **Próxima verificação, com data e motivo** — substitui o card "Páginas
+  analisadas", que ocupava o lugar mais nobre da tela sem pedir ação:
+  - item alto aberto → "Agora": corrigir e rodar de novo, porque a
+    auditoria confirma no site na hora;
+  - correção há menos de 14 dias → 7 dias depois: confirmar que se manteve;
+  - estável → mensal; vencida → "Atrasada", com a data da última;
+  - com `CRON_SECRET` → a próxima segunda, 7h UTC, marcada como automática.
+- **Gráfico de evolução** das notas Google e IA, com os limiares 50/70/90
+  da régua e a frase "desde 04/09 a nota subiu 41 pontos". É a recompensa
+  visível do trabalho — o motivo para voltar e ver a linha continuar.
+- **Ação por etapa**: na janela do efeito, Mercado (o que o Google já
+  mostra) e Estratégia; em manutenção, Radar GEO e Estratégia. A auditoria
+  deixa de ser fim de linha e aponta para os módulos que fazem crescer.
+
+### Decisões de gráfico (skill de dataviz)
+
+- Cores validadas no validador da skill contra os dois fundos. Cinza para a
+  série IA **reprovou** (lê como desativado); a paleta ficou em dois passos
+  do cobalto — Google `cobalto-600`/`#7389f1` (escuro), IA `#94a6fa`/
+  `#3450d4` — com a IA **tracejada** como segunda codificação e rótulos
+  diretos no fim das linhas (o tom claro tem contraste abaixo de 3:1, e o
+  rótulo é a compensação exigida).
+- Um eixo só. Piso da escala na dezena abaixo da menor nota (nunca acima de
+  40), escrito no eixo: com piso 0 o gráfico era metade vazio.
+- SVG esticado só para linhas e grade (`vector-effect: non-scaling-stroke`);
+  pontos, rótulos e dica em HTML por cima, para o texto não deformar.
+- Dica ao passar o mouse ou focar pelo teclado em qualquer ponto da faixa
+  vertical, e tabela escondida para leitor de tela.
+
+### Pendência que fecha o laço
+
+Lembrete por e-mail na data da próxima verificação e quando a reauditoria
+semanal achar algo **novo**. É o que traz o cliente de volta sem ele
+lembrar de abrir o painel — depende de provedor de e-mail.

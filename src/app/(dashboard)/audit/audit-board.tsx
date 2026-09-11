@@ -8,6 +8,8 @@ import { cn } from "@/lib/utils";
 import { Lede, Linha, NotaCard, Secao } from "@/components/lede";
 import { resumirComparacao, type Comparacao } from "@/lib/audit/comparar";
 import type { AuditRow, FindingRow } from "./page";
+import type { Jornada } from "@/lib/audit/jornada";
+import { JornadaDoSite, ProximaVerificacaoCard } from "./jornada-do-site";
 
 const SEVERITY_ORDER = ["critical", "high", "medium", "quick_win", "info"];
 
@@ -47,6 +49,7 @@ export function AuditBoard({
   anterior,
   comparacao,
   acompanhamentoAtivo,
+  jornada = null,
 }: {
   blogId: string;
   audits: AuditRow[];
@@ -55,6 +58,7 @@ export function AuditBoard({
   anterior: AuditRow | null;
   comparacao: Comparacao | null;
   acompanhamentoAtivo: boolean;
+  jornada?: Jornada | null;
 }) {
   const router = useRouter();
   const [siteUrl, setSiteUrl] = useState(latest?.site_url ?? "");
@@ -166,6 +170,9 @@ export function AuditBoard({
               score={latest.score_ai}
               hint="Prontidão para ser citado por ChatGPT e afins"
             />
+            {jornada ? (
+              <ProximaVerificacaoCard proxima={jornada.proxima} />
+            ) : (
             <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
               <p className="text-sm text-slate-500 dark:text-slate-400">
                 Páginas analisadas
@@ -177,7 +184,10 @@ export function AuditBoard({
                 {latest.site_url}
               </p>
             </div>
+            )}
           </div>
+
+          {jornada && <JornadaDoSite jornada={jornada} />}
 
           {/* O que transforma a auditoria de coisa que se roda três vezes em
               coisa que se acompanha. SEO não muda na hora; sem comparação,
@@ -410,7 +420,7 @@ export function AuditBoard({
               : "Cada auditoria fica guardada para ser comparada com a próxima."}
           </p>
           <ul className="mt-3">
-            {audits.map((a) => (
+            {audits.slice(0, 10).map((a) => (
               <Linha key={a.id}>
                 <div className="flex items-baseline justify-between gap-4 text-sm">
                   <span className="min-w-0 truncate text-slate-600 dark:text-slate-400">

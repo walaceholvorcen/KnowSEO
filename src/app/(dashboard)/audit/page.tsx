@@ -1,6 +1,7 @@
 import { requireUserAndWorkspace, getWorkspaceBlogs } from "@/lib/workspace";
 import { compararAuditorias, type AchadoResumo } from "@/lib/audit/comparar";
 import { AuditBoard } from "./audit-board";
+import { lerJornada } from "./jornada-dados";
 
 export interface AuditRow {
   id: string;
@@ -38,7 +39,9 @@ export default async function AuditPage() {
     .select("*")
     .eq("blog_id", blog.id)
     .order("created_at", { ascending: false })
-    .limit(10);
+    // Mais que as 10 da lista: a jornada precisa da primeira auditoria
+    // do site para datar o diagnóstico e desenhar a evolução inteira.
+    .limit(30);
 
   const concluidas = ((audits as AuditRow[]) ?? []).filter(
     (a) => a.status === "done",
@@ -53,21 +56,28 @@ export default async function AuditPage() {
       ) ?? null)
     : null;
 
-  const { data: findings } = latest
-    ? await supabase
-        .from("audit_findings")
-        .select("*")
-        .eq("audit_id", latest.id)
-    : { data: [] };
-
-  const { data: antigos } = anterior
-    ? await supabase
-        .from("audit_findings")
-        .select("code,title,severity,affected_count")
-        .eq("audit_id", anterior.id)
-    : { data: [] };
+  const [{ data: findings }, { data: antigos }] = await Promise.all([
+    latest
+      ? supabase.from("audit_findings").select("*").eq("audit_id", latest.id)
+      : Promise.resolve({ data: [] }),
+    anterior
+      ? supabase
+          .from("audit_findings")
+          .select("code,title,severity,affected_count")
+          .eq("audit_id", anterior.id)
+      : Promise.resolve({ data: [] }),
+  ]);
 
   const lista = (findings as FindingRow[]) ?? [];
+  // Só promete reauditoria automática quando o agendamento consegue de
+  // fato rodar: sem o segredo, a rota semanal recusa todo disparo.
+  const acompanhamentoAtivo = Boolean(process.env.CRON_SECRET);
+  const jornada = await lerJornada(supabase, {
+    concluidas,
+    latest,
+    achados: lista,
+    acompanhamentoAtivo,
+  });
 
   return (
     <AuditBoard
@@ -81,9 +91,8 @@ export default async function AuditPage() {
           ? compararAuditorias(lista, (antigos as AchadoResumo[]) ?? [])
           : null
       }
-      // Só promete reauditoria automática quando o agendamento consegue de
-      // fato rodar: sem o segredo, a rota semanal recusa todo disparo.
-      acompanhamentoAtivo={Boolean(process.env.CRON_SECRET)}
+      acompanhamentoAtivo={acompanhamentoAtivo}
+      jornada={jornada}
     />
   );
 }
