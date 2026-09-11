@@ -61,8 +61,9 @@ function MarcaK({ className }: { className?: string }) {
   );
 }
 
-// Logotipo completo. O tamanho vem do font-size do container (text-3xl,
-// text-5xl...), a cor das letras vem de text-*; o K é sempre azul.
+// Logotipo completo, numa linha: "Know SEO" com o K da marca. O tamanho vem
+// do font-size do container (text-lg, text-xl...), a cor das letras vem de
+// text-*; o K é sempre azul.
 export function Logotipo({ className }: { className?: string }) {
   return (
     <span
@@ -70,16 +71,13 @@ export function Logotipo({ className }: { className?: string }) {
       aria-label="Know SEO"
       className={cn(
         fonteMarca.className,
-        "block select-none uppercase leading-[0.94] tracking-[0.015em]",
+        "block select-none whitespace-nowrap uppercase leading-none tracking-[0.015em]",
         className,
       )}
     >
-      <span aria-hidden="true" className="block">
-        SEO
-      </span>
-      <span aria-hidden="true" className="block whitespace-nowrap">
+      <span aria-hidden="true">
         <MarcaK className="-ml-[0.26em] inline-block h-[0.715em] w-auto" />
-        NOW
+        NOW SEO
       </span>
     </span>
   );
