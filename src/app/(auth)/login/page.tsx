@@ -6,6 +6,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { traduzErroAuth } from "../traduz-erro";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -26,7 +27,7 @@ export default function LoginPage() {
     });
 
     if (error) {
-      setError(error.message);
+      setError(traduzErroAuth(error.message));
       setLoading(false);
       return;
     }
@@ -36,70 +37,79 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-950 px-4">
-      <div className="w-full max-w-sm space-y-6">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-            Entrar
-          </h1>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            Entre no seu painel de conteúdo
-          </p>
+    <div>
+      <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">
+        Entrar
+      </h1>
+      <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+        Acesse o painel da sua marca.
+      </p>
+
+      <form onSubmit={handleSubmit} className="mt-8 space-y-4">
+        <div>
+          <label
+            htmlFor="email"
+            className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300"
+          >
+            Email
+          </label>
+          <input
+            id="email"
+            type="email"
+            required
+            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className={cn(campo(), "w-full")}
+            placeholder="nome@empresa.com"
+          />
+        </div>
+        <div>
+          <label
+            htmlFor="password"
+            className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300"
+          >
+            Senha
+          </label>
+          <input
+            id="password"
+            type="password"
+            required
+            autoComplete="current-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className={cn(campo(), "w-full")}
+            placeholder="••••••••"
+          />
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
-              Email
-            </label>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className={cn(campo(), "w-full")}
-              placeholder="tu@empresa.com"
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
-              Senha
-            </label>
-            <input
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className={cn(campo(), "w-full")}
-              placeholder="••••••••"
-            />
-          </div>
-
-          {error && (
-            <p className="rounded-lg bg-red-50 dark:bg-red-900/20 px-3 py-2 text-sm text-red-600 dark:text-red-400">
-              {error}
-            </p>
-          )}
-
-          <button
-            type="submit"
-            disabled={loading}
-            className={cn(botao("primario"), "w-full")}
+        {error && (
+          <p
+            role="alert"
+            className="rounded-lg bg-red-50 dark:bg-red-900/20 px-3 py-2 text-sm text-red-600 dark:text-red-400"
           >
-            {loading ? "Entrando..." : "Entrar"}
-          </button>
-        </form>
+            {error}
+          </p>
+        )}
 
-        <p className="text-center text-sm text-slate-500 dark:text-slate-400">
-          Ainda não tem conta?{" "}
-          <Link
-            href="/signup"
-            className="font-medium text-cobalto-600 dark:text-cobalto-300 hover:underline"
-          >
-            Criar conta grátis
-          </Link>
-        </p>
-      </div>
+        <button
+          type="submit"
+          disabled={loading}
+          className={cn(botao("primario"), "w-full")}
+        >
+          {loading ? "Entrando..." : "Entrar"}
+        </button>
+      </form>
+
+      <p className="mt-8 text-center text-sm text-slate-500 dark:text-slate-400">
+        Ainda não tem conta?{" "}
+        <Link
+          href="/signup"
+          className="font-medium text-cobalto-600 dark:text-cobalto-300 hover:underline"
+        >
+          Criar conta grátis
+        </Link>
+      </p>
     </div>
   );
 }
