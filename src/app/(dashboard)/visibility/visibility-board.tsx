@@ -12,7 +12,8 @@ import {
   perguntasDaRodada,
   placarPorMotor,
 } from "@/lib/ai-visibility/resumo";
-import { extractDomain, isDirectory } from "@/lib/citation";
+import { lerFontes } from "@/lib/ai-visibility/fontes";
+import { FontesDoMercado } from "./fontes-do-mercado";
 import type { AiQuery, AiVisibilityCheck } from "@/types";
 
 const INTENT_LABEL: Record<string, string> = {
@@ -165,29 +166,7 @@ export function VisibilityBoard({
     timeline.length > 1 ? timeline[timeline.length - 2].score : null;
   const delta = score !== null && previous !== null ? score - previous : null;
 
-  function contar(pegar: (c: AiVisibilityCheck) => string[]) {
-    const contagem = new Map<string, number>();
-    for (const c of latest) {
-      for (const d of pegar(c)) {
-        contagem.set(d, (contagem.get(d) ?? 0) + 1);
-      }
-    }
-    return [...contagem.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
-  }
-
-  // Filtrado na leitura também: as checagens gravadas antes da separação
-  // entre citação e resultado de busca têm diretório misturado em
-  // `competitors`, e a tela chegava a abrir com "no seu lugar apareceu
-  // agencies.semrush.com" - justo a frase que a correção existia para matar.
-  const dominiosDe = (lista: string[]) =>
-    lista.map((d) => extractDomain(d) ?? d);
-  const topCompetitors = contar((c) =>
-    dominiosDe(c.competitors).filter((d) => !isDirectory(d)),
-  );
-  const topDirectories = contar((c) => [
-    ...(c.directories ?? []),
-    ...dominiosDe(c.competitors).filter((d) => isDirectory(d)),
-  ]);
+  const fontes = lerFontes(latest);
 
   const porPergunta = new Map<string, AiVisibilityCheck[]>();
   for (const c of latest) {
@@ -265,7 +244,10 @@ export function VisibilityBoard({
   const achadoSemCitar = latest.filter(
     (c) => !c.cited && c.found_in_search,
   ).length;
-  const [primeiroRival, vezesRival] = topCompetitors[0] ?? [null, 0];
+  const rival = fontes.fontes.find((f) => f.tipo === "empresa");
+  const [primeiroRival, vezesRival] = rival
+    ? [rival.dominio, rival.perguntas]
+    : [null, 0];
   const motoresMedidos = placar.map((p) => p.provider);
 
   const veredito =
@@ -285,7 +267,7 @@ export function VisibilityBoard({
     ) : (
       <>
         {primeiroRival && perguntasCitadas.size < perguntasMedidas.size
-          ? `No seu lugar apareceu ${primeiroRival}, ${vezesRival} ${vezesRival === 1 ? "vez" : "vezes"}. `
+          ? `No seu lugar apareceu ${primeiroRival}, em ${vezesRival} ${vezesRival === 1 ? "pergunta" : "perguntas"}. `
           : ""}
         {achadoSemCitar > 0 &&
           `Em ${achadoSemCitar} ${achadoSemCitar === 1 ? "resposta a busca encontrou" : "respostas a busca encontrou"} o seu site e a IA escolheu outro. `}
@@ -393,59 +375,7 @@ export function VisibilityBoard({
         </dl>
       )}
 
-      {topCompetitors.length > 0 && (
-        <>
-          <Secao>Quem a IA cita no seu lugar</Secao>
-          <p className="text-sm text-slate-600 dark:text-slate-400">
-            Empresas que os assistentes usaram como fonte ao responder. Cada
-            uma é uma resposta que poderia ter sido sua.
-          </p>
-          <ul className="mt-4">
-            {topCompetitors.map(([domain, count]) => (
-              <Linha key={domain}>
-                <div className="flex items-baseline justify-between gap-4">
-                  <a
-                    href={`https://${domain}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="min-w-0 truncate text-slate-800 dark:text-slate-200 hover:text-cobalto-600 dark:hover:text-cobalto-400 hover:underline"
-                  >
-                    {domain}
-                  </a>
-                  <span className="tabular shrink-0 font-display text-2xl text-slate-900 dark:text-slate-100">
-                    {count}
-                  </span>
-                </div>
-              </Linha>
-            ))}
-          </ul>
-        </>
-      )}
-
-      {topDirectories.length > 0 && (
-        <>
-          <Secao>Diretórios e plataformas citados</Secao>
-          <p className="text-sm text-slate-600 dark:text-slate-400">
-            Estes não são concorrentes seus — são listas e portais. Quando a
-            IA recorre a eles, é porque não encontrou uma empresa com resposta
-            boa o bastante. É a lacuna mais fácil de ocupar.
-          </p>
-          <ul className="mt-4">
-            {topDirectories.map(([domain, count]) => (
-              <Linha key={domain}>
-                <div className="flex items-baseline justify-between gap-4">
-                  <span className="min-w-0 truncate text-slate-600 dark:text-slate-400">
-                    {domain}
-                  </span>
-                  <span className="tabular shrink-0 font-display text-slate-500 dark:text-slate-400">
-                    {count}
-                  </span>
-                </div>
-              </Linha>
-            ))}
-          </ul>
-        </>
-      )}
+      <FontesDoMercado leitura={fontes} />
 
       {timeline.length > 1 && (
         <>

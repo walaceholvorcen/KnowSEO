@@ -1,4 +1,6 @@
-export type Severity = "critical" | "high" | "medium" | "quick_win" | "info";
+import type { EntidadeSchema } from "./entidade.ts";
+
+export type Severity ="critical" | "high" | "medium" | "quick_win" | "info";
 export type Category =
   | "crawlability"
   | "indexation"
@@ -41,6 +43,10 @@ export interface PageSnapshot {
   /** Primeiro parágrafo de texto com conteúdo real (usado no check de GEO). */
   firstParagraph: string | null;
   hasJsScripts: boolean;
+  /** Organizações descritas no JSON-LD da página (SEO de entidade). */
+  entidades: EntidadeSchema[];
+  /** Frases de folheto encontradas no texto ("líder de mercado"...). */
+  frasesVazias: string[];
 }
 
 /** URL que o site anuncia (no sitemap ou como home) e não entrega. */

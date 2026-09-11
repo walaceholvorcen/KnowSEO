@@ -1,4 +1,5 @@
 import type { Finding, PageSnapshot, SiteSignals, Severity } from "./types";
+import { nomeComparavel } from "./entidade.ts";
 
 // Regras de auditoria. Função pura: recebe sinais, devolve achados.
 // Nenhuma regra chama rede - é o que permite testar cada uma com um caso
@@ -505,6 +506,117 @@ export function runRules(signals: SiteSignals): Finding[] {
     });
   }
 
+  // -------------------------------------------------------------- entidade
+  // O site diz à máquina QUEM é a empresa? Ver src/lib/audit/entidade.ts.
+  // Achados de site inteiro: a identidade da empresa é uma só, então não
+  // faz sentido diluir pelo número de páginas.
+  const entidades = pages.flatMap((p) => p.entidades);
+  const paginasComEntidade = pages.filter((p) => p.entidades.length > 0);
+
+  if (pages.length && !entidades.length) {
+    // Site sem schema nenhum já leva NO_SCHEMA por página. Aqui a notícia é
+    // outra (a empresa não se apresenta), mas cobrar cheio nos dois achados
+    // puniria duas vezes a mesma ausência.
+    const semSchemaNenhum = withSchema.length === 0;
+    add({
+      code: "SEM_ENTIDADE",
+      severity: semSchemaNenhum ? "medium" : "high",
+      category: "geo",
+      title: "O site não diz à máquina quem é a empresa",
+      impact:
+        "Google e assistentes de IA citam quem eles reconhecem: um nome ligado a uma categoria, a um lugar e aos seus perfis. Sem a ficha da organização em dado estruturado, a IA precisa deduzir isso da prosa - e costuma citar quem deixou explícito.",
+      evidence: semSchemaNenhum
+        ? "Nenhum bloco Organization ou LocalBusiness - e nenhum dado estruturado no site"
+        : `O site tem dado estruturado (${[...new Set(pages.flatMap((p) => p.jsonLdTypes))].filter((t) => t !== "__invalid__").slice(0, 4).join(", ")}), mas nenhum descreve a empresa`,
+      fix: "Publique na home um JSON-LD Organization (ou LocalBusiness, se atende num endereço) com name, url, logo, description e sameAs apontando para os perfis oficiais.",
+      affectedUrls: [pages[0].url],
+      affectedCount: 1,
+    });
+  }
+
+  if (entidades.length && !entidades.some((e) => e.sameAs.length > 0)) {
+    add({
+      code: "ENTIDADE_SEM_SAMEAS",
+      severity: "medium",
+      category: "geo",
+      title: "A empresa não está ligada aos próprios perfis",
+      impact:
+        "É o sameAs que diz à máquina que o site, o Instagram, o LinkedIn e o perfil no Google são a mesma empresa. A IA aprende sobre você principalmente nesses outros lugares - sem o elo, ela não soma o que leu lá ao seu site.",
+      evidence: `O bloco ${entidades[0].tipo} existe, mas sem nenhum link em sameAs`,
+      fix: "Adicione sameAs com a URL completa de cada perfil oficial: Instagram, LinkedIn, YouTube, perfil no Google e diretórios do setor em que a empresa está.",
+      ...scope(paginasComEntidade),
+    });
+  }
+
+  if (entidades.length) {
+    // A mais completa das fichas: se uma página tem tudo, o que falta nas
+    // outras não impede a máquina de reconhecer a empresa.
+    const faltasDe = (e: (typeof entidades)[number]) =>
+      [
+        !e.nome && "name",
+        !e.url && "url",
+        !e.logo && "logo",
+        !e.descricao && "description",
+        e.local && !e.endereco && "address",
+        e.local && !e.telefone && "telephone",
+      ].filter((x): x is string => !!x);
+    const melhor = [...entidades].sort(
+      (a, b) => faltasDe(a).length - faltasDe(b).length,
+    )[0];
+    const faltas = faltasDe(melhor);
+    if (faltas.length) {
+      const faltaLocal = faltas.includes("address") || faltas.includes("telephone");
+      add({
+        code: "ENTIDADE_INCOMPLETA",
+        severity: faltaLocal ? "medium" : "quick_win",
+        category: "geo",
+        title: "A ficha da empresa está incompleta",
+        impact: faltaLocal
+          ? "Para negócio com endereço, endereço e telefone na ficha são o que liga o site ao perfil no Google e às buscas \"perto de mim\"."
+          : "Cada campo vazio é uma pergunta sobre a empresa que a máquina não consegue responder com certeza.",
+        evidence: `${melhor.tipo} sem: ${faltas.join(", ")}`,
+        fix: "Complete os campos que faltam no JSON-LD da organização, com os mesmos dados que aparecem no site e no perfil do Google.",
+        ...scope(paginasComEntidade),
+      });
+    }
+
+    const nomes = new Map<string, string>();
+    for (const e of entidades) {
+      if (e.nome) nomes.set(nomeComparavel(e.nome), e.nome);
+    }
+    if (nomes.size > 1) {
+      add({
+        code: "ENTIDADE_NOME_INCONSISTENTE",
+        severity: "quick_win",
+        category: "geo",
+        title: "A empresa aparece com mais de um nome",
+        impact:
+          "Para a máquina, dois nomes podem ser duas empresas. A consistência do nome em todo lugar é o que junta as menções numa entidade só.",
+        evidence: `Nomes encontrados: ${[...nomes.values()].slice(0, 4).map((n) => `"${n}"`).join(", ")}`,
+        fix: "Use exatamente o mesmo nome em todos os blocos de dado estruturado - e o mesmo do perfil no Google.",
+        ...scope(paginasComEntidade),
+      });
+    }
+  }
+
+  // Duas frases de folheto na mesma página, e não uma: uma só pode ser
+  // descuido num texto que no resto tem fato. Duas já é o padrão do texto.
+  const folheto = pages.filter((p) => p.frasesVazias.length >= 2);
+  if (folheto.length) {
+    const exemplos = [...new Set(folheto.flatMap((p) => p.frasesVazias))];
+    add({
+      code: "TEXTO_GENERICO",
+      severity: "medium",
+      category: "geo",
+      title: `${folheto.length} página(s) falam de nada para a máquina`,
+      impact:
+        "A IA descreve empresas a partir de fatos: nome, número, lugar, especialidade. Frase de folheto não tem nada disso - não há o que reconhecer, nem o que citar. É o texto que qualquer concorrente poderia assinar.",
+      evidence: `Frases encontradas: ${exemplos.slice(0, 5).map((f) => `"${f}"`).join(", ")}`,
+      fix: "Troque cada frase por um fato verificável: \"atendemos 140 clínicas em Madri desde 2012\" em vez de \"referência no setor\".",
+      ...scope(folheto),
+    });
+  }
+
   const noStructure = pages.filter(
     (p) => p.wordCount >= THIN_CONTENT_WORDS && p.h2s.length < 2,
   );
@@ -547,6 +659,17 @@ const MIN_SCOPE = 0.15;
 
 const GEO_CATEGORIES = new Set(["geo"]);
 
+// Achados de GEO que dizem respeito à empresa, não a uma página: a
+// identidade é uma só. Um sameAs faltando pesa igual num site de 3 ou de 300
+// páginas.
+const SITE_INTEIRO = new Set([
+  "NO_LLMS_TXT",
+  "SEM_ENTIDADE",
+  "ENTIDADE_SEM_SAMEAS",
+  "ENTIDADE_INCOMPLETA",
+  "ENTIDADE_NOME_INCONSISTENTE",
+]);
+
 function penaltyFor(finding: Finding, totalPages: number): number {
   const base = BASE_PENALTY[finding.severity];
   if (base === 0) return 0;
@@ -556,7 +679,7 @@ function penaltyFor(finding: Finding, totalPages: number): number {
   const isSiteWide =
     finding.category === "crawlability" ||
     finding.category === "technical" ||
-    finding.code === "NO_LLMS_TXT";
+    SITE_INTEIRO.has(finding.code);
 
   if (isSiteWide) return base;
   if (totalPages === 0) return base;

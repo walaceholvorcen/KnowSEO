@@ -1191,3 +1191,61 @@ disso vira funcionalidade nossa.
    no artigo publicado (é o formato que a IA recorta).
 6. **Sinais locais na auditoria** (enquanto o módulo GMN espera o
    cartão): LocalBusiness schema, endereço visível no rodapé, telefone.
+
+## 25. Auditoria de Entidade e as fontes que a IA usa (itens 1 e 2 da seção 24)
+
+### Auditoria de Entidade — `src/lib/audit/entidade.ts`
+
+Cinco regras novas, todas na nota **IA** (categoria `geo`, sem migração):
+
+| Código | Severidade | O que mede |
+|---|---|---|
+| `SEM_ENTIDADE` | alto (médio se o site não tem schema nenhum) | nenhum bloco Organization/LocalBusiness |
+| `ENTIDADE_SEM_SAMEAS` | médio | organização sem link para os próprios perfis |
+| `ENTIDADE_INCOMPLETA` | ganho rápido (médio se falta endereço/telefone de negócio local) | name, url, logo, description, address, telephone |
+| `ENTIDADE_NOME_INCONSISTENTE` | ganho rápido | a empresa com mais de um nome entre páginas |
+| `TEXTO_GENERICO` | médio, proporcional | ≥2 frases de folheto na mesma página ("líder de mercado", "soluciones innovadoras") |
+
+Decisões:
+- As quatro de entidade são **de site inteiro** (`SITE_INTEIRO` em
+  `rules.ts`): a identidade da empresa é uma só, não dilui por página.
+- `SEM_ENTIDADE` cai para médio quando o site não tem schema nenhum,
+  porque `NO_SCHEMA` já cobra essa ausência por página — cobrar cheio nos
+  dois puniria duas vezes.
+- Vale a **ficha mais completa** do site: se uma página tem tudo, o que
+  falta nas outras não impede o reconhecimento.
+- Tipo múltiplo (`["Organization", "ProfessionalService"]`) usa o mais
+  específico — é ele que diz se a empresa tem endereço físico. `Service`
+  puro é oferta, não organização, e fica de fora.
+- A lista de frases de folheto é conservadora: só entra o que não carrega
+  fato em contexto nenhum. "Experiência" sozinho pode ser fato; "soluções
+  inovadoras" nunca é. Duas frases na página, não uma: uma pode ser
+  descuido num texto que tem fato.
+- `tsconfig` ganhou `allowImportingTsExtensions`: é o primeiro módulo da
+  auditoria importado por valor por outro, e os testes rodam no node puro,
+  que exige a extensão.
+
+Validado contra sites reais: `dataknow.es` ganha 2 achados verdadeiros
+(sem `sameAs`; ficha sem logo e endereço); `isocialweb.agency` passa
+limpo; o `seogenome.com` do próprio Daniel Sócrates tem a Organization sem
+`sameAs` (o link para Instagram está só na pessoa) — a regra acerta.
+
+### As fontes que a IA usa — `src/lib/ai-visibility/fontes.ts`
+
+Substitui no Radar as listas "quem a IA cita no seu lugar" e "diretórios",
+que mostravam um número grande e igual em cada linha ("1, 1, 1") e nada
+sobre onde o cliente estava. Agora é uma lista só:
+
+- Cada fonte com barra de **perguntas em que aparece / total da rodada**,
+  tipo (concorrente ou plataforma) e em quais assistentes.
+- **A linha "Seu site" entra na posição que a marca ocupa** — ver o
+  próprio site atrás de um diretório é o argumento inteiro.
+- Abertura: "A IA se apoiou em 46 sites diferentes para responder as
+  perguntas do seu setor. O seu não é um deles." A frase de concentração
+  ("as 5 maiores levam X%") só aparece a partir de 40%: num mercado de
+  cauda longa, "5 sites levam 15%" é verdade que não diz nada.
+- Ação dita uma vez por tipo, não um botão por linha: plataforma = ter
+  perfil completo nela; concorrente = comparar no Mercado.
+- Zero chamada nova: tudo sai do que as checagens já gravam. Diretório
+  misturado em `competitors` (checagens antigas) é reclassificado na
+  leitura.

@@ -29,7 +29,7 @@ const HEALTHY = `<!doctype html><html><head>
 <title>Clínica dental en Madrid especializada en ortodoncia</title>
 <meta name="description" content="Somos una clínica dental en Madrid con más de 20 años tratando ortodoncia invisible e implantes. Primera consulta sin coste y financiación a medida.">
 <link rel="canonical" href="${ORIGIN}/">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"LocalBusiness","name":"C"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"LocalBusiness","name":"C","url":"https://cliente.es/","logo":"https://cliente.es/logo.png","description":"Clinica dental en Madrid","address":"Calle Mayor 1, Madrid","telephone":"+34 910 000 000","sameAs":["https://www.instagram.com/clinica"]}</script>
 </head><body>
 <h1>Ortodoncia invisible en Madrid</h1><h2>Como funciona</h2><h2>Precio</h2>
 <p>${"palabra ".repeat(400)}</p>

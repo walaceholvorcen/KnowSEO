@@ -1,4 +1,5 @@
 import type { PageSnapshot } from "./types";
+import { extrairEntidades, frasesVazias } from "./entidade.ts";
 
 // Extração de sinais de SEO do HTML. Função pura: recebe HTML, devolve
 // dados. Sem rede aqui - assim as regras podem ser testadas com HTML fixo.
@@ -146,5 +147,7 @@ export function parsePage(params: {
     jsonLdTypes: extractJsonLdTypes(html),
     firstParagraph: extractFirstParagraph(html),
     hasJsScripts: /<script[^>]*src=/i.test(html),
+    entidades: extrairEntidades(html),
+    frasesVazias: frasesVazias(bodyText),
   };
 }
