@@ -1124,3 +1124,70 @@ rodou uma vez no fim, com zero achados.
 - Contraste de texto secundário é medido, não estimado.
 - A régua é a única assinatura visual. Não replicar o gesto em outras
   telas como enfeite — ela vale porque a escala é real.
+
+## 24. Pesquisa de mercado — o que um SEO de 25 anos ensina (Daniel Sócrates)
+
+Setembro/2026. Estudo do perfil @danielsocrates.seo (44,8 mil seguidores,
+CEO da SEO Genome, autor do livro "SEO de Entidade", no ramo desde 2001),
+posts das últimas semanas + site da agência. O que ele ensina, e o que
+disso vira funcionalidade nossa.
+
+### O que ele martela, resumido
+
+1. **Entidade é a tese central** (o livro inteiro é sobre isso): "o Google
+   não ranqueia texto, ele escolhe quem responde". Máquina só cita quem
+   ela reconhece como entidade: nome, categoria, relações, dado
+   estruturado. Demonstração dele: colar o texto do site na ferramenta de
+   linguagem natural do Google — texto genérico ("líder de mercado,
+   soluções inovadoras") devolve "nenhuma categoria encontrada".
+2. **A IA copia de um punhado de fontes**: ~15 domínios concentram ~68%
+   das citações de ChatGPT/Claude/Gemini/Perplexity/AI Overviews, e quase
+   nenhum é o site da empresa — são perfis e fichas de terceiros (YouTube
+   subiu, Reddit despencou). "Confira em quais desses 20 você aparece."
+3. **Search Console é a mina subaproveitada**: relatório novo de IA
+   generativa (AI Overviews/AI Mode dentro de Desempenho); a caixinha
+   "Search generative AI" em Configurações (incluir/excluir das respostas
+   de IA, já vem marcada); consultas em posição 11–20 = "o tráfego mais
+   barato que você tem"; propriedades de rede social (Instagram/TikTok/
+   X/YouTube) sem precisar de site.
+4. **Conteúdo único vence produção em série**: o Google recompensa
+   experiência própria, casos, opinião — o que máquina e concorrente não
+   copiam. Responder pergunta real (AnswerThePublic, modelo Quora) é o
+   conteúdo que a IA cita.
+5. **SEO local como reforço de sinal**: perfil do Google, foto com
+   geolocalização, NAP consistente.
+6. **Método da agência dele** = Diagnóstico → Plano → Execução → Medição
+   ("linha de base antes, série depois"), com silos de conteúdo.
+
+### O que já temos e ele valida
+
+- A corrente do Início é o método dele em tela (diagnóstico → pauta →
+  conteúdo → medição).
+- O Radar GEO mede citação de verdade em 3 motores — ele só consegue
+  oferecer isso ao cliente via relatório manual.
+- "Página 2" via Search Console já é a seção "onde você já quase ganha"
+  do Mercado.
+- O filtro de diretórios nas citações já separa "fonte" de "rival".
+
+### O que incluir (prioridade da pesquisa)
+
+1. **Auditoria de Entidade** — categoria nova de regras: JSON-LD de
+   Organization/LocalBusiness com nome+categoria+sameAs; nome consistente;
+   detector de texto genérico na home (frases vazias tipo "líder de
+   mercado") = o teste "seu site fala de nada pra máquina". Já parseamos
+   JSON-LD; é estender regra, não motor.
+2. **Fontes que a IA usa no seu mercado** — já gravamos citações e
+   resultados de busca das rodadas do Radar; agregar por domínio e
+   mostrar "a IA se apoia nestes sites no seu setor; você aparece em X
+   deles", com ação por fonte. Dado real nosso, ninguém pequeno tem.
+3. **DNA da marca com experiência própria** — campos para casos,
+   números e opiniões, injetados na geração; trava de qualidade que
+   recusa artigo genérico (detector determinístico de frase vazia).
+4. **Checklist Search Console na Auditoria** — itens educativos: caixinha
+   de IA generativa conferida, relatório de IA generativa aberto,
+   posições 11–20 revisadas. Quando a API expor o relatório de IA,
+   puxar para o Mercado.
+5. **Pautas-pergunta** — pauta tipo "pergunta respondida" com FAQ schema
+   no artigo publicado (é o formato que a IA recorta).
+6. **Sinais locais na auditoria** (enquanto o módulo GMN espera o
+   cartão): LocalBusiness schema, endereço visível no rodapé, telefone.
