@@ -1,5 +1,7 @@
 "use client";
 
+import { botao, campo } from "@/components/ui";
+import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -89,7 +91,7 @@ export function BlogSettingsForm({ blog }: { blog: Blog }) {
         <input
           value={customDomain}
           onChange={(e) => setCustomDomain(e.target.value)}
-          className="w-full rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm outline-none focus:border-cobalto-500 dark:focus:border-cobalto-400"
+          className={cn(campo(), "w-full")}
           placeholder="blog.suempresa.com"
         />
         <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
@@ -172,7 +174,7 @@ export function BlogSettingsForm({ blog }: { blog: Blog }) {
         <input
           value={ctaText}
           onChange={(e) => setCtaText(e.target.value)}
-          className="w-full rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm outline-none focus:border-cobalto-500 dark:focus:border-cobalto-400"
+          className={cn(campo(), "w-full")}
           placeholder="Saber más"
         />
       </div>
@@ -185,7 +187,7 @@ export function BlogSettingsForm({ blog }: { blog: Blog }) {
           <input
             value={ctaUrl}
             onChange={(e) => setCtaUrl(e.target.value)}
-            className="w-full rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm outline-none focus:border-cobalto-500 dark:focus:border-cobalto-400"
+            className={cn(campo(), "w-full")}
             placeholder="https://suempresa.com/contacto"
           />
           {numeroNaUrl && (
@@ -217,7 +219,7 @@ export function BlogSettingsForm({ blog }: { blog: Blog }) {
           <input
             value={whatsapp}
             onChange={(e) => setWhatsapp(e.target.value)}
-            className="w-full rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm outline-none focus:border-cobalto-500 dark:focus:border-cobalto-400"
+            className={cn(campo(), "w-full")}
             placeholder="34600000000"
           />
         </div>
@@ -226,7 +228,7 @@ export function BlogSettingsForm({ blog }: { blog: Blog }) {
       <button
         type="submit"
         disabled={saving}
-        className="rounded-lg bg-cobalto-600 px-4 py-2 text-sm font-semibold text-white hover:bg-cobalto-700 disabled:opacity-50"
+        className={botao("primario")}
       >
         {saving ? "Salvando..." : saved ? "Salvo" : "Salvar"}
       </button>

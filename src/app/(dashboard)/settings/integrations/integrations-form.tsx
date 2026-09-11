@@ -1,5 +1,7 @@
 "use client";
 
+import { botao, campo } from "@/components/ui";
+import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -91,7 +93,7 @@ export function IntegrationsForm({
     return (
       <a
         href="/api/integrations/google/connect"
-        className="inline-block rounded-lg bg-cobalto-600 px-4 py-2 font-semibold text-white hover:bg-cobalto-700"
+        className={botao("primario")}
       >
         Conectar com o Google
       </a>
@@ -108,7 +110,7 @@ export function IntegrationsForm({
           value={gscProperty}
           onChange={(e) => setGscProperty(e.target.value)}
           disabled={carregandoPropriedades}
-          className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm outline-none focus:border-cobalto-500 dark:focus:border-cobalto-400"
+          className={cn(campo(), "w-full")}
         >
           <option value="">
             {carregandoPropriedades ? "Carregando..." : "Nenhuma selecionada"}
@@ -137,7 +139,7 @@ export function IntegrationsForm({
           value={ga4Property}
           onChange={(e) => setGa4Property(e.target.value)}
           disabled={carregandoPropriedades}
-          className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm outline-none focus:border-cobalto-500 dark:focus:border-cobalto-400"
+          className={cn(campo(), "w-full")}
         >
           <option value="">
             {carregandoPropriedades ? "Carregando..." : "Nenhuma selecionada"}
@@ -160,7 +162,7 @@ export function IntegrationsForm({
         <button
           onClick={salvar}
           disabled={salvando}
-          className="rounded-lg bg-cobalto-600 px-4 py-2 text-sm font-semibold text-white hover:bg-cobalto-700 disabled:opacity-50"
+          className={botao("primario")}
         >
           {salvando ? "Salvando..." : salvo ? "Salvo" : "Salvar"}
         </button>

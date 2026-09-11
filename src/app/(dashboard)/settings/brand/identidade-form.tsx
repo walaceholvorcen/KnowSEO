@@ -1,5 +1,7 @@
 "use client";
 
+import { botao, campo } from "@/components/ui";
+import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, X } from "lucide-react";
@@ -74,13 +76,13 @@ function Lista({
             }}
             placeholder={placeholder}
             aria-label={titulo}
-            className="w-52 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-1.5 text-sm outline-none focus:border-cobalto-500 dark:focus:border-cobalto-400"
+            className={cn(campo("sm"), "w-52")}
           />
           <button
             type="button"
             onClick={adicionar}
             disabled={!rascunho.trim()}
-            className="flex items-center gap-1 rounded-lg border border-slate-300 dark:border-slate-700 px-2.5 py-1.5 text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40"
+            className={botao("secundario", "sm")}
           >
             <Plus size={14} /> Adicionar
           </button>
@@ -165,7 +167,7 @@ export function IdentidadeForm({
         <button
           onClick={salvar}
           disabled={salvando}
-          className="rounded-lg bg-cobalto-600 px-4 py-2 text-sm font-semibold text-white hover:bg-cobalto-700 disabled:opacity-50"
+          className={botao("primario")}
         >
           {salvando ? "Salvando..." : salvo ? "Salvo" : "Salvar"}
         </button>

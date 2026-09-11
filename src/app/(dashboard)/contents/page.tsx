@@ -1,3 +1,4 @@
+import { botao } from "@/components/ui";
 import Link from "next/link";
 import Image from "next/image";
 import { requireUserAndWorkspace, getWorkspaceBlogs } from "@/lib/workspace";
@@ -48,7 +49,7 @@ export default async function ContentsPage() {
         acao={
           <Link
             href="/strategy"
-            className="rounded-lg bg-cobalto-600 px-4 py-2 font-semibold text-white hover:bg-cobalto-700"
+            className={botao("primario")}
           >
             Escrever novo artigo
           </Link>

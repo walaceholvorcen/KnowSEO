@@ -1,5 +1,7 @@
 "use client";
 
+import { botao, campo } from "@/components/ui";
+import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -70,7 +72,7 @@ export function CreateWorkspaceForm({
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="w-full rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm outline-none focus:border-cobalto-500 dark:focus:border-cobalto-400 focus:ring-1 focus:ring-cobalto-500 dark:focus:ring-cobalto-400"
+          className={cn(campo(), "w-full")}
           placeholder="Mi agencia / Mi empresa"
         />
       </div>
@@ -84,7 +86,7 @@ export function CreateWorkspaceForm({
       <button
         type="submit"
         disabled={loading}
-        className="w-full rounded-lg bg-cobalto-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-cobalto-700 disabled:opacity-50"
+        className={cn(botao("primario"), "w-full")}
       >
         {loading ? "Creando..." : "Continuar"}
       </button>

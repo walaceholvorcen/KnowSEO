@@ -1,5 +1,7 @@
 "use client";
 
+import { botao, campo } from "@/components/ui";
+import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -81,7 +83,7 @@ export function BrandDnaForm({
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={3}
-          className="w-full rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm outline-none focus:border-cobalto-500 dark:focus:border-cobalto-400"
+          className={cn(campo(), "w-full")}
           placeholder="Ex: Somos uma agência de performance que cuida de anúncios para pequenas empresas..."
         />
       </div>
@@ -93,7 +95,7 @@ export function BrandDnaForm({
         <input
           value={targetAudience}
           onChange={(e) => setTargetAudience(e.target.value)}
-          className="w-full rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm outline-none focus:border-cobalto-500 dark:focus:border-cobalto-400"
+          className={cn(campo(), "w-full")}
           placeholder="Ex: Donos de negócio de 25 a 55 anos que querem mais clientes"
         />
       </div>
@@ -105,7 +107,7 @@ export function BrandDnaForm({
         <input
           value={tone}
           onChange={(e) => setTone(e.target.value)}
-          className="w-full rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm outline-none focus:border-cobalto-500 dark:focus:border-cobalto-400"
+          className={cn(campo(), "w-full")}
         />
       </div>
 
@@ -117,7 +119,7 @@ export function BrandDnaForm({
           value={writingStyle}
           onChange={(e) => setWritingStyle(e.target.value)}
           rows={2}
-          className="w-full rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm outline-none focus:border-cobalto-500 dark:focus:border-cobalto-400"
+          className={cn(campo(), "w-full")}
           placeholder="Ex: Trate o leitor por você. Frases curtas. Explique todo termo técnico."
         />
       </div>
@@ -129,7 +131,7 @@ export function BrandDnaForm({
         <input
           value={bannedTopics}
           onChange={(e) => setBannedTopics(e.target.value)}
-          className="w-full rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm outline-none focus:border-cobalto-500 dark:focus:border-cobalto-400"
+          className={cn(campo(), "w-full")}
           placeholder="Ex: Não citar concorrentes, não prometer resultado garantido"
         />
       </div>
@@ -141,7 +143,7 @@ export function BrandDnaForm({
         <input
           value={bannedWords}
           onChange={(e) => setBannedWords(e.target.value)}
-          className="w-full rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm outline-none focus:border-cobalto-500 dark:focus:border-cobalto-400"
+          className={cn(campo(), "w-full")}
           placeholder="Ex: barato, low cost, garantido"
         />
       </div>
@@ -149,7 +151,7 @@ export function BrandDnaForm({
       <button
         type="submit"
         disabled={saving}
-        className="rounded-lg bg-cobalto-600 px-4 py-2 text-sm font-semibold text-white hover:bg-cobalto-700 disabled:opacity-50"
+        className={botao("primario")}
       >
         {saving ? "Salvando..." : saved ? "Salvo" : "Salvar"}
       </button>

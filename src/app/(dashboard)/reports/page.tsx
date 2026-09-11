@@ -1,3 +1,4 @@
+import { botao, pagina } from "@/components/ui";
 import Link from "next/link";
 import { requireUserAndWorkspace, getWorkspaceBlogs } from "@/lib/workspace";
 import { Lede, Linha, Secao } from "@/components/lede";
@@ -81,14 +82,14 @@ export default async function ReportsPage() {
         : `${visitas} ${visitas === 1 ? "visita" : "visitas"} nos últimos 28 dias, ${conversas} ${conversas === 1 ? "virou conversa" : "viraram conversa"}.`;
 
   return (
-    <div className="mx-auto max-w-3xl px-8 py-12">
+    <div className={pagina()}>
       <Lede
         apoio="Dado de primeira parte, medido no seu próprio blog. Não depende do Google Analytics nem de consentimento de cookie."
         acao={
           visitas === 0 && (
             <Link
               href="/contents"
-              className="rounded-lg bg-cobalto-600 px-4 py-2 font-semibold text-white hover:bg-cobalto-700"
+              className={botao("primario")}
             >
               Ver meus artigos
             </Link>

@@ -14,10 +14,24 @@ export default async function DashboardLayout({
     redirect("/onboarding");
   }
 
+  const blog = blogs[0];
+  const raiz = process.env.NEXT_PUBLIC_ROOT_DOMAIN || "localhost:3000";
+
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-50 dark:bg-slate-950">
-      <Sidebar credits={workspace.credits} />
-      <main className="h-full flex-1 overflow-y-auto">{children}</main>
+    // Coluna no celular (barra no topo), linha a partir de telas largas
+    // (barra lateral fixa). O fundo do conteúdo é um tom mais claro que o da
+    // barra: são duas camadas de neutro, e a barra lê como moldura.
+    <div className="flex h-screen flex-col overflow-hidden bg-slate-50 dark:bg-background lg:flex-row">
+      <Sidebar
+        credits={workspace.credits}
+        blog={{
+          nome: blog.name,
+          endereco: blog.custom_domain ?? `${blog.subdomain}.${raiz}`,
+        }}
+      />
+      <main className="min-h-0 flex-1 overflow-y-auto [scrollbar-gutter:stable]">
+        {children}
+      </main>
     </div>
   );
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { botao, campo, pagina } from "@/components/ui";
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -127,7 +128,7 @@ export function MarketBoard({
   );
 
   return (
-    <div className="mx-auto max-w-3xl px-8 py-12">
+    <div className={pagina()}>
       <Lede
         apoio={
           analise?.status === "done" ? (
@@ -148,7 +149,7 @@ export function MarketBoard({
           <button
             onClick={analisar}
             disabled={rodando || lista.length === 0}
-            className="flex items-center gap-2 rounded-lg bg-cobalto-600 px-4 py-2 text-sm font-semibold text-white hover:bg-cobalto-700 disabled:opacity-50"
+            className={botao("primario")}
           >
             <Radar size={15} />
             {rodando
@@ -193,12 +194,12 @@ export function MarketBoard({
               onChange={(e) => setRascunho(e.target.value)}
               placeholder="concorrente.com"
               aria-label="Domínio do concorrente"
-              className="w-44 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-1.5 text-sm outline-none focus:border-cobalto-500 dark:focus:border-cobalto-400"
+              className={cn(campo("sm"), "w-44")}
             />
             <button
               type="submit"
               disabled={!rascunho.trim()}
-              className="flex items-center gap-1 rounded-lg border border-slate-300 dark:border-slate-700 px-2.5 py-1.5 text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40"
+              className={botao("secundario", "sm")}
             >
               <Plus size={14} /> Adicionar
             </button>
@@ -360,7 +361,7 @@ export function MarketBoard({
                       <button
                         onClick={() => alternar(t.id)}
                         aria-expanded={isAberto}
-                        className="flex items-center gap-1 rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-1.5 text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800"
+                        className={botao("secundario", "sm")}
                       >
                         {isAberto ? (
                           <ChevronDown size={14} />
@@ -373,10 +374,7 @@ export function MarketBoard({
                     <button
                       onClick={() => gerarPauta(t.id)}
                       disabled={gerando !== null}
-                      className={cn(
-                        "ml-auto rounded-lg px-3 py-1.5 text-sm font-semibold",
-                        "bg-cobalto-600 text-white hover:bg-cobalto-700 disabled:opacity-50",
-                      )}
+                      className={cn(botao("primario", "sm"), "ml-auto")}
                     >
                       {gerando === t.id ? "Gerando..." : "Gerar pauta"}
                     </button>

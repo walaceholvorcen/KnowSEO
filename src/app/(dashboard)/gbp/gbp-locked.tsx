@@ -1,3 +1,4 @@
+import { pagina } from "@/components/ui";
 import { Lock } from "lucide-react";
 import { Lede } from "@/components/lede";
 
@@ -6,7 +7,7 @@ import { Lede } from "@/components/lede";
 // <GbpBoard /> real é o único passo para reativar o módulo.
 export function GbpLocked() {
   return (
-    <div className="mx-auto max-w-3xl px-8 py-12">
+    <div className={pagina()}>
       <Lede
         apoio="Quando ativado, o negócio digita nome e cidade e recebe nota + achados do próprio perfil no Google - sem conectar nada."
       >

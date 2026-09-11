@@ -1,5 +1,6 @@
 "use client";
 
+import { botao, pagina } from "@/components/ui";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Bot, Check, X, Play, Sparkles } from "lucide-react";
@@ -11,6 +12,7 @@ import {
   perguntasDaRodada,
   placarPorMotor,
 } from "@/lib/ai-visibility/resumo";
+import { extractDomain, isDirectory } from "@/lib/citation";
 import type { AiQuery, AiVisibilityCheck } from "@/types";
 
 const INTENT_LABEL: Record<string, string> = {
@@ -173,8 +175,19 @@ export function VisibilityBoard({
     return [...contagem.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
   }
 
-  const topCompetitors = contar((c) => c.competitors);
-  const topDirectories = contar((c) => c.directories ?? []);
+  // Filtrado na leitura também: as checagens gravadas antes da separação
+  // entre citação e resultado de busca têm diretório misturado em
+  // `competitors`, e a tela chegava a abrir com "no seu lugar apareceu
+  // agencies.semrush.com" - justo a frase que a correção existia para matar.
+  const dominiosDe = (lista: string[]) =>
+    lista.map((d) => extractDomain(d) ?? d);
+  const topCompetitors = contar((c) =>
+    dominiosDe(c.competitors).filter((d) => !isDirectory(d)),
+  );
+  const topDirectories = contar((c) => [
+    ...(c.directories ?? []),
+    ...dominiosDe(c.competitors).filter((d) => isDirectory(d)),
+  ]);
 
   const porPergunta = new Map<string, AiVisibilityCheck[]>();
   for (const c of latest) {
@@ -285,7 +298,7 @@ export function VisibilityBoard({
     : 0;
 
   return (
-    <div className="mx-auto max-w-3xl px-8 py-12">
+    <div className={pagina()}>
       <Lede
         apoio={apoio}
         acao={
@@ -293,7 +306,7 @@ export function VisibilityBoard({
             <button
               onClick={analisar}
               disabled={busy !== null || runAtivo !== null || queries.length === 0}
-              className="flex items-center gap-1.5 rounded-lg bg-cobalto-600 px-4 py-2 text-sm font-semibold text-white hover:bg-cobalto-700 disabled:opacity-50"
+              className={botao("primario")}
             >
               <Play size={15} />
               {runAtivo ? "Analisando..." : busy === "run" ? "Iniciando..." : "Analisar agora"}
@@ -301,7 +314,7 @@ export function VisibilityBoard({
             <button
               onClick={gerarPerguntas}
               disabled={busy !== null || runAtivo !== null}
-              className="flex items-center gap-1.5 rounded-lg border border-slate-300 dark:border-slate-700 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-50"
+              className={botao("secundario")}
             >
               <Sparkles size={15} />
               {busy === "questions" ? "Gerando..." : "Gerar perguntas"}
@@ -531,7 +544,7 @@ export function VisibilityBoard({
                               setAberta(aberta === q.id ? null : q.id)
                             }
                             aria-expanded={aberta === q.id}
-                            className="rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-1.5 text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800"
+                            className={botao("secundario", "sm")}
                           >
                             {aberta === q.id
                               ? "Ocultar respostas"
@@ -542,7 +555,7 @@ export function VisibilityBoard({
                           <button
                             onClick={() => responderComArtigo(q.question)}
                             disabled={gerando !== null}
-                            className="rounded-lg bg-cobalto-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-cobalto-700 disabled:opacity-50"
+                            className={botao("primario", "sm")}
                           >
                             {gerando === q.question
                               ? "Gerando..."

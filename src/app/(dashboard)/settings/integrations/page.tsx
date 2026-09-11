@@ -1,3 +1,4 @@
+import { pagina } from "@/components/ui";
 import { requireUserAndWorkspace, getWorkspaceBlogs } from "@/lib/workspace";
 import { SettingsNav } from "../settings-nav";
 import { Lede, Secao } from "@/components/lede";
@@ -26,7 +27,7 @@ export default async function IntegrationsPage({
       : "Nenhuma conta Google conectada ainda.";
 
   return (
-    <div className="mx-auto max-w-3xl px-8 py-12">
+    <div className={pagina("estreita")}>
       <SettingsNav />
       <Lede apoio="Uma conta só, da agência. Cada cliente adiciona esse e-mail como usuário no Search Console e no GA4 dele - sem senha compartilhada, sem login por cliente.">
         {veredito}

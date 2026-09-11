@@ -1,5 +1,7 @@
 "use client";
 
+import { botao, campo } from "@/components/ui";
+import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Trash2, Radar } from "lucide-react";
@@ -100,12 +102,12 @@ export function InternalLinksManager({
             value={siteUrl}
             onChange={(e) => setSiteUrl(e.target.value)}
             placeholder="suaempresa.com"
-            className="flex-1 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm outline-none focus:border-cobalto-500 dark:focus:border-cobalto-400"
+            className={cn(campo(), "flex-1")}
           />
           <button
             type="submit"
             disabled={crawling}
-            className="whitespace-nowrap rounded-lg bg-cobalto-600 px-4 py-2 text-sm font-semibold text-white hover:bg-cobalto-700 disabled:opacity-50"
+            className={botao("primario")}
           >
             {crawling ? "Analisando..." : "Analisar site"}
           </button>
@@ -135,18 +137,18 @@ export function InternalLinksManager({
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             placeholder="https://suaempresa.com/servicos"
-            className="flex-1 rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm outline-none focus:border-cobalto-500 dark:focus:border-cobalto-400"
+            className={cn(campo(), "flex-1")}
           />
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Título (opcional)"
-            className="w-40 rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm outline-none focus:border-cobalto-500 dark:focus:border-cobalto-400"
+            className={cn(campo(), "w-40")}
           />
           <button
             type="submit"
             disabled={saving}
-            className="rounded-lg border border-slate-300 dark:border-slate-700 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50"
+            className={botao("secundario")}
           >
             Adicionar
           </button>

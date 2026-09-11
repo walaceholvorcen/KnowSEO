@@ -1,5 +1,6 @@
 "use client";
 
+import { botao, campo } from "@/components/ui";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -223,14 +224,14 @@ export function ArticleEditor({
           <button
             onClick={() => handleSave()}
             disabled={saving}
-            className="rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-1.5 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-50"
+            className={botao("secundario", "sm")}
           >
             Salvar rascunho
           </button>
           <button
             onClick={() => handleSave("published")}
             disabled={saving}
-            className="rounded-lg bg-cobalto-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-cobalto-700 disabled:opacity-50"
+            className={botao("primario", "sm")}
           >
             {status === "published" ? "Atualizar" : "Publicar"}
           </button>
@@ -340,7 +341,7 @@ export function ArticleEditor({
                   value={seoTitle}
                   maxLength={60}
                   onChange={(e) => setSeoTitle(e.target.value)}
-                  className="w-full rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm outline-none focus:border-cobalto-500 dark:focus:border-cobalto-400"
+                  className={cn(campo(), "w-full")}
                 />
               </div>
               <div>
@@ -352,7 +353,7 @@ export function ArticleEditor({
                   maxLength={155}
                   onChange={(e) => setSeoDescription(e.target.value)}
                   rows={2}
-                  className="w-full rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 text-sm outline-none focus:border-cobalto-500 dark:focus:border-cobalto-400"
+                  className={cn(campo(), "w-full")}
                 />
               </div>
             </div>
@@ -367,7 +368,7 @@ export function ArticleEditor({
                   type="button"
                   onClick={gerarCarrossel}
                   disabled={gerandoCarrossel}
-                  className="flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-1.5 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-50"
+                  className={cn(botao("secundario", "sm"), "shrink-0")}
                 >
                   <Sparkles size={14} />
                   {gerandoCarrossel

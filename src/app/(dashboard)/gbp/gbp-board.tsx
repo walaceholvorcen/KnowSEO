@@ -1,5 +1,6 @@
 "use client";
 
+import { botao, campo, pagina } from "@/components/ui";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronDown, ChevronRight, ExternalLink } from "lucide-react";
@@ -80,7 +81,7 @@ export function GbpBoard({
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-8 py-12">
+    <div className={pagina()}>
       <Lede
         apoio={
           latest?.status === "done"
@@ -99,12 +100,12 @@ export function GbpBoard({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Nome do negócio, cidade"
-            className="flex-1 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm outline-none focus:border-cobalto-500 dark:focus:border-cobalto-400"
+            className={cn(campo(), "flex-1")}
           />
           <button
             type="submit"
             disabled={running}
-            className="whitespace-nowrap rounded-lg bg-cobalto-600 px-4 py-2 text-sm font-semibold text-white hover:bg-cobalto-700 disabled:opacity-50"
+            className={botao("primario")}
           >
             {running ? "Buscando..." : "Analisar"}
           </button>

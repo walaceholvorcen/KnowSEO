@@ -1,5 +1,6 @@
 "use client";
 
+import { botao, pagina } from "@/components/ui";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Sparkles, X, PenLine } from "lucide-react";
@@ -109,14 +110,14 @@ export function StrategyBoard({
       : `${suggested.length} ${suggested.length === 1 ? "pauta esperando" : "pautas esperando"} escolha.`;
 
   return (
-    <div className="mx-auto max-w-3xl px-8 py-12">
+    <div className={pagina()}>
       <Lede
         acao={
           !semCreditos && (
             <button
               onClick={handleFindIdeas}
               disabled={loadingIdeas}
-              className="flex items-center gap-2 rounded-lg bg-cobalto-600 px-4 py-2 font-semibold text-white hover:bg-cobalto-700 disabled:opacity-50"
+              className={botao("primario")}
             >
               <Sparkles size={15} />
               {loadingIdeas ? "Buscando..." : "Buscar pautas"}
@@ -136,7 +137,7 @@ export function StrategyBoard({
               <h3 className="font-medium text-slate-900 dark:text-slate-100">
                 {kw.suggested_title || kw.keyword}
               </h3>
-              <p className="mt-1 text-slate-600 dark:text-slate-400">
+              <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
                 {kw.keyword}
                 {kw.funnel_stage && <>. {FUNNEL_LABEL[kw.funnel_stage]}</>}
               </p>
@@ -188,17 +189,14 @@ export function StrategyBoard({
               <div className="mt-3 flex items-center gap-2">
                 <button
                   onClick={() => handleReject(kw.id)}
-                  className={cn(
-                    "flex items-center gap-1 rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-1.5",
-                    "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800",
-                  )}
+                  className={botao("secundario", "sm")}
                 >
                   <X size={14} /> Descartar
                 </button>
                 <button
                   onClick={() => handleWrite(kw.id)}
                   disabled={generatingId === kw.id || semCreditos}
-                  className="ml-auto flex items-center gap-1.5 rounded-lg bg-cobalto-600 px-3 py-1.5 font-semibold text-white hover:bg-cobalto-700 disabled:opacity-50"
+                  className={cn(botao("primario", "sm"), "ml-auto")}
                 >
                   <PenLine size={14} />
                   {generatingId === kw.id ? "Gerando..." : "Escrever artigo"}

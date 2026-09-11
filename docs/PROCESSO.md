@@ -1042,3 +1042,85 @@ início, como link direto para Integrações.
   lembrar de abrir o painel — precisa de provedor de e-mail.
 - Crédito por rodada do Radar GEO. Continua sem débito, e agora é a
   operação mais cara do produto: até trinta consultas com busca na web.
+
+---
+
+## 23. Acabamento de instrumento — o painel "elitizado"
+
+Pedido do dono: "melhorar muito o design, deixar elitizado", usando as
+skills de design instaladas (`impeccable` conduzindo, `ui-ux-pro-max` na
+checagem de UX e acessibilidade, `frontend-design` já regra da casa).
+
+### A leitura que definiu a direção
+
+Premium num painel de ferramenta não vem de enfeite, vem de **rigor** — o
+mesmo que separa um instrumento de medição caro de um barato. A identidade
+da seção 15 ficou intacta (paleta, IBM Plex, nada de serifada, nada de
+cara de revista). O que faltava era acabamento de sistema, e o levantamento
+provou com números:
+
+- **Não existia botão.** Havia mais de 20 botões principais escritos à mão,
+  em 5 variações de altura e espaçamento, e 26 campos com 4 variações.
+- **Zero estados de foco desenhados.** Quem navega por teclado via o
+  contorno padrão do navegador, diferente em cada um.
+- **Coluna de 768px em todas as telas** — uma das causas do "parece
+  revista" registradas na seção 15 e nunca atacada.
+- **O texto secundário não passava no contraste.** `slate-500` dava 3,6:1
+  sobre o fundo, abaixo dos 4,5:1 exigidos para texto pequeno.
+
+### O que mudou
+
+- **`src/components/ui.ts`** — `botao()`, `campo()` e `pagina()`. Funções
+  que devolvem classe, não componentes: servem igual para `<button>`,
+  `<Link>` e `<a>`. Botão com filete claro no topo e sombra curta (lê como
+  tecla), estado de pressionado, e **44px em tela de toque**
+  (`pointer-coarse:`) mantendo o compacto no mouse. A troca nos 23 arquivos
+  foi feita por script sobre `className` literal; o que estava escrito de
+  outro jeito foi convertido à mão.
+- **Alturas medidas, não estimadas.** Campo e botão lado a lado agora têm
+  38px os dois (antes 38 e 36). Conferido no DOM renderizado.
+- **`slate-500` escurecido para `#6a716b`**: 4,7:1 no fundo, 5:1 no branco.
+  Um token corrigiu o contraste do texto secundário do app inteiro.
+- **Superfícies do navegador** em `globals.css`: seleção de texto no realce
+  da citação, cursor e barra de rolagem na paleta, `color-scheme` escuro
+  no modo escuro, e `:focus-visible` desenhado para o app inteiro.
+- **A régua** — a única ousadia do painel. A `NotaCard` mostra a nota numa
+  escala graduada de 0 a 100 com marcas altas exatamente nos limiares das
+  faixas (50, 70, 90), os mesmos de `scoreBand()`. O cliente vê que 88 é
+  "Bom" *e* que está a dois pontos de "Excelente". Vem do mundo do
+  instrumento de medição, não é decoração: a escala é a real.
+- **Moldura** — barra lateral agrupada pela ordem do trabalho
+  (Diagnóstico → Produção → Resultado), com o blog operado no topo e os
+  créditos como leitura em mono. Item ativo sobe para a superfície branca,
+  como tecla pressionada. **No celular vira topo com menu** — antes a barra
+  fixa de 240px ocupava a tela; fechado, o menu sai também da ordem do Tab
+  (`invisible` junto com o deslize) e fecha no Esc.
+- **Largura** — telas de análise em 1024px (`pagina()`), formulários em
+  768px (`pagina("estreita")`): campo largo demais obriga o olho a
+  atravessar a tela para ler o rótulo.
+- **O veredito virou `<h1>`.** Era `<p>`: as telas não tinham título para
+  leitor de tela nem para navegação por cabeçalho.
+
+### Um erro de conteúdo que a inspeção visual pegou
+
+O Radar GEO ainda abria com "no seu lugar apareceu agencies.semrush.com" —
+o dado anterior à correção da seção 20. O filtro de diretório na leitura
+tinha ido para o Início e o Mercado e **faltado na tela do próprio Radar**.
+Só apareceu olhando a tela renderizada com dado real; nenhum teste pegaria.
+
+### Como a revisão visual foi feita
+
+Sem sessão de login no navegador do agente, foi criada uma vitrine local
+(`src/app/vitrine`) que renderiza as telas reais com o dado real pelo
+client admin. Devolve 404 em produção e **não é versionada**
+(`.git/info/exclude`). Uma rodada de inspeção (claro, escuro, celular),
+correção em lote, uma rodada de confirmação — e o detector da `impeccable`
+rodou uma vez no fim, com zero achados.
+
+### Regras que ficam
+
+- Botão, campo e largura de tela vêm de `ui.ts`. Controle escrito à mão é
+  regressão.
+- Contraste de texto secundário é medido, não estimado.
+- A régua é a única assinatura visual. Não replicar o gesto em outras
+  telas como enfeite — ela vale porque a escala é real.

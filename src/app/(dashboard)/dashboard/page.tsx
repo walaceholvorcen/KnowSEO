@@ -1,3 +1,4 @@
+import { botao, pagina } from "@/components/ui";
 import Link from "next/link";
 import { Check, ArrowRight } from "lucide-react";
 import { requireUserAndWorkspace, getWorkspaceBlogs } from "@/lib/workspace";
@@ -226,13 +227,13 @@ export default async function DashboardHomePage() {
   ];
 
   return (
-    <div className="mx-auto max-w-3xl px-8 py-12">
+    <div className={pagina()}>
       <Lede
         apoio={configurando ? undefined : `Blog ${blog?.name}.`}
         acao={
           <Link
             href={gargalo.acaoHref}
-            className="rounded-lg bg-cobalto-600 px-4 py-2 font-semibold text-white hover:bg-cobalto-700"
+            className={botao("primario")}
           >
             {gargalo.acaoTexto}
           </Link>

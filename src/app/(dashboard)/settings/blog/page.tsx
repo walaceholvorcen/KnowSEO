@@ -1,3 +1,4 @@
+import { pagina } from "@/components/ui";
 import { requireUserAndWorkspace, getWorkspaceBlogs } from "@/lib/workspace";
 import type { InternalLink } from "@/types";
 import { SettingsNav } from "../settings-nav";
@@ -28,7 +29,7 @@ export default async function BlogSettingsPage() {
         : `${blog.custom_domain} está cadastrado e aguardando o DNS propagar.`;
 
   return (
-    <div className="mx-auto max-w-3xl px-8 py-12">
+    <div className={pagina("estreita")}>
       <SettingsNav />
       <Lede
         apoio={

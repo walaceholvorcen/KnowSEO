@@ -1,3 +1,4 @@
+import { pagina } from "@/components/ui";
 import { requireUserAndWorkspace, getWorkspaceBlogs } from "@/lib/workspace";
 import type { BrandDna } from "@/types";
 import { SettingsNav } from "../settings-nav";
@@ -38,7 +39,7 @@ export default async function BrandDnaPage() {
         : `DNA parcial: ${preenchidos} de ${CAMPOS_DE_VOZ.length} campos preenchidos.`;
 
   return (
-    <div className="mx-auto max-w-3xl px-8 py-12">
+    <div className={pagina("estreita")}>
       <SettingsNav />
       <Lede apoio="Isso alimenta o prompt de todo artigo gerado pela IA - é a diferença entre um texto genérico e um com a voz da sua marca.">
         {veredito}
