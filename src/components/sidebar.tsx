@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import Link, { useLinkStatus } from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
@@ -136,6 +136,7 @@ export function Sidebar({
             )}
           />
           <span className="truncate">{item.label}</span>
+          {!item.locked && <SinalDeCarregando />}
           {item.locked && (
             <Lock
               size={13}
@@ -268,5 +269,22 @@ export function Sidebar({
         </div>
       </aside>
     </>
+  );
+}
+
+// Confirmação de clique para quando o esqueleto da tela ainda não foi
+// pré-carregado (rede lenta, primeiros segundos depois de abrir o painel).
+// Tamanho fixo e sempre presente, só troca a opacidade: um indicador que
+// aparece e some empurraria o texto do item.
+function SinalDeCarregando() {
+  const { pending } = useLinkStatus();
+  return (
+    <span
+      aria-hidden="true"
+      className={cn(
+        "ml-auto size-1.5 shrink-0 rounded-full bg-cobalto-500 transition-opacity duration-150",
+        pending ? "opacity-100 motion-safe:animate-pulse" : "opacity-0",
+      )}
+    />
   );
 }

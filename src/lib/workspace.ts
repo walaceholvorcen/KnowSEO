@@ -1,58 +1,68 @@
+import { cache } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import type { Blog, Workspace } from "@/types";
 
 // MVP: 1 usuário -> 1 workspace principal (o schema já suporta N workspaces
 // e N membros por workspace para quando entrarmos no caso de uso de agência).
-export async function requireUserAndWorkspace() {
+//
+// Isto roda antes de qualquer tela do painel mostrar alguma coisa, então
+// cada ida ao banco aqui é espera que o cliente sente como "travou":
+//
+// - cache(): layout e página chamam esta função na mesma requisição. Sem o
+//   cache, a mesma sequência de consultas rodava duas vezes seguidas.
+// - getClaims(): confere o token localmente (chave assimétrica) em vez de
+//   perguntar ao servidor de autenticação, que levava 300-700ms medidos.
+//   As consultas seguintes continuam protegidas pelo RLS no banco.
+// - vínculo e workspace numa consulta só, pelo relacionamento.
+export const requireUserAndWorkspace = cache(async () => {
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data } = await supabase.auth.getClaims();
+  const claims = data?.claims;
 
-  if (!user) {
+  if (!claims?.sub) {
     redirect("/login");
   }
 
+  const user = {
+    id: claims.sub,
+    email: typeof claims.email === "string" ? claims.email : null,
+  };
+
   const { data: membership } = await supabase
     .from("workspace_members")
-    .select("workspace_id")
+    .select("workspace:workspaces(*)")
     .eq("user_id", user.id)
     .limit(1)
     .maybeSingle();
 
-  if (!membership) {
+  const workspace = (membership as { workspace: Workspace | null } | null)
+    ?.workspace;
+
+  if (!workspace) {
     // Usuário autenticado mas sem workspace ainda (edge case raro - o
     // signup normalmente já cria um). Manda para o fluxo de criação.
     redirect("/onboarding/workspace");
   }
 
-  const { data: workspace } = await supabase
-    .from("workspaces")
-    .select("*")
-    .eq("id", membership.workspace_id)
-    .single();
+  return { supabase, user, workspace };
+});
 
-  if (!workspace) {
-    redirect("/onboarding/workspace");
-  }
+export const getWorkspaceBlogs = cache(
+  async (
+    supabase: Awaited<ReturnType<typeof createClient>>,
+    workspaceId: string,
+  ): Promise<Blog[]> => {
+    const { data } = await supabase
+      .from("blogs")
+      .select("*")
+      .eq("workspace_id", workspaceId)
+      .order("created_at", { ascending: true });
 
-  return { supabase, user, workspace: workspace as Workspace };
-}
-
-export async function getWorkspaceBlogs(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  workspaceId: string,
-): Promise<Blog[]> {
-  const { data } = await supabase
-    .from("blogs")
-    .select("*")
-    .eq("workspace_id", workspaceId)
-    .order("created_at", { ascending: true });
-
-  return (data as Blog[]) ?? [];
-}
+    return (data as Blog[]) ?? [];
+  },
+);
 
 // Marca um passo do onboarding como concluído e credita +1 artigo,
 // só na primeira vez (idempotente) - é o mecanismo de "créditos por

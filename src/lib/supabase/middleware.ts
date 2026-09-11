@@ -27,9 +27,12 @@ export async function updateSession(request: NextRequest) {
     },
   );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // getClaims, não getUser: o projeto assina o token com chave assimétrica
+  // (ES256), então a assinatura é conferida aqui mesmo contra a chave
+  // pública, sem ida ao servidor de autenticação. getUser custava de 300 a
+  // 700ms medidos - em TODA navegação do painel, antes de a página começar.
+  // Continua renovando o token vencido e gravando os cookies novos.
+  const { data } = await supabase.auth.getClaims();
 
-  return { response, user };
+  return { response, userId: data?.claims.sub ?? null };
 }

@@ -1249,3 +1249,45 @@ sobre onde o cliente estava. Agora é uma lista só:
 - Zero chamada nova: tudo sai do que as checagens já gravam. Diretório
   misturado em `competitors` (checagens antigas) é reclassificado na
   leitura.
+
+## 26. Navegação lenta no painel — "parece que travou"
+
+Queixa do dono: clicar para mudar de tela demorava, e o cliente podia
+achar que o sistema tinha travado. Medido antes de mexer:
+
+- Supabase e as funções da Vercel estão na mesma costa (iad1), banco a
+  ~100ms. **Região não era o problema.**
+- O **servidor de autenticação** do Supabase levava **300–700ms** por
+  chamada — e era chamado **duas vezes a cada clique** (`getUser()` no
+  proxy e de novo na página), antes de qualquer consulta de dado.
+- Nenhuma tela do painel tinha `loading.tsx`. Todas são dinâmicas (dependem
+  da sessão), e a doc do Next 16 é explícita: rota dinâmica sem
+  `loading.tsx` não é pré-carregada e o clique espera o servidor inteiro
+  sem mudar nada na tela.
+
+O que mudou:
+
+1. **`(dashboard)/loading.tsx`** — esqueleto no formato das telas (veredito
+   com ação, linhas com filete). O Next pré-carrega esse esqueleto junto
+   com os links do menu, então a tela troca **no instante do clique**.
+2. **`getClaims()` no lugar de `getUser()`** no proxy e em
+   `requireUserAndWorkspace`. O projeto assina o token com ES256 (conferido
+   no JWKS), então a assinatura é verificada localmente contra a chave
+   pública — é a recomendação atual do Supabase. O dado continua protegido
+   pelo RLS; o token vencido continua sendo renovado no proxy.
+3. **`cache()`** do React em `requireUserAndWorkspace` e
+   `getWorkspaceBlogs`: layout e página pediam a mesma coisa na mesma
+   requisição.
+4. Vínculo e workspace **numa consulta só**, pelo relacionamento
+   (`workspace:workspaces(*)`).
+5. **Sinal no item do menu** (`useLinkStatus`): um ponto cobalto pulsa no
+   item clicado enquanto a tela não entra — para o caso de o esqueleto
+   ainda não ter sido pré-carregado (rede lenta, primeiros segundos).
+   Tamanho fixo, só troca opacidade, para não empurrar o texto.
+
+Resultado esperado por clique: de ~2 idas ao servidor de autenticação +
+~5 consultas em sequência para 0 idas à autenticação + ~2 consultas antes
+do dado da tela — e resposta visual imediata.
+
+Atenção: o pré-carregamento só existe em produção (`next dev` não
+pré-carrega). Testar a sensação de velocidade no deploy, não local.
