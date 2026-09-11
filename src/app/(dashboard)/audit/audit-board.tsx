@@ -259,9 +259,15 @@ export function AuditBoard({
                           <span className="text-slate-700 dark:text-slate-300">
                             {p.atual.title}
                           </span>{" "}
-                          <span className="tabular font-display text-slate-500 dark:text-slate-400">
-                            ({p.anterior.affected_count} →{" "}
-                            {p.atual.affected_count} páginas)
+                          {/* Mono só nos números: com a frase inteira em
+                              mono, "páginas" virava fantasia de técnico. */}
+                          <span className="text-slate-500 dark:text-slate-400">
+                            (
+                            <span className="tabular font-display">
+                              {p.anterior.affected_count} →{" "}
+                              {p.atual.affected_count}
+                            </span>{" "}
+                            páginas)
                           </span>
                         </p>
                       </Linha>
