@@ -90,7 +90,13 @@ ponta a ponta. Os bugs caros deste projeto foram de integração.
 1. Decidir onde o conteúdo mora (proxy para `/blog` ou reposicionar a
    promessa). Decisão de produto, não de código.
 2. Recuperação de senha + cobrança + multi-cliente: sem isso não há venda.
-3. Débito de crédito no Raio X - GEO e na auditoria.
+3. ~~Débito de crédito no Raio X - GEO e na auditoria.~~ **Adiado pelo
+   dono (set/2026): limite e consumo dependem do plano que o cliente
+   contratar, e isso é conversa de cobrança.** Fica registrado o risco que
+   continua aberto: uma rodada do Raio X custa ~US$ 1,00 a 1,60 só com o
+   Claude (busca a US$ 10/mil + o que a busca traz lido a US$ 5/MTok), não
+   debita nada e ainda roda sozinha toda semana. Com três motores, de US$ 4
+   a 20 por cliente por mês, sem teto.
 4. Trava de qualidade antes de publicar.
 5. ROI por artigo nos Relatórios.
 6. Segundo motor de IA (Gemini, gratuito) para "a IA" deixar de ser uma só.
