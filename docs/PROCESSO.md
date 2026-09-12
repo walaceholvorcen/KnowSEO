@@ -1439,3 +1439,49 @@ Supabase tem limite baixo e não serve para cliente real.
   front.
 - O onboarding passou a servir também para cadastrar cliente novo
   (`?novo=1`) — e saiu do espanhol residual.
+
+## 30. Trava de qualidade — as regras da auditoria antes de publicar
+
+Risco mais caro que o produto tinha aberto: a geração saía ruim e ia ao ar
+com a marca do cliente, sem ninguém conferir. A auditoria só acusaria
+"página rasa" depois, no site dele.
+
+`src/lib/artigo/qualidade.ts` (função pura, 10 testes) aplica ao artigo as
+mesmas regras e os mesmos limites de `src/lib/audit/rules.ts`, em dois
+níveis:
+
+| Trava (bloqueia) | Aviso (publica e informa) |
+|---|---|
+| menos de 300 palavras | título de SEO fora de 30–60 |
+| nenhum H2 | meta fora de 70–155 |
+| nenhum link interno | 2+ frases de folheto (reusa `frasesVazias`) |
+| pauta ausente do título e da abertura | parágrafo acima de 150 palavras |
+| markdown ou tag de documento vazada | sem lista nem tabela |
+| | menos de 2 números no texto inteiro |
+| | pauta já publicada (canibalização) |
+
+Decisões:
+
+- **Dois níveis, não um.** Bloquear tudo viraria obstáculo; avisar tudo
+  viraria decoração. Trava é só o indefensável.
+- **"Publicar mesmo assim"** existe, como segunda ação explícita. O dono
+  pode ter razão contra a regra; o que não pode é publicar sem saber.
+- **A conferência roda no que está na tela**, não no que está no banco: o
+  editor é campo editável e o texto corrigido ainda não passou pelo
+  salvamento.
+- **Link interno de verdade:** conta `href` relativo ou que aponte para uma
+  página conhecida do cliente (`internal_links`), não qualquer `<a>`.
+- **Palavras curtas fora da checagem de pauta:** exigir "de" e "para" no
+  título transformaria a regra em loteria.
+- **Número no texto é o rastro de substância** (preço, prazo, ano). Texto
+  inteiro sem nenhum costuma ser o texto que serve para qualquer empresa.
+- **Segunda tentativa pelo mesmo crédito** na rota de geração quando a
+  trava reprova, ficando no melhor dos dois resultados. A falha foi da
+  geração, não de quem pediu. Só uma repetição: insistir mais é queimar
+  token num prompt que não está resolvendo.
+
+Validado na vitrine com artigo real do banco: bloqueou a publicação, mostrou
+1332 palavras, o achado e como corrigir.
+
+Isto é também o pré-requisito do piloto automático: publicar sozinho só é
+aceitável com uma trava no caminho.

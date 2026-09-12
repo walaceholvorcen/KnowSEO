@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { generateArticle } from "@/lib/anthropic";
 import { slugify } from "@/lib/utils";
 import { isAiConfigured, AI_NOT_CONFIGURED_MESSAGE } from "@/lib/ai-config";
+import { avaliarArtigo } from "@/lib/artigo/qualidade";
 import type { Blog, BrandDna, InternalLink, Keyword } from "@/types";
 
 export async function POST(request: Request) {
@@ -82,16 +83,48 @@ export async function POST(request: Request) {
     .eq("id", keyword.id);
 
   try {
-    const generated = await generateArticle({
+    const pedido = {
       blog,
       dna: dna as BrandDna | null,
       keyword: keyword.keyword,
       suggestedTitle: (keyword as Keyword).suggested_title,
       internalLinks: (internalLinks as InternalLink[]) ?? [],
-    });
+    };
+    const paginas = ((internalLinks as InternalLink[]) ?? []).map((l) => l.url);
 
+    const conferir = (a: NonNullable<Awaited<ReturnType<typeof generateArticle>>>) =>
+      avaliarArtigo({
+        titulo: a.title,
+        seoTitle: a.seo_title,
+        seoDescription: a.seo_description,
+        html: a.content_html,
+        keyword: keyword.keyword,
+        linksConhecidos: paginas,
+      });
+
+    let generated = await generateArticle(pedido);
     if (!generated) {
       throw new Error("empty response from model");
+    }
+
+    // Segunda tentativa pelo mesmo crédito quando a trava de qualidade
+    // reprova: a falha foi da geração, não de quem pediu. Fica no melhor
+    // resultado dos dois - insistir mais que isso é queimar tempo e token
+    // num prompt que claramente não está resolvendo.
+    let avaliacao = conferir(generated);
+    if (avaliacao.travas.length > 0) {
+      console.warn(
+        "[articles/generate] reprovado na trava, tentando de novo",
+        avaliacao.travas.map((t) => t.codigo),
+      );
+      const segunda = await generateArticle(pedido);
+      if (segunda) {
+        const avaliacaoDaSegunda = conferir(segunda);
+        if (avaliacaoDaSegunda.travas.length < avaliacao.travas.length) {
+          generated = segunda;
+          avaliacao = avaliacaoDaSegunda;
+        }
+      }
     }
 
     const { data: finalArticle } = await supabase
@@ -121,7 +154,9 @@ export async function POST(request: Request) {
       .update({ credits: Math.max(0, workspace.credits - 1) })
       .eq("id", workspace.id);
 
-    return NextResponse.json({ article: finalArticle });
+    // A avaliação vai junto para a tela poder abrir já dizendo o que ficou
+    // pendente, em vez de o cliente descobrir só ao clicar em Publicar.
+    return NextResponse.json({ article: finalArticle, avaliacao });
   } catch (err) {
     await supabase
       .from("articles")

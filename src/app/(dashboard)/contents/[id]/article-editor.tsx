@@ -17,11 +17,17 @@ import {
   GalleryHorizontal,
   Download,
   Sparkles,
+  AlertTriangle,
+  Info,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { slugify } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import type { Article } from "@/types";
+import {
+  avaliarArtigo,
+  type AvaliacaoDoArtigo,
+} from "@/lib/artigo/qualidade";
 
 // Largura lógica de cada aparelho. A prévia é renderizada nessa largura e
 // depois reduzida por escala - mostrar uma página de desktop espremida em
@@ -31,10 +37,17 @@ const LARGURA = { desktop: 1180, mobile: 390 };
 export function ArticleEditor({
   article,
   enderecoPublico,
+  pauta = null,
+  linksConhecidos = [],
+  keywordsPublicadas = [],
 }: {
   article: Article;
   /** Endereço do artigo no blog do cliente, mostrado acima da prévia. */
   enderecoPublico: string;
+  /** Pauta que originou o artigo, usada pela trava de qualidade. */
+  pauta?: string | null;
+  linksConhecidos?: string[];
+  keywordsPublicadas?: string[];
 }) {
   const router = useRouter();
   const supabase = createClient();
@@ -57,6 +70,9 @@ export function ArticleEditor({
   const [slides, setSlides] = useState(article.carousel_slides ?? []);
   const [gerandoCarrossel, setGerandoCarrossel] = useState(false);
   const [erroCarrossel, setErroCarrossel] = useState<string | null>(null);
+  // Resultado da trava de qualidade. Só nasce quando alguém tenta publicar:
+  // conferir a cada tecla transformaria a escrita numa lista de reclamações.
+  const [avaliacao, setAvaliacao] = useState<AvaliacaoDoArtigo | null>(null);
 
   const isGenerating = article.generation_status === "generating";
 
@@ -132,10 +148,33 @@ export function ArticleEditor({
     contentRef.current?.focus();
   }
 
-  async function handleSave(nextStatus?: Article["status"]) {
+  async function handleSave(
+    nextStatus?: Article["status"],
+    ignorarTrava = false,
+  ) {
+    const finalStatus = nextStatus ?? status;
+
+    // A conferência roda no conteúdo que está na tela, não no que foi salvo:
+    // o editor é um campo editável, e o texto corrigido agora ainda não
+    // passou pelo banco.
+    if (finalStatus === "published" && !ignorarTrava) {
+      const resultado = avaliarArtigo({
+        titulo: title,
+        seoTitle,
+        seoDescription,
+        html: contentRef.current?.innerHTML ?? article.content_html ?? "",
+        keyword: pauta,
+        linksConhecidos,
+        keywordsPublicadas,
+      });
+      setAvaliacao(resultado);
+      if (!resultado.podePublicar) return;
+    } else if (finalStatus !== "published") {
+      setAvaliacao(null);
+    }
+
     setSaving(true);
     setError(null);
-    const finalStatus = nextStatus ?? status;
 
     // O slug vem do campo, não do título.
     //
@@ -242,6 +281,65 @@ export function ArticleEditor({
         {/* Escrita */}
         <div className="min-w-0 flex-1 overflow-y-auto px-8 py-8">
           <div className="mx-auto max-w-2xl">
+            {avaliacao &&
+              (avaliacao.travas.length > 0 || avaliacao.avisos.length > 0) && (
+                <div className="mb-8 rounded-xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-900">
+                  <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                    {avaliacao.travas.length > 0
+                      ? `${avaliacao.travas.length} ${avaliacao.travas.length === 1 ? "item impede" : "itens impedem"} a publicação`
+                      : `Publicado. ${avaliacao.avisos.length} ${avaliacao.avisos.length === 1 ? "ponto pode" : "pontos podem"} render mais`}
+                  </p>
+                  <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+                    {avaliacao.palavras} palavras. São as mesmas regras que a
+                    Auditoria aplica no site do cliente — só que antes de
+                    publicar, não depois.
+                  </p>
+
+                  <ul className="mt-4 space-y-3">
+                    {[...avaliacao.travas, ...avaliacao.avisos].map((a) => (
+                      <li key={a.codigo} className="flex gap-2.5">
+                        {a.nivel === "trava" ? (
+                          <AlertTriangle
+                            size={15}
+                            aria-hidden="true"
+                            className="mt-0.5 shrink-0 text-nota-atencao"
+                          />
+                        ) : (
+                          <Info
+                            size={15}
+                            aria-hidden="true"
+                            className="mt-0.5 shrink-0 text-slate-400 dark:text-slate-500"
+                          />
+                        )}
+                        <span className="min-w-0">
+                          <span className="block text-sm font-medium text-slate-900 dark:text-slate-100">
+                            {a.titulo}
+                          </span>
+                          <span className="mt-0.5 block text-sm text-slate-600 dark:text-slate-400">
+                            {a.comoCorrigir}
+                          </span>
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  {avaliacao.travas.length > 0 && (
+                    <div className="mt-4 flex flex-wrap items-center gap-3">
+                      <button
+                        onClick={() => handleSave("published", true)}
+                        disabled={saving}
+                        className={botao("fantasma", "sm")}
+                      >
+                        Publicar mesmo assim
+                      </button>
+                      <span className="text-sm text-slate-500 dark:text-slate-400">
+                        Corrija e clique em Publicar de novo para conferir.
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
