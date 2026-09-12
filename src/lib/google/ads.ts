@@ -12,13 +12,18 @@ import {
 //
 // Usa a mesma conta Google já conectada para Search Console e GA4 (escopo
 // `adwords` somado em oauth.ts), então não existe segunda tela de login.
-// O que é exclusivo daqui são duas credenciais que não vêm do OAuth:
+// A credencial exclusiva daqui é uma só:
 //
-//   GOOGLE_ADS_DEVELOPER_TOKEN - identifica a APLICAÇÃO perante o Google
-//     Ads. Sai do Centro de API de uma conta de administrador (MCC), e
-//     precisa de "Acesso básico" aprovado para consultar contas reais.
-//   GOOGLE_ADS_CUSTOMER_ID - a conta contra a qual a consulta é feita. Só
-//     dígitos, sem hífen.
+//   GOOGLE_ADS_CUSTOMER_ID - a conta de anúncios contra a qual a consulta é
+//     feita. Só dígitos, sem hífen.
+//
+// GOOGLE_ADS_DEVELOPER_TOKEN virou OPCIONAL em setembro/2026: o Google
+// aposentou o token ("this is optional and ignored by the API servers") e
+// passou o nível de acesso para o PROJETO do Google Cloud que gerou as
+// credenciais OAuth. O Planejador de Palavras-chave (KeywordPlanIdeaService)
+// exige nível Básico nesse projeto - o nível Explorer, que vem por padrão,
+// bloqueia justamente os serviços de planejamento. Exigir o token aqui
+// travava quem cria a conta hoje e nunca vai receber um.
 //
 // AVISO que precisa chegar ao cliente, não ficar só aqui: sem campanha
 // ativa gastando, o Google devolve o volume em FAIXAS (ex.: 1.000 no lugar
@@ -34,10 +39,7 @@ const VERSAO = process.env.GOOGLE_ADS_API_VERSION || "v21";
 const MAX_SEMENTES = 20;
 
 export function isGoogleAdsConfigured(): boolean {
-  return Boolean(
-    process.env.GOOGLE_ADS_DEVELOPER_TOKEN &&
-      process.env.GOOGLE_ADS_CUSTOMER_ID,
-  );
+  return Boolean(process.env.GOOGLE_ADS_CUSTOMER_ID);
 }
 
 function somenteDigitos(valor: string): string {
@@ -64,9 +66,13 @@ export async function buscarVolumeDeBusca(params: {
 
   const headers: Record<string, string> = {
     Authorization: `Bearer ${token}`,
-    "developer-token": process.env.GOOGLE_ADS_DEVELOPER_TOKEN ?? "",
     "Content-Type": "application/json",
   };
+
+  // Só vai quando existe: o cabeçalho é ignorado hoje e será recusado numa
+  // versão futura da API. Mandar vazio é convite a erro de credencial.
+  const devToken = process.env.GOOGLE_ADS_DEVELOPER_TOKEN;
+  if (devToken) headers["developer-token"] = devToken;
 
   // Quando a conta consultada está sob uma conta de administrador, o Google
   // exige saber por qual MCC estamos entrando. Se não for informado, assume

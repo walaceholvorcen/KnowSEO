@@ -59,7 +59,7 @@ export default async function IntegrationsPage({
       <p className="text-sm text-slate-600 dark:text-slate-400">
         {isGoogleAdsConfigured()
           ? "O Planejador de Palavras-chave do Google Ads está ligado. As pautas da Estratégia saem com volume de busca medido pelo Google, e não com estimativa do modelo."
-          : "Sem o Planejador de Palavras-chave, a Estratégia sugere pauta com leitura qualitativa do modelo — sem volume de busca. Para ligar, faltam duas credenciais no ambiente: GOOGLE_ADS_DEVELOPER_TOKEN e GOOGLE_ADS_CUSTOMER_ID."}
+          : "Sem o Planejador de Palavras-chave, a Estratégia sugere pauta com leitura qualitativa do modelo — sem volume de busca. Para ligar: o projeto do Google Cloud que gera o login do Google precisa de acesso Básico à API do Google Ads (o nível Explorer, padrão, bloqueia o Planejador), e falta a variável GOOGLE_ADS_CUSTOMER_ID com o número da conta de anúncios."}
       </p>
       {isGoogleAdsConfigured() && (
         <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
