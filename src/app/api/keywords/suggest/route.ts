@@ -65,7 +65,7 @@ export async function POST(request: Request) {
     tema = (data as { termo: string; exemplos: string[] } | null) ?? null;
   }
 
-  // Pauta pedida a partir de uma pergunta que a marca perdeu no Radar GEO.
+  // Pauta pedida a partir de uma pergunta que a marca perdeu no Raio X - GEO.
   // É o laço que o produto não fechava: o módulo media a derrota e parava
   // ali, com o gerador de artigo na tela ao lado.
   const perguntaPerdida = pergunta?.trim() || null;

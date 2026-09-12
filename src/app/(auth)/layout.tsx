@@ -82,7 +82,7 @@ export default function AuthLayout({
               </div>
 
               <div className="mt-6 flex items-baseline justify-between gap-4 border-t border-white/10 pt-5">
-                <span className="text-sm text-[#93a4c9]">Radar GEO</span>
+                <span className="text-sm text-[#93a4c9]">Raio X - GEO</span>
                 <span className="text-sm text-white">
                   6 de 10 respostas citam a marca
                 </span>

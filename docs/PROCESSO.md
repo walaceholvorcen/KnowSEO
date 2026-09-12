@@ -670,7 +670,7 @@ engolido e a análise de cobertura ainda vale.
 
 ### Detalhes que valem lembrar
 
-- Os concorrentes sugeridos vêm do **Radar GEO** — domínios realmente
+- Os concorrentes sugeridos vêm do **Raio X - GEO** — domínios realmente
   citados no lugar da marca. Melhor ponto de partida que uma caixa vazia.
 - As páginas do cliente são reaproveitadas de `internal_links` em vez de
   rastrear o mesmo site duas vezes; só cai no crawl ao vivo se aquela
@@ -774,7 +774,7 @@ duas mudanças grandes na mesma entrega.
 
 ---
 
-## 20. Radar GEO — o dia em que o diferencial parou de mentir
+## 20. Raio X - GEO — o dia em que o diferencial parou de mentir
 
 Revisão crítica do módulo (auditoria linha a linha, setembro/2026) encontrou
 um defeito que invalidava a métrica que o produto vende como prova.
@@ -935,7 +935,7 @@ poder de discriminação significa: antes as duas eram 93 e não diziam nada.
 
 ---
 
-## 22. Radar GEO em segundo plano, três assistentes, e a auditoria que se acompanha
+## 22. Raio X - GEO em segundo plano, três assistentes, e a auditoria que se acompanha
 
 Três pedidos do cliente numa mensagem só: o GEO "é muito demorado, e se eu
 sair do radar ele para e se clicar em analisar volta de novo"; "precisamos
@@ -1018,7 +1018,7 @@ sem resposta, e é por isso que o cliente para de voltar.
   A anterior é sempre do **mesmo site**: comparar domínios diferentes
   fabricaria "resolvidos" que nunca foram corrigidos.
 - **Acompanhamento semanal** (`/api/cron/semanal`, toda segunda às 7h UTC,
-  `vercel.json`) reaudita o último site auditado e refaz o Radar GEO de
+  `vercel.json`) reaudita o último site auditado e refaz o Raio X - GEO de
   cada blog, sem ninguém clicar. Critério "rodou há mais de seis dias", não
   "é segunda-feira" — o que não coube num disparo entra no seguinte.
   Protegido por `CRON_SECRET`: sem ele a rota recusa tudo, e a tela **não
@@ -1040,7 +1040,7 @@ início, como link direto para Integrações.
 - Alerta por e-mail quando a reauditoria semanal encontra algo **novo**
   (404, `noindex` que apareceu). É o que traz o cliente de volta sem ele
   lembrar de abrir o painel — precisa de provedor de e-mail.
-- Crédito por rodada do Radar GEO. Continua sem débito, e agora é a
+- Crédito por rodada do Raio X - GEO. Continua sem débito, e agora é a
   operação mais cara do produto: até trinta consultas com busca na web.
 
 ---
@@ -1103,7 +1103,7 @@ provou com números:
 
 ### Um erro de conteúdo que a inspeção visual pegou
 
-O Radar GEO ainda abria com "no seu lugar apareceu agencies.semrush.com" —
+O Raio X - GEO ainda abria com "no seu lugar apareceu agencies.semrush.com" —
 o dado anterior à correção da seção 20. O filtro de diretório na leitura
 tinha ido para o Início e o Mercado e **faltado na tela do próprio Radar**.
 Só apareceu olhando a tela renderizada com dado real; nenhum teste pegaria.
@@ -1163,7 +1163,7 @@ disso vira funcionalidade nossa.
 
 - A corrente do Início é o método dele em tela (diagnóstico → pauta →
   conteúdo → medição).
-- O Radar GEO mede citação de verdade em 3 motores — ele só consegue
+- O Raio X - GEO mede citação de verdade em 3 motores — ele só consegue
   oferecer isso ao cliente via relatório manual.
 - "Página 2" via Search Console já é a seção "onde você já quase ganha"
   do Mercado.
@@ -1330,7 +1330,7 @@ tela agora diz com data:
   da régua e a frase "desde 04/09 a nota subiu 41 pontos". É a recompensa
   visível do trabalho — o motivo para voltar e ver a linha continuar.
 - **Ação por etapa**: na janela do efeito, Mercado (o que o Google já
-  mostra) e Estratégia; em manutenção, Radar GEO e Estratégia. A auditoria
+  mostra) e Estratégia; em manutenção, Raio X - GEO e Estratégia. A auditoria
   deixa de ser fim de linha e aponta para os módulos que fazem crescer.
 
 ### Decisões de gráfico (skill de dataviz)

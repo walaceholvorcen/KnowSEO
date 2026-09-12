@@ -46,7 +46,7 @@ const GRUPOS: { rotulo: string | null; itens: Item[] }[] = [
     rotulo: "Diagnóstico",
     itens: [
       { href: "/audit", label: "Auditoria - SEO", icon: Stethoscope },
-      { href: "/visibility", label: "Radar GEO", icon: Bot },
+      { href: "/visibility", label: "Raio X - GEO", icon: Bot },
       // Antes da Estratégia de propósito: olhar o mercado vem antes de
       // escolher a pauta.
       { href: "/market", label: "Mercado", icon: Radar },

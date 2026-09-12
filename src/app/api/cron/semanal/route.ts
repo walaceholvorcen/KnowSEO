@@ -10,7 +10,7 @@ import {
 } from "@/lib/ai-visibility/runner";
 import type { AiQuery, Blog } from "@/types";
 
-// O acompanhamento semanal: reaudita o site e refaz o Radar GEO de cada
+// O acompanhamento semanal: reaudita o site e refaz o Raio X - GEO de cada
 // blog, sem ninguém clicar.
 //
 // É isto que dá sentido às duas telas. SEO não muda na hora - o efeito de uma
@@ -74,7 +74,7 @@ export async function GET(request: Request) {
       );
     }
 
-    // Radar GEO: mesma lógica - só onde já existe conjunto de perguntas.
+    // Raio X - GEO: mesma lógica - só onde já existe conjunto de perguntas.
     if (providers.length) {
       const [{ data: queries }, { data: ultimaRodada }] = await Promise.all([
         admin

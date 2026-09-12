@@ -48,7 +48,7 @@ export default async function BrandDnaPage() {
 
       <Secao>Identidade da marca</Secao>
       <p className="text-sm text-slate-600 dark:text-slate-400">
-        Usado pelo Radar GEO para reconhecer você numa resposta de IA. Se a
+        Usado pelo Raio X - GEO para reconhecer você numa resposta de IA. Se a
         marca tiver apelido, grafia alternativa ou outro domínio e eles não
         estiverem aqui, uma citação real passa despercebida e conta como
         derrota.

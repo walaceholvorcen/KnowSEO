@@ -52,7 +52,7 @@ export interface Blog {
   name: string;
   subdomain: string;
   /** Grafias da marca que uma IA poderia usar. Alimenta o detector de
-   *  citação do Radar GEO; vazio faz cair no nome do blog. */
+   *  citação do Raio X - GEO; vazio faz cair no nome do blog. */
   brand_names: string[];
   /** Domínios que são da marca, além do próprio e do blog hospedado. */
   brand_domains: string[];

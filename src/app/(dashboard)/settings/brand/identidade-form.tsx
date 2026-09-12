@@ -9,7 +9,7 @@ import { createClient } from "@/lib/supabase/client";
 
 // Como a marca é escrita e onde ela mora.
 //
-// Estes dois campos existem no banco desde o primeiro dia do Radar GEO e
+// Estes dois campos existem no banco desde o primeiro dia do Raio X - GEO e
 // nunca tiveram tela. Sem eles o detector de citação caía no nome do blog -
 // que no banco de teste era literalmente "testando dataknow" -, e nenhuma
 // menção real à marca casaria nunca. Vinte linhas de formulário separavam o
@@ -173,7 +173,7 @@ export function IdentidadeForm({
         </button>
         {salvo && (
           <span className="text-sm text-slate-500 dark:text-slate-400">
-            Vale a partir da próxima análise do Radar GEO.
+            Vale a partir da próxima análise do Raio X - GEO.
           </span>
         )}
       </div>

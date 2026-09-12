@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireUserAndWorkspace } from "@/lib/workspace";
 
-// Progresso de uma rodada do Radar GEO. A tela consulta isto a cada poucos
+// Progresso de uma rodada do Raio X - GEO. A tela consulta isto a cada poucos
 // segundos enquanto a análise roda em segundo plano - é o que permite sair
 // da página e voltar encontrando "12 de 30" em vez de um botão parado.
 //

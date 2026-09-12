@@ -65,7 +65,7 @@ export default async function MarketPage() {
       ])
     : [{ data: null }, { data: null }];
 
-  // Concorrentes que o Radar GEO já viu citados no lugar da marca. É dado
+  // Concorrentes que o Raio X - GEO já viu citados no lugar da marca. É dado
   // real de quem ganha a resposta da IA - melhor ponto de partida do que uma
   // caixa de texto vazia esperando que o cliente lembre dos rivais.
   const { data: citacoes } = await supabase

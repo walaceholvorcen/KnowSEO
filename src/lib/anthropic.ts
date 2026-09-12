@@ -110,7 +110,7 @@ export async function generateKeywordIdeas(params: {
    *  concorrentes publicaram sobre ele. Quando existe, a sugestão deixa de
    *  ser palpite no vácuo e passa a responder a uma lacuna medida. */
   tema?: { termo: string; exemplos: string[] } | null;
-  /** Pergunta que a marca perdeu no Radar GEO: um assistente de IA
+  /** Pergunta que a marca perdeu no Raio X - GEO: um assistente de IA
    *  respondeu a isto e citou outra empresa. Fecha o laço entre medir a
    *  derrota e escrever a resposta. */
   perguntaPerdida?: string | null;

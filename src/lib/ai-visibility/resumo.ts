@@ -1,4 +1,4 @@
-// Leitura de uma rodada do Radar GEO com mais de um motor.
+// Leitura de uma rodada do Raio X - GEO com mais de um motor.
 //
 // Com Claude, ChatGPT e Perplexity na mesma rodada, "citado em 3 de 30" não
 // diz nada ao cliente: ele pensa em perguntas, não em pares pergunta ×

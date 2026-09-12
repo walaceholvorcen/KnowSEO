@@ -71,7 +71,7 @@ da Anthropic configurada.
 
 **Jornada:**
 1. Você aponta de 2 a 4 concorrentes diretos. A tela já sugere os domínios
-   que o Radar GEO viu sendo citados no lugar da sua marca.
+   que o Raio X - GEO viu sendo citados no lugar da sua marca.
 2. O sistema lê o sitemap público de cada um e pega o título das primeiras
    60 páginas — o mesmo crawler da linkagem interna, sem login e sem API.
 3. As suas páginas não são rastreadas de novo: reaproveita o que a
