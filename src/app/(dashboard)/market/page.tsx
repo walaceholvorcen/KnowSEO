@@ -1,4 +1,5 @@
-import { requireUserAndWorkspace, getWorkspaceBlogs } from "@/lib/workspace";
+import { redirect } from "next/navigation";
+import { requireUserAndWorkspace, getBlogAtivo } from "@/lib/workspace";
 import { buscarConexao } from "@/lib/google/oauth";
 import { extractDomain, isDirectory } from "@/lib/citation";
 import { MarketBoard } from "./market-board";
@@ -37,8 +38,8 @@ export interface MarketChanceRow {
 
 export default async function MarketPage() {
   const { supabase, workspace } = await requireUserAndWorkspace();
-  const blogs = await getWorkspaceBlogs(supabase, workspace.id);
-  const blog = blogs[0];
+  const blog = await getBlogAtivo(supabase, workspace.id);
+  if (!blog) redirect("/onboarding");
 
   const { data: rodada } = await supabase
     .from("market_analyses")

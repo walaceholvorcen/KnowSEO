@@ -1,12 +1,13 @@
-import { requireUserAndWorkspace, getWorkspaceBlogs } from "@/lib/workspace";
+import { redirect } from "next/navigation";
+import { requireUserAndWorkspace, getBlogAtivo } from "@/lib/workspace";
 import { paisDoBlog } from "@/lib/keywords/metricas";
 import type { Keyword } from "@/types";
 import { StrategyBoard } from "./strategy-board";
 
 export default async function StrategyPage() {
   const { supabase, workspace } = await requireUserAndWorkspace();
-  const blogs = await getWorkspaceBlogs(supabase, workspace.id);
-  const blog = blogs[0];
+  const blog = await getBlogAtivo(supabase, workspace.id);
+  if (!blog) redirect("/onboarding");
 
   const { data: keywords } = await supabase
     .from("keywords")

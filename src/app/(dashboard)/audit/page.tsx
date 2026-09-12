@@ -1,4 +1,5 @@
-import { requireUserAndWorkspace, getWorkspaceBlogs } from "@/lib/workspace";
+import { redirect } from "next/navigation";
+import { requireUserAndWorkspace, getBlogAtivo } from "@/lib/workspace";
 import { compararAuditorias, type AchadoResumo } from "@/lib/audit/comparar";
 import { AuditBoard } from "./audit-board";
 import { lerJornada } from "./jornada-dados";
@@ -31,8 +32,8 @@ export interface FindingRow {
 
 export default async function AuditPage() {
   const { supabase, workspace } = await requireUserAndWorkspace();
-  const blogs = await getWorkspaceBlogs(supabase, workspace.id);
-  const blog = blogs[0];
+  const blog = await getBlogAtivo(supabase, workspace.id);
+  if (!blog) redirect("/onboarding");
 
   const { data: audits } = await supabase
     .from("site_audits")

@@ -1,13 +1,14 @@
+import { redirect } from "next/navigation";
 import { botao, pagina } from "@/components/ui";
 import Link from "next/link";
-import { requireUserAndWorkspace, getWorkspaceBlogs } from "@/lib/workspace";
+import { requireUserAndWorkspace, getBlogAtivo } from "@/lib/workspace";
 import { Lede, Linha, Secao } from "@/components/lede";
 import type { AnalyticsEvent } from "@/types";
 
 export default async function ReportsPage() {
   const { supabase, workspace } = await requireUserAndWorkspace();
-  const blogs = await getWorkspaceBlogs(supabase, workspace.id);
-  const blog = blogs[0];
+  const blog = await getBlogAtivo(supabase, workspace.id);
+  if (!blog) redirect("/onboarding");
 
   const desde = new Date();
   desde.setDate(desde.getDate() - 28);

@@ -1,7 +1,8 @@
+import { redirect } from "next/navigation";
 import { botao } from "@/components/ui";
 import Link from "next/link";
 import Image from "next/image";
-import { requireUserAndWorkspace, getWorkspaceBlogs } from "@/lib/workspace";
+import { requireUserAndWorkspace, getBlogAtivo } from "@/lib/workspace";
 import { formatDate } from "@/lib/utils";
 import { Lede } from "@/components/lede";
 import type { Article } from "@/types";
@@ -23,8 +24,8 @@ const STATUS_COLOR: Record<Article["status"], string> = {
 
 export default async function ContentsPage() {
   const { supabase, workspace } = await requireUserAndWorkspace();
-  const blogs = await getWorkspaceBlogs(supabase, workspace.id);
-  const blog = blogs[0];
+  const blog = await getBlogAtivo(supabase, workspace.id);
+  if (!blog) redirect("/onboarding");
 
   const { data: articles } = await supabase
     .from("articles")

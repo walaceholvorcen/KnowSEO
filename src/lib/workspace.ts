@@ -1,7 +1,9 @@
 import { cache } from "react";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import type { Blog, Workspace } from "@/types";
+import { BLOG_COOKIE } from "@/lib/blog-cookie";
 
 // MVP: 1 usuário -> 1 workspace principal (o schema já suporta N workspaces
 // e N membros por workspace para quando entrarmos no caso de uso de agência).
@@ -84,3 +86,24 @@ export async function completeOnboardingStep(
     })
     .eq("id", workspace.id);
 }
+
+// Cliente em operação. O comprador deste produto é agência: o painel
+// precisa dizer de quem são os números e deixar trocar sem sair da tela.
+export { BLOG_COOKIE };
+
+// O id vem de cookie, mas só vale se pertencer ao workspace de quem está
+// logado - cookie é editável pelo visitante, e sem esta checagem bastaria
+// trocar o valor à mão para apontar o painel para o cliente de outra
+// agência. Valor desconhecido cai no primeiro blog, sem erro na cara.
+export const getBlogAtivo = cache(
+  async (
+    supabase: Awaited<ReturnType<typeof createClient>>,
+    workspaceId: string,
+  ): Promise<Blog | null> => {
+    const blogs = await getWorkspaceBlogs(supabase, workspaceId);
+    if (!blogs.length) return null;
+
+    const escolhido = (await cookies()).get(BLOG_COOKIE)?.value;
+    return blogs.find((b) => b.id === escolhido) ?? blogs[0];
+  },
+);

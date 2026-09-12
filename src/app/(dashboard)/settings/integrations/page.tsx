@@ -1,5 +1,6 @@
+import { redirect } from "next/navigation";
 import { pagina } from "@/components/ui";
-import { requireUserAndWorkspace, getWorkspaceBlogs } from "@/lib/workspace";
+import { requireUserAndWorkspace, getBlogAtivo } from "@/lib/workspace";
 import { SettingsNav } from "../settings-nav";
 import { Lede, Secao } from "@/components/lede";
 import { buscarConexao, isGoogleIntegrationConfigured } from "@/lib/google/oauth";
@@ -12,8 +13,8 @@ export default async function IntegrationsPage({
   searchParams: Promise<{ conectado?: string; erro?: string }>;
 }) {
   const { supabase, workspace } = await requireUserAndWorkspace();
-  const blogs = await getWorkspaceBlogs(supabase, workspace.id);
-  const blog = blogs[0];
+  const blog = await getBlogAtivo(supabase, workspace.id);
+  if (!blog) redirect("/onboarding");
   const { conectado, erro } = await searchParams;
 
   const conexao = isGoogleIntegrationConfigured()

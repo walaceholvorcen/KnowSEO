@@ -1,5 +1,6 @@
+import { redirect } from "next/navigation";
 import { pagina } from "@/components/ui";
-import { requireUserAndWorkspace, getWorkspaceBlogs } from "@/lib/workspace";
+import { requireUserAndWorkspace, getBlogAtivo } from "@/lib/workspace";
 import type { InternalLink } from "@/types";
 import { SettingsNav } from "../settings-nav";
 import { BlogSettingsForm } from "./blog-settings-form";
@@ -8,8 +9,8 @@ import { Lede, Secao } from "@/components/lede";
 
 export default async function BlogSettingsPage() {
   const { supabase, workspace } = await requireUserAndWorkspace();
-  const blogs = await getWorkspaceBlogs(supabase, workspace.id);
-  const blog = blogs[0];
+  const blog = await getBlogAtivo(supabase, workspace.id);
+  if (!blog) redirect("/onboarding");
 
   const { data: links } = await supabase
     .from("internal_links")

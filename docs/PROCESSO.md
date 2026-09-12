@@ -1394,3 +1394,48 @@ Google reaproveita o consentimento antigo. Sem revogar em
 **Regra que fica:** credencial de terceiro se verifica chamando, não
 lendo `process.env`. Este módulo passou semanas "configurado" sem nunca ter
 respondido uma vez.
+
+## 29. Senha e multi-cliente — dois dos três bloqueadores comerciais
+
+Item 2 da avaliação (seção em `docs/AVALIACAO.md`): sem recuperação de
+senha, sem cobrança e sem multi-cliente não existe venda. Dois foram
+resolvidos aqui; cobrança depende de decisão de negócio.
+
+### Recuperação de senha
+
+- `/esqueci` → `resetPasswordForEmail` com `redirectTo` para
+  `/api/auth/confirmar?destino=/nova-senha`.
+- **A rota aceita os dois formatos de link** (`code` do fluxo PKCE e
+  `token_hash` + `type` do modelo antigo). Qual chega depende do template
+  do projeto no Supabase, e errar isso trancaria o cliente para fora
+  justamente na tela feita para destrancá-lo.
+- `destino` só é aceito se começar com `/` — parâmetro de URL não pode
+  virar redirecionamento aberto.
+- A confirmação é igual exista ou não a conta. Dizer "e-mail não
+  cadastrado" entrega ao curioso quem é cliente.
+- `/nova-senha` confere a sessão **antes** do formulário: link expirado
+  vira aviso com link para pedir outro, em vez de erro depois de digitar.
+- O aviso de link inválido no login ficou isolado em `<Suspense>`:
+  `useSearchParams` derruba a pré-renderização estática da página inteira.
+
+**Depende de configuração no Supabase (fora do código):** a URL do app em
+Authentication → URL Configuration, `/api/auth/confirmar` na lista de
+redirecionamentos permitidos, e SMTP próprio — o remetente padrão do
+Supabase tem limite baixo e não serve para cliente real.
+
+### Multi-cliente
+
+- `getBlogAtivo()` lê o cookie `blog_ativo` e **confere se o id pertence ao
+  workspace** antes de usar; valor desconhecido cai no primeiro blog. Sem
+  essa checagem, editar o cookie à mão apontaria o painel para o cliente de
+  outra agência (o RLS ainda barraria os dados, mas a tela erraria).
+- Cookie, não coluna: a escolha é do navegador de quem opera, então duas
+  pessoas da mesma agência podem estar em clientes diferentes ao mesmo
+  tempo.
+- `blogs[0]` saiu de 11 telas; a barra lateral virou seletor quando há mais
+  de um cliente, com "Adicionar cliente" ao lado.
+- `BLOG_COOKIE` mora em `src/lib/blog-cookie.ts`: importar `workspace.ts`
+  do navegador arrastaria o client de servidor do Supabase para o pacote do
+  front.
+- O onboarding passou a servir também para cadastrar cliente novo
+  (`?novo=1`) — e saiu do espanhol residual.

@@ -1,12 +1,13 @@
-import { requireUserAndWorkspace, getWorkspaceBlogs } from "@/lib/workspace";
+import { redirect } from "next/navigation";
+import { requireUserAndWorkspace, getBlogAtivo } from "@/lib/workspace";
 import { encontrarGargalo } from "@/lib/gargalo";
 import { carregarInicio } from "./dados";
 import { InicioBoard } from "./inicio-board";
 
 export default async function DashboardHomePage() {
   const { supabase, workspace } = await requireUserAndWorkspace();
-  const blogs = await getWorkspaceBlogs(supabase, workspace.id);
-  const blog = blogs[0];
+  const blog = await getBlogAtivo(supabase, workspace.id);
+  if (!blog) redirect("/onboarding");
 
   const dados = await carregarInicio(supabase, blog.id);
 

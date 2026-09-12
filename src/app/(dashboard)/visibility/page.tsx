@@ -1,12 +1,13 @@
-import { requireUserAndWorkspace, getWorkspaceBlogs } from "@/lib/workspace";
+import { redirect } from "next/navigation";
+import { requireUserAndWorkspace, getBlogAtivo } from "@/lib/workspace";
 import { getProviders, MAX_PERGUNTAS } from "@/lib/ai-visibility/runner";
 import type { AiQuery, AiVisibilityCheck } from "@/types";
 import { VisibilityBoard, type RodadaResumo } from "./visibility-board";
 
 export default async function VisibilityPage() {
   const { supabase, workspace } = await requireUserAndWorkspace();
-  const blogs = await getWorkspaceBlogs(supabase, workspace.id);
-  const blog = blogs[0];
+  const blog = await getBlogAtivo(supabase, workspace.id);
+  if (!blog) redirect("/onboarding");
 
   const [{ data: queries }, { data: checks }, { data: rodada }] =
     await Promise.all([

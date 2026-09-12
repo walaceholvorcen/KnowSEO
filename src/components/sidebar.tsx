@@ -5,6 +5,7 @@ import Link, { useLinkStatus } from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
+import { BLOG_COOKIE } from "@/lib/blog-cookie";
 import { Logotipo } from "@/components/marca";
 import {
   LayoutGrid,
@@ -19,6 +20,7 @@ import {
   Lock,
   Radar,
   Menu,
+  Plus,
   X,
   type LucideIcon,
 } from "lucide-react";
@@ -75,13 +77,22 @@ const CONFIGURACOES: Item = {
   match: "/settings",
 };
 
+export interface BlogDaBarra {
+  id: string;
+  nome: string;
+  endereco: string;
+}
+
 export function Sidebar({
   credits,
-  blog,
+  blogs,
+  blogAtivoId,
 }: {
   credits: number;
-  blog: { nome: string; endereco: string };
+  blogs: BlogDaBarra[];
+  blogAtivoId: string;
 }) {
+  const blog = blogs.find((b) => b.id === blogAtivoId) ?? blogs[0];
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
@@ -95,6 +106,16 @@ export function Sidebar({
     window.addEventListener("keydown", fecharNoEsc);
     return () => window.removeEventListener("keydown", fecharNoEsc);
   }, [aberto]);
+
+  // Cookie em vez de estado no banco: a escolha é do navegador de quem
+  // opera, não da conta - duas pessoas da mesma agência podem estar em
+  // clientes diferentes ao mesmo tempo. O servidor confere se o id
+  // pertence ao workspace antes de usar.
+  function trocarDeCliente(e: React.ChangeEvent<HTMLSelectElement>) {
+    document.cookie = `${BLOG_COOKIE}=${e.target.value}; path=/; max-age=31536000; samesite=lax`;
+    setAberto(false);
+    router.refresh();
+  }
 
   async function handleLogout() {
     await supabase.auth.signOut();
@@ -213,13 +234,42 @@ export function Sidebar({
             contexto em que a pessoa está mexendo - sem isto, nada na tela
             dizia de quem eram os números. */}
         <div className="mx-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 dark:border-slate-800 dark:bg-slate-900">
-          <p className="truncate text-sm font-medium text-slate-900 dark:text-slate-100">
-            {blog.nome}
-          </p>
+          {blogs.length > 1 ? (
+            <>
+              <label htmlFor="cliente-ativo" className="sr-only">
+                Cliente em operação
+              </label>
+              <select
+                id="cliente-ativo"
+                value={blog.id}
+                onChange={trocarDeCliente}
+                className="-mx-1 w-[calc(100%+0.5rem)] cursor-pointer truncate rounded bg-transparent px-1 text-sm font-medium text-slate-900 outline-none hover:bg-slate-100 dark:text-slate-100 dark:hover:bg-slate-800"
+              >
+                {blogs.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.nome}
+                  </option>
+                ))}
+              </select>
+            </>
+          ) : (
+            <p className="truncate text-sm font-medium text-slate-900 dark:text-slate-100">
+              {blog.nome}
+            </p>
+          )}
           <p className="truncate text-xs text-slate-500 dark:text-slate-400">
             {blog.endereco}
           </p>
         </div>
+
+        <Link
+          href="/onboarding?novo=1"
+          onClick={() => setAberto(false)}
+          className="mx-3 mt-1.5 flex items-center gap-1.5 px-1 text-xs text-slate-500 hover:text-cobalto-600 dark:text-slate-400 dark:hover:text-cobalto-400"
+        >
+          <Plus size={12} aria-hidden="true" />
+          Adicionar cliente
+        </Link>
 
         <nav
           aria-label="Principal"

@@ -1,5 +1,9 @@
 import { redirect } from "next/navigation";
-import { requireUserAndWorkspace, getWorkspaceBlogs } from "@/lib/workspace";
+import {
+  requireUserAndWorkspace,
+  getWorkspaceBlogs,
+  getBlogAtivo,
+} from "@/lib/workspace";
 import { Sidebar } from "@/components/sidebar";
 
 export default async function DashboardLayout({
@@ -14,7 +18,7 @@ export default async function DashboardLayout({
     redirect("/onboarding");
   }
 
-  const blog = blogs[0];
+  const blog = (await getBlogAtivo(supabase, workspace.id))!;
   const raiz = process.env.NEXT_PUBLIC_ROOT_DOMAIN || "localhost:3000";
 
   return (
@@ -24,10 +28,12 @@ export default async function DashboardLayout({
     <div className="flex h-screen flex-col overflow-hidden bg-slate-50 dark:bg-background lg:flex-row">
       <Sidebar
         credits={workspace.credits}
-        blog={{
-          nome: blog.name,
-          endereco: blog.custom_domain ?? `${blog.subdomain}.${raiz}`,
-        }}
+        blogAtivoId={blog.id}
+        blogs={blogs.map((b) => ({
+          id: b.id,
+          nome: b.name,
+          endereco: b.custom_domain ?? `${b.subdomain}.${raiz}`,
+        }))}
       />
       <main className="min-h-0 flex-1 overflow-y-auto [scrollbar-gutter:stable]">
         {children}
