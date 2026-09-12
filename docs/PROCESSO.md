@@ -1353,3 +1353,44 @@ tela agora diz com data:
 Lembrete por e-mail na data da próxima verificação e quando a reauditoria
 semanal achar algo **novo**. É o que traz o cliente de volta sem ele
 lembrar de abrir o painel — depende de provedor de e-mail.
+
+## 28. Google Ads: o token morreu, a versão morreu, e a tela passou a medir
+
+Ao passar o passo a passo do Planejador de Palavras-chave para o dono,
+três coisas apareceram — todas descobertas batendo na API de verdade com o
+token guardado no banco, não lendo documentação:
+
+1. **A versão padrão estava morta.** `v21` (nosso default) devolve 404. Só
+   `v22` a `v26` respondem, medido em setembro/2026. O padrão virou `v26`.
+2. **O developer token foi aposentado** pelo Google em 9/9/2026: "optional
+   and ignored by the API servers". O nível de acesso passou a ser do
+   **projeto do Google Cloud** que gera as credenciais OAuth. Nosso
+   `isGoogleAdsConfigured()` exigia o token — travaria para sempre quem
+   cria a conta hoje e nunca vai receber um. A função foi removida.
+3. **O nível concedido por padrão (Explorer) bloqueia justamente o
+   Planejador** (`KeywordPlanIdeaService` está na lista de serviços de
+   planejamento restritos). Precisa pedir **Básico**, que hoje é aprovado
+   em minutos na página da Google Ads API dentro do Cloud Console.
+
+E a conexão real do banco tinha só `webmasters.readonly` e
+`analytics.readonly` — o escopo `adwords` foi somado ao código depois, e o
+Google reaproveita o consentimento antigo. Sem revogar em
+`myaccount.google.com/permissions`, reconectar não adianta.
+
+### O que mudou no código
+
+- **A conta de anúncios é descoberta sozinha** (`listAccessibleCustomers`):
+  `GOOGLE_ADS_CUSTOMER_ID` virou opcional, e ideia de palavra-chave não
+  muda de conta para conta. Um passo manual a menos para ativar.
+- **`diagnosticarGoogleAds()`** pergunta ao Google o que a conexão consegue
+  fazer e devolve um de cinco estados: sem conexão, sem escopo, sem conta
+  de anúncios, sem acesso ao Planejador, pronto. A tela de Integrações
+  mostra o estado medido e, quando falta acesso Básico, os três passos
+  para resolver. Antes ela dizia "ligado" com base numa variável de
+  ambiente, enquanto a API recusava toda chamada.
+- O gate por variável saiu de `keywords/suggest`: o volume é enriquecimento
+  e já degrada sozinho.
+
+**Regra que fica:** credencial de terceiro se verifica chamando, não
+lendo `process.env`. Este módulo passou semanas "configurado" sem nunca ter
+respondido uma vez.

@@ -5,7 +5,7 @@ import {
   fetchRealKeywordMetrics,
   isDataForSeoConfigured,
 } from "@/lib/dataforseo";
-import { buscarVolumeDeBusca, isGoogleAdsConfigured } from "@/lib/google/ads";
+import { buscarVolumeDeBusca } from "@/lib/google/ads";
 import { buscarConexao } from "@/lib/google/oauth";
 import { enriquecer, type MetricaReal } from "@/lib/keywords/metricas";
 import { isAiConfigured, AI_NOT_CONFIGURED_MESSAGE } from "@/lib/ai-config";
@@ -105,7 +105,10 @@ export async function POST(request: Request) {
   let metricas = new Map<string, MetricaReal>();
   let paisMedido: string | null = null;
 
-  if (isGoogleAdsConfigured()) {
+  // Sem gate por variável de ambiente: a conta de anúncios é descoberta
+  // pela própria conexão, e buscarVolumeDeBusca devolve vazio quando o
+  // Google recusa. Exigir configuração manual só adiava a primeira medição.
+  {
     const conexao = await buscarConexao(workspace.id).catch(() => null);
     if (conexao) {
       try {

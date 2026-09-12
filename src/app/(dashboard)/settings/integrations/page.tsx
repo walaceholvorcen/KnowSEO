@@ -3,7 +3,7 @@ import { requireUserAndWorkspace, getWorkspaceBlogs } from "@/lib/workspace";
 import { SettingsNav } from "../settings-nav";
 import { Lede, Secao } from "@/components/lede";
 import { buscarConexao, isGoogleIntegrationConfigured } from "@/lib/google/oauth";
-import { isGoogleAdsConfigured } from "@/lib/google/ads";
+import { diagnosticarGoogleAds } from "@/lib/google/ads";
 import { IntegrationsForm } from "./integrations-form";
 
 export default async function IntegrationsPage({
@@ -19,6 +19,12 @@ export default async function IntegrationsPage({
   const conexao = isGoogleIntegrationConfigured()
     ? await buscarConexao(workspace.id)
     : null;
+
+  // Estado medido, não deduzido de variável de ambiente: a conexão pode
+  // existir e mesmo assim o Planejador recusar (escopo antigo, projeto sem
+  // acesso Básico, conta de anúncios inexistente). Cada caso tem uma saída
+  // diferente, e a tela precisa dizer qual é.
+  const ads = conexao ? await diagnosticarGoogleAds(workspace.id) : null;
 
   const veredito = !isGoogleIntegrationConfigured()
     ? "Integração com o Google ainda não está configurada no ambiente."
@@ -57,15 +63,30 @@ export default async function IntegrationsPage({
 
       <Secao>Volume de busca</Secao>
       <p className="text-sm text-slate-600 dark:text-slate-400">
-        {isGoogleAdsConfigured()
+        {ads?.estado === "pronto"
           ? "O Planejador de Palavras-chave do Google Ads está ligado. As pautas da Estratégia saem com volume de busca medido pelo Google, e não com estimativa do modelo."
-          : "Sem o Planejador de Palavras-chave, a Estratégia sugere pauta com leitura qualitativa do modelo — sem volume de busca. Para ligar: o projeto do Google Cloud que gera o login do Google precisa de acesso Básico à API do Google Ads (o nível Explorer, padrão, bloqueia o Planejador), e falta a variável GOOGLE_ADS_CUSTOMER_ID com o número da conta de anúncios."}
+          : (ads?.detalhe ??
+            "Conecte uma conta Google acima para a Estratégia usar volume de busca medido, em vez da leitura qualitativa do modelo.")}
       </p>
-      {isGoogleAdsConfigured() && (
+      {ads?.estado === "sem_acesso_ao_planejador" && (
+        <ol className="mt-3 list-decimal space-y-1 pl-5 text-sm text-slate-600 dark:text-slate-400">
+          <li>
+            Abra o projeto do Google Cloud que gera este login e ative a
+            Google Ads API na Biblioteca de APIs.
+          </li>
+          <li>
+            Na página de visão geral da Google Ads API do projeto, peça o
+            nível Básico. O nível Explorer, concedido por padrão, bloqueia
+            justamente os serviços de planejamento.
+          </li>
+          <li>Volte aqui: esta tela consulta o Google a cada visita.</li>
+        </ol>
+      )}
+      {ads?.estado === "pronto" && (
         <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-          Sem campanha ativa na conta, o Google devolve o volume em faixas
-          aproximadas em vez do número exato. Continua sendo medição do
-          Google, não palpite.
+          {ads.detalhe} Sem campanha ativa na conta, o Google devolve o volume
+          em faixas aproximadas em vez do número exato. Continua sendo medição
+          do Google, não palpite.
         </p>
       )}
     </div>
