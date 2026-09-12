@@ -26,7 +26,7 @@ const INTENT_LABEL: Record<string, string> = {
 // Os três assistentes que o produto sabe consultar, sempre na mesma ordem.
 // Os que ainda não têm chave aparecem apagados: o cliente vê onde a medição
 // existe e onde ainda não chega, em vez de achar que "a IA" é um lugar só.
-const TODOS_OS_MOTORES = ["chatgpt", "perplexity", "claude"];
+const TODOS_OS_MOTORES = ["chatgpt", "gemini", "perplexity", "claude"];
 
 export interface RodadaResumo {
   id: string;
@@ -340,7 +340,7 @@ export function VisibilityBoard({
           cada um busca num índice diferente, e aparecer no Perplexity e
           sumir no ChatGPT é diagnóstico, não erro de medição. */}
       {latest.length > 0 && (
-        <dl className="mb-2 grid grid-cols-3 divide-x divide-slate-200 dark:divide-slate-800 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+        <dl className="mb-2 grid grid-cols-2 sm:grid-cols-4 divide-x divide-y sm:divide-y-0 divide-slate-200 dark:divide-slate-800 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
           {TODOS_OS_MOTORES.map((nome) => {
             const p = porMotor.get(nome);
             const ligado = motores.includes(nome);

@@ -21,10 +21,11 @@ export interface PlacarMotor {
 }
 
 // Ordem fixa de exibição: o motor que mais gente usa primeiro.
-const ORDEM = ["chatgpt", "perplexity", "claude"];
+const ORDEM = ["chatgpt", "gemini", "perplexity", "claude"];
 
 export const ROTULO_MOTOR: Record<string, string> = {
   chatgpt: "ChatGPT",
+  gemini: "Gemini",
   perplexity: "Perplexity",
   claude: "Claude",
 };

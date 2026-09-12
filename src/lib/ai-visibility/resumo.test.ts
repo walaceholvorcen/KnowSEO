@@ -25,7 +25,7 @@ test("placar separa cada motor", () => {
   ]);
 });
 
-test("placar sai na ordem de uso: ChatGPT, Perplexity, Claude", () => {
+test("placar sai na ordem de uso: ChatGPT, Gemini, Perplexity, Claude", () => {
   const p = placarPorMotor([
     c("q1", "claude", false),
     c("q1", "perplexity", false),
@@ -35,8 +35,8 @@ test("placar sai na ordem de uso: ChatGPT, Perplexity, Claude", () => {
 });
 
 test("motor desconhecido vai para o fim sem quebrar", () => {
-  const p = placarPorMotor([c("q1", "gemini", true), c("q1", "claude", false)]);
-  assert.deepEqual(p.map((x) => x.provider), ["claude", "gemini"]);
+  const p = placarPorMotor([c("q1", "copilot", true), c("q1", "claude", false)]);
+  assert.deepEqual(p.map((x) => x.provider), ["claude", "copilot"]);
 });
 
 test("pergunta conta como citada se UM motor citou", () => {

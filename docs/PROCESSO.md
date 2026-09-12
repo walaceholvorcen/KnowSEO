@@ -1485,3 +1485,32 @@ Validado na vitrine com artigo real do banco: bloqueou a publicação, mostrou
 
 Isto é também o pré-requisito do piloto automático: publicar sozinho só é
 aceitável com uma trava no caminho.
+
+## 31. Gemini no Raio X - GEO — o quarto motor, e o único de graça
+
+Pedido do dono depois de o Google Ads travar: "teríamos alguma fonte de
+busca que no momento seja free?". O Gemini é a única que faz sentido para
+este módulo — e é a mais relevante para o cliente, porque responde usando a
+busca do Google, a mesma base das AI Overviews e do AI Mode.
+
+- **Camada gratuita real:** milhares de consultas com busca por mês, sem
+  cartão. Nossa rodada usa 10 por análise.
+- **API de "interactions"**, não a de `generateContent`: é a atual para
+  busca com fundamentação, e o formato lembra o da OpenAI — um array de
+  passos, com as citações em anotações `url_citation` dentro de
+  `model_output`. Confirmado na documentação antes de escrever, como nos
+  outros três.
+- **Modelo em variável de ambiente** (`GEMINI_GEO_MODEL`, padrão
+  `gemini-3.8-flash`): o Google aposenta versão a cada poucos meses.
+
+**Limite honesto, registrado no código:** o passo `google_search_result` do
+Gemini devolve o widget de sugestões em HTML, não a lista de endereços
+consultados. Então `searchResultUrls` fica vazio neste motor — não por
+esquecimento. Consequência: aqui não dá para dizer "a busca te encontrou e a
+IA escolheu outro", que nos outros três é o diagnóstico mais acionável. A
+citação, que é a métrica principal, continua sendo provada.
+
+O placar da tela virou quatro colunas (2×2 no celular), e a ordem de
+exibição passou a ser ChatGPT, Gemini, Perplexity, Claude — ordem de uso
+pelo comprador. Um teste que usava "gemini" como exemplo de motor
+desconhecido passou a usar "copilot": o nome virou motor de verdade.

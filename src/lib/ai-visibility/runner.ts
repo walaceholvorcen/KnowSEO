@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { ClaudeProvider } from "./claude-provider";
 import { OpenAiProvider } from "./openai-provider";
 import { PerplexityProvider } from "./perplexity-provider";
+import { GeminiProvider } from "./gemini-provider";
 import type { AiProvider } from "./provider";
 import type { AiQuery, Blog } from "@/types";
 
@@ -17,12 +18,17 @@ export function getProvider(): AiProvider {
 // cliente. Cada chave nova (OPENAI_API_KEY, PERPLEXITY_API_KEY) liga um motor
 // sem mexer em código: a rodada seguinte já pergunta a ele também.
 export function getProviders(): AiProvider[] {
-  return [new OpenAiProvider(), new PerplexityProvider(), new ClaudeProvider()]
+  return [
+    new OpenAiProvider(),
+    new GeminiProvider(),
+    new PerplexityProvider(),
+    new ClaudeProvider(),
+  ]
     .filter((p) => p.isConfigured());
 }
 
-// Dez, não quinze: pedido do cliente, e a conta fecha. Com três motores são
-// trinta consultas por rodada; quinze perguntas levariam a quarenta e cinco
+// Dez, não quinze: pedido do cliente, e a conta fecha. Com quatro motores são
+// quarenta consultas por rodada; quinze perguntas levariam a quarenta e cinco
 // e a um custo por rodada que não se paga com o ganho de amostra.
 export const MAX_PERGUNTAS = 10;
 
