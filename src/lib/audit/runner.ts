@@ -53,7 +53,10 @@ type Leitura =
 // legível, respondeu erro (ou não respondeu), ou não é HTML e sai da conta.
 // Antes as três viravam `null` e só a primeira sobrevivia.
 async function lerUrl(url: string, origin: string): Promise<Leitura> {
-  const resposta = await fetchComStatus(url);
+  // Uma tentativa a mais antes de acusar "não respondeu": com seis leituras
+  // em paralelo, um tempo esgotado isolado virava achado de gravidade alta em
+  // página que responde em 1s (isocialweb.agency/ecommerce, set/2026).
+  const resposta = (await fetchComStatus(url)) ?? (await fetchComStatus(url));
 
   if (!resposta) {
     return { tipo: "quebrada", problema: { url, status: null } };
@@ -69,7 +72,14 @@ async function lerUrl(url: string, origin: string): Promise<Leitura> {
   const contentType = resposta.res.headers.get("content-type") ?? "";
   if (!contentType.includes("text/html")) return { tipo: "ignorada" };
 
-  const html = (await resposta.res.text()).slice(0, 400_000);
+  // Tira CSS e JS embutidos ANTES de cortar: páginas com CSS-in-JS passam de
+  // 1 MB e o corte cego em 400 KB deixava o H1 e os links de fora - achado
+  // falso de "sem H1" em site que tem (backlinko.com, set/2026). O JSON-LD e
+  // a tag de script externo ficam: as regras de schema e de JS dependem deles.
+  const html = (await resposta.res.text())
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
+    .replace(/<script(?![^>]*ld\+json)([^>]*)>[\s\S]*?<\/script>/gi, "<script$1></script>")
+    .slice(0, 400_000);
 
   // Compara sem a barra final para não acusar redirecionamento onde só
   // houve normalização de caminho.
@@ -111,7 +121,19 @@ export async function auditSite(siteUrl: string): Promise<AuditResult | null> {
   const urlsQuebradas: UrlComProblema[] = [];
   const urlsRedirecionadas: UrlComProblema[] = [];
 
+  // Mesma página por dois endereços (https://site.com e https://site.com/, ou
+  // o endereço e o destino do redirect) virava "título duplicado" de
+  // gravidade alta que não existe. Conta a página final uma vez só.
+  const vistas = new Set<string>();
+
   for (const leitura of leituras) {
+    if (leitura.tipo === "pagina") {
+      const final = (leitura.redirecionou ?? leitura.snapshot.url)
+        .toLowerCase()
+        .replace(/\/$/, "");
+      if (vistas.has(final)) continue;
+      vistas.add(final);
+    }
     if (leitura.tipo === "quebrada") {
       urlsQuebradas.push(leitura.problema);
     } else if (leitura.tipo === "pagina") {

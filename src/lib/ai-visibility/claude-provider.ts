@@ -32,7 +32,12 @@ export class ClaudeProvider implements AiProvider {
       output_config: { effort: "low" },
       tools: [
         {
-          type: "web_search_20260209",
+          // A versão 20250305, não a 20260209. A nova filtra os resultados
+          // numa execução de código criptografada e devolve o texto com
+          // `citations: []` - medido em set/2026: 0 citações contra 15 da
+          // clássica, mesma pergunta, mesmo custo. Sem citação o Raio X não
+          // tem prova de fonte, concorrente nem diretório.
+          type: "web_search_20250305",
           name: "web_search",
           max_uses: 3,
         },

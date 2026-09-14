@@ -124,3 +124,22 @@ describe("faixas nomeadas", () => {
     assert.equal(scoreBand(20), "critico");
   });
 });
+
+describe("teto da nota IA", () => {
+  test("site sem schema em página nenhuma não passa de 45 na IA", () => {
+    const html = `<html><head><title>Exemplo de página simples sem nada</title></head><body><p>${"palavra ".repeat(50)}</p></body></html>`;
+    const s = computeScores(
+      runRules({
+        origin: "https://x.com",
+        isHttps: true,
+        robotsTxt: { found: true, body: "" },
+        sitemapUrls: [],
+        sitemapFound: true,
+        llmsTxtFound: true,
+        pages: [parsePage({ url: "https://x.com/", statusCode: 200, html, origin: "https://x.com" })],
+      }),
+      1,
+    );
+    assert.ok(s.ai <= 45, `nota IA ${s.ai}`);
+  });
+});

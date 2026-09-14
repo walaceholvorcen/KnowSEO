@@ -702,11 +702,24 @@ export function computeScores(findings: Finding[], totalPages = 0) {
       findings.filter((f) => !GEO_CATEGORIES.has(f.category)),
       totalPages,
     ),
-    ai: scoreFrom(
-      findings.filter((f) => GEO_CATEGORIES.has(f.category)),
-      totalPages,
+    ai: Math.min(
+      scoreFrom(findings.filter((f) => GEO_CATEGORIES.has(f.category)), totalPages),
+      tetoIa(findings, totalPages),
     ),
   };
+}
+
+// Sem dado estruturado em página nenhuma, a máquina não tem ficha nenhuma do
+// site para ler. As penalidades somadas davam 70 - faixa "Bom" - para um site
+// sem sinal algum (example.com, set/2026). Isso não pode ser "Bom".
+// ponytail: teto fixo; trocar por peso calibrado se aparecer caso de borda.
+const TETO_SEM_SCHEMA = 45;
+
+function tetoIa(findings: Finding[], totalPages: number): number {
+  const semSchema = findings.find((f) => f.code === "NO_SCHEMA");
+  return semSchema && totalPages > 0 && semSchema.affectedCount >= totalPages
+    ? TETO_SEM_SCHEMA
+    : 100;
 }
 
 export type ScoreBand = "excelente" | "bom" | "atencao" | "critico";
