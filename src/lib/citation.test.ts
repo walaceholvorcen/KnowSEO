@@ -1,6 +1,6 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
-import { detectCitation, extractDomain, normalizeBrand } from "./citation.ts";
+import { detectCitation, extractDomain, normalizeBrand, isDirectory } from "./citation.ts";
 
 const brand = {
   brandNames: ["Clínica Dental Madrid"],
@@ -310,4 +310,9 @@ describe("menção pelo endereço escrito no texto", () => {
     assert.equal(r.cited, true);
     assert.equal(r.matchType, "brand");
   });
+});
+
+test("imprensa de marketing da Espanha é plataforma, não concorrente", () => {
+  assert.equal(isDirectory("puromarketing.com"), true);
+  assert.equal(isDirectory("sayonara.es"), false);
 });

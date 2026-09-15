@@ -49,6 +49,15 @@ const DIRETORIOS = new Set([
   "twitter.com", "x.com", "tiktok.com", "pinterest.com", "medium.com",
   "github.com", "amazon.com", "amazon.es", "google.com", "blogspot.com",
   "wordpress.com", "wix.com", "substack.com",
+  // Imprensa e publicações de marketing da Espanha: citam agências em
+  // listas e reportagens, mas não disputam cliente. Apareceram como
+  // "concorrente" na primeira rodada real em espanhol (set/2026).
+  // ponytail: lista curada; a cauda longa de portais novos entra conforme aparecer.
+  "puromarketing.com", "marketinginsiderreview.com", "totbarcelona.cat",
+  "barcelonaconecta.es", "reasonwhy.es", "marketingdirecto.com",
+  "marketing4ecommerce.net", "elpais.com", "expansion.com",
+  "eleconomista.es", "cincodias.elpais.com", "lavanguardia.com",
+  "20minutos.es", "xataka.com", "emprendedores.es", "hubspot.es",
 ]);
 
 export function isDirectory(domain: string): boolean {
