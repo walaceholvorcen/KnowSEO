@@ -26,6 +26,8 @@ export interface EntidadeSchema {
   telefone: boolean;
   /** Tipo de negócio com endereço físico, onde endereço e telefone contam. */
   local: boolean;
+  /** O nó como veio do site: a ficha para colar parte dele, não do zero. */
+  bruto: Record<string, unknown>;
 }
 
 // Tipos do schema.org que descrevem a empresa, não uma página ou um artigo.
@@ -124,6 +126,7 @@ export function extrairEntidades(html: string): EntidadeSchema[] {
         endereco: presente(obj.address),
         telefone: presente(obj.telephone),
         local: ehLocal(tipo),
+        bruto: obj,
       });
     }
 
@@ -214,6 +217,150 @@ const FRASES_VAZIAS = [
 export function frasesVazias(textoCorrido: string): string[] {
   const alvo = normalizar(textoCorrido);
   return FRASES_VAZIAS.filter((f) => alvo.includes(f));
+}
+
+// ------------------------------------------------------------ ficha pronta
+// O achado de entidade dizia "adicione sameAs" e parava ali: o cliente não
+// sabe o que é JSON-LD. A ficha abaixo é o bloco pronto para colar - parte do
+// que o site já publica (nada do que existe se perde) e acrescenta o que dá
+// para achar no próprio HTML. O que não dá (perfil de site feito em JS,
+// endereço) o cliente completa na tela antes de copiar.
+
+export const MARCA_FICHA = '<script type="application/ld+json">';
+
+// Perfil de empresa, não post, vídeo, botão de compartilhar nem perfil de
+// pessoa (/in/ do LinkedIn é o fundador, não a empresa).
+const REDE =
+  /^https?:\/\/(?:[a-z]+\.)?(instagram\.com|linkedin\.com|youtube\.com|facebook\.com|tiktok\.com|x\.com|twitter\.com|pinterest\.[a-z.]+|github\.com)\/[^/?#]+/i;
+const NAO_PERFIL =
+  /share|intent|\/p\/|\/reels?\/|\/watch|\/embed|\/status\/|\/in\/|\/posts?\/|\/hashtag\/|\/explore\//i;
+
+function maisRepetido(valores: string[]): string | null {
+  const n = new Map<string, number>();
+  for (const v of valores) n.set(v, (n.get(v) ?? 0) + 1);
+  return [...n].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+}
+
+/** Um perfil por rede, o mais repetido entre as páginas: o rodapé se repete
+ *  em todas, o link para o Instagram de um cliente num case não. */
+export function perfisNoHtml(htmls: string[]): string[] {
+  const porRede = new Map<string, string[]>();
+  for (const html of htmls) {
+    for (const [, href] of html.matchAll(/href\s*=\s*["']([^"']+)["']/gi)) {
+      const url = href.trim().split(/[?#]/)[0].replace(/\/+$/, "");
+      const m = url.match(REDE);
+      if (!m || NAO_PERFIL.test(url)) continue;
+      const rede = m[1].toLowerCase().replace("twitter.com", "x.com");
+      porRede.set(rede, [...(porRede.get(rede) ?? []), url]);
+    }
+  }
+  return [...porRede.values()]
+    .map(maisRepetido)
+    .filter((u): u is string => !!u);
+}
+
+interface PaginaParaFicha {
+  url: string;
+  html: string;
+  metaDescription: string | null;
+  entidades: EntidadeSchema[];
+}
+
+/** A ficha da organização com tudo o que o site já diz sobre ela. */
+export function fichaDoSite(
+  paginas: PaginaParaFicha[],
+  origin: string,
+  melhor?: EntidadeSchema,
+): Record<string, unknown> {
+  const home = paginas.find((p) => p.url.replace(/\/$/, "") === origin) ?? paginas[0];
+  const base = melhor?.bruto ?? {};
+  const htmls = paginas.map((p) => p.html);
+
+  const siteName = home?.html.match(
+    /<meta[^>]+property\s*=\s*["']og:site_name["'][^>]*content\s*=\s*["']([^"']+)/i,
+  )?.[1];
+
+  const telefone = maisRepetido(
+    htmls.flatMap((h) =>
+      [...h.matchAll(/href\s*=\s*["']tel:([^"']+)["']/gi)].map((m) =>
+        decodeURIComponent(m[1]).trim(),
+      ),
+    ),
+  );
+
+  // Imagem que se declara logo no cabeçalho da home. og:image não serve: é
+  // a capa de compartilhamento, quase nunca o logo.
+  let logo: string | undefined;
+  for (const [tag] of home?.html.matchAll(/<img\b[^>]*>/gi) ?? []) {
+    const src = tag.match(/\ssrc\s*=\s*["']([^"']+)/i)?.[1];
+    if (!/logo/i.test(tag) || !src || src.startsWith("data:")) continue;
+    try {
+      logo = new URL(src, home.url).href;
+      break;
+    } catch {}
+  }
+
+  const sameAs = [...new Set([...listaDeUrls(base.sameAs), ...perfisNoHtml(htmls)])];
+
+  return {
+    "@context": "https://schema.org",
+    ...base,
+    "@type": base["@type"] ?? "Organization",
+    name: base.name ?? siteName,
+    url: base.url ?? `${origin}/`,
+    logo: base.logo ?? (base.image ? undefined : logo),
+    description: base.description ?? home?.metaDescription ?? undefined,
+    telephone: base.telephone ?? telefone ?? undefined,
+    sameAs: sameAs.length ? sameAs : undefined,
+  };
+}
+
+export interface Complemento {
+  nome?: string;
+  perfis: string[];
+  logo?: string;
+  telefone?: string;
+  rua?: string;
+  cidade?: string;
+  cep?: string;
+  pais?: string;
+}
+
+const ehUrl = (s: string) => /^https?:\/\/[^\s.]+\.[^\s]+$/i.test(s);
+
+/** Junta à ficha o que o cliente preencheu na tela. Campo vazio não entra:
+ *  bloco com "PREENCHA AQUI" colado em produção é pior que campo ausente. */
+export function completarFicha(
+  ficha: Record<string, unknown>,
+  c: Complemento,
+): Record<string, unknown> {
+  const t = (s?: string) => s?.trim() || undefined;
+  const perfis = c.perfis.map((p) => p.trim()).filter(ehUrl);
+  const logo = t(c.logo);
+  const endereco =
+    t(c.rua) || t(c.cidade) || t(c.cep) || t(c.pais)
+      ? {
+          "@type": "PostalAddress",
+          streetAddress: t(c.rua),
+          addressLocality: t(c.cidade),
+          postalCode: t(c.cep),
+          addressCountry: t(c.pais)?.toUpperCase(),
+        }
+      : undefined;
+  return {
+    ...ficha,
+    name: ficha.name ?? t(c.nome),
+    logo: ficha.logo ?? (logo && ehUrl(logo) ? logo : undefined),
+    telephone: ficha.telephone ?? t(c.telefone),
+    address: ficha.address ?? endereco,
+    sameAs: perfis.length ? [...new Set(perfis)] : undefined,
+  };
+}
+
+/** O bloco como vai no <head>. `<` escapado: um "</script>" dentro de uma
+ *  descrição fecharia a tag no meio do JSON. */
+export function blocoJsonLd(ficha: Record<string, unknown>): string {
+  return `${MARCA_FICHA}\n${JSON.stringify(ficha, null, 2).replace(/</g, "\\u003c")}\n</script>`;
 }
 
 /** Nome normalizado para comparar grafias da mesma marca entre páginas. */

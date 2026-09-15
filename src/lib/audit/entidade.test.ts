@@ -1,6 +1,14 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
-import { extrairEntidades, frasesVazias } from "./entidade.ts";
+import {
+  blocoJsonLd,
+  completarFicha,
+  extrairEntidades,
+  fichaDoSite,
+  frasesVazias,
+  MARCA_FICHA,
+  perfisNoHtml,
+} from "./entidade.ts";
 import { parsePage } from "./parse.ts";
 import { runRules, computeScores } from "./rules.ts";
 import type { SiteSignals } from "./types.ts";
@@ -170,5 +178,71 @@ describe("regras de entidade", () => {
     const depois = computeScores(runRules(site(ld({ "@type": "WebSite" }))), 1);
     assert.equal(antes.google, depois.google);
     assert.ok(depois.ai < antes.ai);
+  });
+});
+
+describe("ficha pronta para colar", () => {
+  const pagina = (html: string, url = `${ORIGIN}/`) => ({
+    url,
+    html,
+    metaDescription: "Agência de SEO em Madri",
+    entidades: extrairEntidades(html),
+  });
+
+  test("perfil do rodapé entra; post, compartilhar e pessoa não", () => {
+    const rodape =
+      '<a href="https://www.instagram.com/dataknow/?hl=es">ig</a>' +
+      '<a href="https://www.linkedin.com/company/dataknow">in</a>';
+    const perfis = perfisNoHtml([
+      rodape + '<a href="https://www.instagram.com/p/abc123">post</a>',
+      rodape + '<a href="https://www.instagram.com/cliente">case</a>',
+      '<a href="https://www.facebook.com/sharer/sharer.php?u=x">f</a>' +
+        '<a href="https://www.linkedin.com/in/fundador">eu</a>',
+    ]);
+    assert.deepEqual(perfis, [
+      "https://www.instagram.com/dataknow",
+      "https://www.linkedin.com/company/dataknow",
+    ]);
+  });
+
+  test("mantém o que o site já tem e soma o que acha no HTML", () => {
+    const [p] = [
+      pagina(
+        ld({ "@type": "ProfessionalService", name: "DataKnow", knowsAbout: ["SEO"] }) +
+          '<img class="site-logo" src="/img/logo.svg"><a href="tel:+34%20600">t</a>' +
+          '<a href="https://instagram.com/dataknow">ig</a>',
+      ),
+    ];
+    const f = fichaDoSite([p], ORIGIN, p.entidades[0]);
+    assert.equal(f["@type"], "ProfessionalService");
+    assert.deepEqual(f.knowsAbout, ["SEO"]);
+    assert.equal(f.logo, "https://cliente.es/img/logo.svg");
+    assert.equal(f.telephone, "+34 600");
+    assert.equal(f.description, "Agência de SEO em Madri");
+    assert.deepEqual(f.sameAs, ["https://instagram.com/dataknow"]);
+  });
+
+  test("campo vazio e URL inválida não entram no bloco", () => {
+    const f = completarFicha(
+      { "@context": "https://schema.org", "@type": "Organization", name: "A" },
+      { perfis: ["https://instagram.com/a", "@a", ""], logo: "logo.png", cidade: "Madrid" },
+    );
+    assert.deepEqual(f.sameAs, ["https://instagram.com/a"]);
+    assert.equal(f.logo, undefined);
+    assert.deepEqual(f.address, {
+      "@type": "PostalAddress",
+      streetAddress: undefined,
+      addressLocality: "Madrid",
+      postalCode: undefined,
+      addressCountry: undefined,
+    });
+    assert.ok(!blocoJsonLd({ d: "</script>" }).includes("</script>\""));
+  });
+
+  test("achado de sameAs traz o bloco no como corrigir", () => {
+    const f = runRules(site(ld({ "@type": "Organization", name: "A", url: ORIGIN }))).find(
+      (x) => x.code === "ENTIDADE_SEM_SAMEAS",
+    );
+    assert.ok(f?.fix.includes(MARCA_FICHA));
   });
 });

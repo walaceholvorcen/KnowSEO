@@ -10,6 +10,7 @@ import { resumirComparacao, type Comparacao } from "@/lib/audit/comparar";
 import type { AuditRow, FindingRow } from "./page";
 import type { Jornada } from "@/lib/audit/jornada";
 import { JornadaDoSite, ProximaVerificacaoCard } from "./jornada-do-site";
+import { FichaParaColar, separarFicha } from "./ficha-para-colar";
 
 const SEVERITY_ORDER = ["critical", "high", "medium", "quick_win", "info"];
 
@@ -367,16 +368,24 @@ export function AuditBoard({
                               </p>
                             </div>
                           )}
-                          {f.fix && (
-                            <div>
-                              <p className="text-sm text-slate-500 dark:text-slate-400">
-                                Como corrigir
-                              </p>
-                              <p className="mt-0.5 text-slate-700 dark:text-slate-300">
-                                {f.fix}
-                              </p>
-                            </div>
-                          )}
+                          {f.fix && (() => {
+                            const { texto, ficha } = separarFicha(f.fix);
+                            return (
+                              <div>
+                                <p className="text-sm text-slate-500 dark:text-slate-400">
+                                  Como corrigir
+                                </p>
+                                <p className="mt-0.5 text-slate-700 dark:text-slate-300">
+                                  {texto}
+                                </p>
+                                {ficha && (
+                                  <div className="mt-3">
+                                    <FichaParaColar ficha={ficha} />
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })()}
                           {f.affected_urls.length > 0 && (
                             <div>
                               <p className="text-sm text-slate-500 dark:text-slate-400">

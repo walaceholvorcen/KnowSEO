@@ -1514,3 +1514,23 @@ O placar da tela virou quatro colunas (2×2 no celular), e a ordem de
 exibição passou a ser ChatGPT, Gemini, Perplexity, Claude — ordem de uso
 pelo comprador. Um teste que usava "gemini" como exemplo de motor
 desconhecido passou a usar "copilot": o nome virou motor de verdade.
+
+## 32. Ficha da empresa pronta para colar
+
+Os achados de entidade (`SEM_ENTIDADE`, `ENTIDADE_SEM_SAMEAS`,
+`ENTIDADE_INCOMPLETA`) diziam "adicione sameAs" — e o cliente não sabe o que
+é JSON-LD. Agora cada um traz o bloco pronto.
+
+- **Parte do que o site já publica** (`fichaDoSite`): o nó da organização
+  como veio, mais o que dá para achar no HTML — perfis de rede no rodapé
+  (um por rede, o mais repetido entre páginas; post, compartilhar e perfil
+  de pessoa ficam de fora), `tel:`, `<img>` que se declara logo, `og:site_name`,
+  meta description. Nada do que existe se perde.
+- **O cliente completa na tela** só o que o site não disse (perfis, logo,
+  endereço, telefone, nome), copia e cola. Campo vazio não entra no bloco:
+  "PREENCHA AQUI" colado em produção é pior que campo ausente.
+- **Sem migração:** o bloco vai no fim de `fix`, depois de
+  `MARCA_FICHA`; a tela separa (`separarFicha`). Auditoria antiga continua
+  mostrando só o texto.
+- Validado: dataknow.es (site em JS, perfis não estão no HTML → formulário
+  pede); seogenome.com (Instagram e YouTube achados sozinhos no rodapé).

@@ -1,5 +1,5 @@
 import type { Finding, PageSnapshot, SiteSignals, Severity } from "./types";
-import { nomeComparavel } from "./entidade.ts";
+import { blocoJsonLd, fichaDoSite, nomeComparavel } from "./entidade.ts";
 
 // Regras de auditoria. Função pura: recebe sinais, devolve achados.
 // Nenhuma regra chama rede - é o que permite testar cada uma com um caso
@@ -513,6 +513,27 @@ export function runRules(signals: SiteSignals): Finding[] {
   const entidades = pages.flatMap((p) => p.entidades);
   const paginasComEntidade = pages.filter((p) => p.entidades.length > 0);
 
+  // A mais completa das fichas: se uma página tem tudo, o que falta nas
+  // outras não impede a máquina de reconhecer a empresa.
+  const faltasDe = (e: (typeof entidades)[number]) =>
+    [
+      !e.nome && "name",
+      !e.url && "url",
+      !e.logo && "logo",
+      !e.descricao && "description",
+      e.local && !e.endereco && "address",
+      e.local && !e.telefone && "telephone",
+    ].filter((x): x is string => !!x);
+  const melhor = [...entidades].sort(
+    (a, b) => faltasDe(a).length - faltasDe(b).length,
+  )[0];
+  // O bloco pronto vai junto do "como corrigir" dos três achados de
+  // entidade; a tela o separa do texto e abre o formulário de completar.
+  const comFicha = (texto: string) =>
+    pages.length
+      ? `${texto}\n\n${blocoJsonLd(fichaDoSite(pages, signals.origin, melhor))}`
+      : texto;
+
   if (pages.length && !entidades.length) {
     // Site sem schema nenhum já leva NO_SCHEMA por página. Aqui a notícia é
     // outra (a empresa não se apresenta), mas cobrar cheio nos dois achados
@@ -528,7 +549,7 @@ export function runRules(signals: SiteSignals): Finding[] {
       evidence: semSchemaNenhum
         ? "Nenhum bloco Organization ou LocalBusiness - e nenhum dado estruturado no site"
         : `O site tem dado estruturado (${[...new Set(pages.flatMap((p) => p.jsonLdTypes))].filter((t) => t !== "__invalid__").slice(0, 4).join(", ")}), mas nenhum descreve a empresa`,
-      fix: "Publique na home um JSON-LD Organization (ou LocalBusiness, se atende num endereço) com name, url, logo, description e sameAs apontando para os perfis oficiais.",
+      fix: comFicha("Publique na home um JSON-LD Organization (ou LocalBusiness, se atende num endereço) com name, url, logo, description e sameAs apontando para os perfis oficiais."),
       affectedUrls: [pages[0].url],
       affectedCount: 1,
     });
@@ -543,26 +564,12 @@ export function runRules(signals: SiteSignals): Finding[] {
       impact:
         "É o sameAs que diz à máquina que o site, o Instagram, o LinkedIn e o perfil no Google são a mesma empresa. A IA aprende sobre você principalmente nesses outros lugares - sem o elo, ela não soma o que leu lá ao seu site.",
       evidence: `O bloco ${entidades[0].tipo} existe, mas sem nenhum link em sameAs`,
-      fix: "Adicione sameAs com a URL completa de cada perfil oficial: Instagram, LinkedIn, YouTube, perfil no Google e diretórios do setor em que a empresa está.",
+      fix: comFicha("Adicione sameAs com a URL completa de cada perfil oficial: Instagram, LinkedIn, YouTube, perfil no Google e diretórios do setor em que a empresa está."),
       ...scope(paginasComEntidade),
     });
   }
 
   if (entidades.length) {
-    // A mais completa das fichas: se uma página tem tudo, o que falta nas
-    // outras não impede a máquina de reconhecer a empresa.
-    const faltasDe = (e: (typeof entidades)[number]) =>
-      [
-        !e.nome && "name",
-        !e.url && "url",
-        !e.logo && "logo",
-        !e.descricao && "description",
-        e.local && !e.endereco && "address",
-        e.local && !e.telefone && "telephone",
-      ].filter((x): x is string => !!x);
-    const melhor = [...entidades].sort(
-      (a, b) => faltasDe(a).length - faltasDe(b).length,
-    )[0];
     const faltas = faltasDe(melhor);
     if (faltas.length) {
       const faltaLocal = faltas.includes("address") || faltas.includes("telephone");
@@ -575,7 +582,7 @@ export function runRules(signals: SiteSignals): Finding[] {
           ? "Para negócio com endereço, endereço e telefone na ficha são o que liga o site ao perfil no Google e às buscas \"perto de mim\"."
           : "Cada campo vazio é uma pergunta sobre a empresa que a máquina não consegue responder com certeza.",
         evidence: `${melhor.tipo} sem: ${faltas.join(", ")}`,
-        fix: "Complete os campos que faltam no JSON-LD da organização, com os mesmos dados que aparecem no site e no perfil do Google.",
+        fix: comFicha("Complete os campos que faltam no JSON-LD da organização, com os mesmos dados que aparecem no site e no perfil do Google."),
         ...scope(paginasComEntidade),
       });
     }
