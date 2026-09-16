@@ -13,6 +13,7 @@ import {
   placarPorMotor,
 } from "@/lib/ai-visibility/resumo";
 import { lerFontes } from "@/lib/ai-visibility/fontes";
+import { markdownParaHtml } from "@/lib/markdown";
 import { FontesDoMercado } from "./fontes-do-mercado";
 import type { AiQuery, AiVisibilityCheck } from "@/types";
 
@@ -267,7 +268,11 @@ export function VisibilityBoard({
           ? "Consultando os assistentes de IA. As primeiras respostas aparecem em instantes."
           : `${queries.length} perguntas prontas para consultar. Falta rodar a primeira análise.`
         : perguntasCitadas.size === 0
-          ? `Em ${perguntasMedidas.size} perguntas do seu setor, nenhum assistente de IA citou você.`
+          ? // A manchete só afirma o que foi medido: com um motor, o nome dele;
+            // "nenhum assistente" só quando houve mais de um na rodada.
+            motoresMedidos.length === 1
+            ? `O ${listaDeMotores(motoresMedidos)} não citou você em nenhuma das ${perguntasMedidas.size} perguntas do seu setor.`
+            : `Nenhum dos ${motoresMedidos.length} assistentes citou você nas ${perguntasMedidas.size} perguntas do seu setor.`
           : `Você apareceu em ${perguntasCitadas.size} das ${perguntasMedidas.size} perguntas do seu setor.`;
 
   const apoio =
@@ -517,9 +522,16 @@ export function VisibilityBoard({
                               <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
                                 {ROTULO_MOTOR[r.provider] ?? r.provider}
                               </p>
-                              <blockquote className="mt-1 whitespace-pre-line border-l-2 border-slate-200 dark:border-slate-700 pl-3 text-sm text-slate-600 dark:text-slate-400">
-                                {r.answer_excerpt}
-                              </blockquote>
+                              {/* Resposta inteira, com rolagem: cortar em N
+                                  caracteres deixava a frase pela metade. O HTML
+                                  sai de markdownParaHtml, que escapa o texto
+                                  antes de marcar — seguro para innerHTML. */}
+                              <blockquote
+                                className="mt-1 max-h-80 overflow-y-auto border-l-2 border-slate-200 dark:border-slate-700 pl-3 text-sm text-slate-600 dark:text-slate-400 [&_h1]:mt-3 [&_h1]:text-base [&_h1]:font-semibold [&_h1]:text-slate-900 dark:[&_h1]:text-slate-100 [&_h2]:mt-3 [&_h2]:text-base [&_h2]:font-semibold [&_h2]:text-slate-900 dark:[&_h2]:text-slate-100 [&_h3]:mt-2 [&_h3]:font-semibold [&_h3]:text-slate-900 dark:[&_h3]:text-slate-100 [&_p]:my-2 [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:my-0.5 [&_strong]:font-semibold [&_strong]:text-slate-800 dark:[&_strong]:text-slate-200 [&_a]:text-cobalto-600 [&_a]:underline [&_code]:rounded [&_code]:bg-slate-200/60 dark:[&_code]:bg-slate-800 [&_code]:px-1 [&_code]:font-mono [&_code]:text-xs"
+                                dangerouslySetInnerHTML={{
+                                  __html: markdownParaHtml(r.answer_excerpt!),
+                                }}
+                              />
                             </div>
                           ))}
                       </div>

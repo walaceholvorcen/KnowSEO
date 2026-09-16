@@ -358,7 +358,10 @@ export function InicioBoard({
             <>
               <div className="flex items-baseline justify-between gap-2">
                 <span className="text-sm text-slate-600 dark:text-slate-400">
-                  Perguntas em que a IA cita você
+                  {/* Só afirma o que foi medido: um motor leva o nome dele. */}
+                  {dados.motoresMedidos.length === 1
+                    ? `Perguntas em que o ${ROTULO_MOTOR[dados.motoresMedidos[0]] ?? dados.motoresMedidos[0]} cita você`
+                    : `Perguntas em que os ${dados.motoresMedidos.length} assistentes citam você`}
                 </span>
                 <Numero valor={dados.citacoes} de={`de ${totalCelulas}`} />
               </div>

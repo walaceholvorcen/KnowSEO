@@ -101,6 +101,20 @@ const KeywordIdeaSchema = z.object({
 
 export type KeywordIdea = z.infer<typeof KeywordIdeaSchema>["ideas"][number];
 
+// O modelo não sabe que dia é hoje e escrevia "Guia 2024" em pauta gerada
+// em 2026. Vai na mensagem do usuário (não no system, que é cacheado) e em
+// espanhol, a língua do resto do prompt. Sem ano fixo: sai do relógio.
+function lineaDeHoy(): string {
+  const hoy = new Date();
+  const fecha = hoy.toLocaleDateString("es-ES", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+  return `Hoy es ${fecha}. Cuando cites un año, usa ${hoy.getUTCFullYear()}.`;
+}
+
 export async function generateKeywordIdeas(params: {
   blog: Blog;
   dna: BrandDna | null;
@@ -157,7 +171,9 @@ ${
     messages: [
       {
         role: "user",
-        content: `Sugiere ${count} keywords nuevas para el blog de esta marca, con buena intención de búsqueda comercial o informacional.
+        content: `${lineaDeHoy()}
+
+Sugiere ${count} keywords nuevas para el blog de esta marca, con buena intención de búsqueda comercial o informacional.
 
 Ya existen (o fueron descartadas) estas keywords - NO las repitas ni sugieras variantes triviales de ellas:
 ${existingKeywords.length ? existingKeywords.map((k) => `- ${k}`).join("\n") : "(ninguna todavía)"}
@@ -227,7 +243,9 @@ export async function generateArticle(params: {
     messages: [
       {
         role: "user",
-        content: `Escribe un artículo de blog completo (900-1400 palabras) optimizado para la keyword: "${keyword}".
+        content: `${lineaDeHoy()}
+
+Escribe un artículo de blog completo (900-1400 palabras) optimizado para la keyword: "${keyword}".
 ${suggestedTitle ? `Título sugerido de referencia (puedes ajustarlo): "${suggestedTitle}"` : ""}
 
 ${

@@ -198,9 +198,10 @@ export async function executarRodada(params: {
           competitors: result.competitors.slice(0, 10),
           directories: result.directories.slice(0, 10),
           found_in_search: result.foundInSearch,
-          // 2000 e não 500: o trecho é mostrado como prova do veredito, e
-          // 500 cortavam no meio da frase que recomendava o concorrente.
-          answer_excerpt: answer.answerText.slice(0, 2000),
+          // Resposta inteira: a coluna é text sem limite (migration 0002) e
+          // qualquer corte (500, depois 2000) acabava no meio da frase que
+          // recomendava o concorrente — justo a prova que a tela mostra.
+          answer_excerpt: answer.answerText,
         });
         if (error) throw new Error(error.message);
       } catch (err) {
