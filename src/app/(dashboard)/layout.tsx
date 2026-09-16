@@ -5,6 +5,7 @@ import {
   getBlogAtivo,
 } from "@/lib/workspace";
 import { Sidebar } from "@/components/sidebar";
+import { enderecoDoBlog } from "@/lib/blog-endereco";
 
 export default async function DashboardLayout({
   children,
@@ -19,7 +20,6 @@ export default async function DashboardLayout({
   }
 
   const blog = (await getBlogAtivo(supabase, workspace.id))!;
-  const raiz = process.env.NEXT_PUBLIC_ROOT_DOMAIN || "localhost:3000";
 
   return (
     // Coluna no celular (barra no topo), linha a partir de telas largas
@@ -31,7 +31,7 @@ export default async function DashboardLayout({
         blogs={blogs.map((b) => ({
           id: b.id,
           nome: b.name,
-          endereco: b.custom_domain ?? `${b.subdomain}.${raiz}`,
+          endereco: enderecoDoBlog(b),
         }))}
       />
       <main className="min-h-0 flex-1 overflow-y-auto [scrollbar-gutter:stable]">

@@ -37,6 +37,7 @@ const LARGURA = { desktop: 1180, mobile: 390 };
 export function ArticleEditor({
   article,
   enderecoPublico,
+  dominioPendente = false,
   pauta = null,
   linksConhecidos = [],
   keywordsPublicadas = [],
@@ -44,6 +45,8 @@ export function ArticleEditor({
   article: Article;
   /** Endereço do artigo no blog do cliente, mostrado acima da prévia. */
   enderecoPublico: string;
+  /** Domínio próprio cadastrado mas sem DNS confirmado: o artigo está no subdomínio. */
+  dominioPendente?: boolean;
   /** Pauta que originou o artigo, usada pela trava de qualidade. */
   pauta?: string | null;
   linksConhecidos?: string[];
@@ -517,9 +520,19 @@ export function ArticleEditor({
         {/* Prévia */}
         <div className="hidden w-[46%] shrink-0 flex-col border-l border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-950 lg:flex">
           <div className="flex shrink-0 items-center gap-3 px-5 py-3">
-            <p className="min-w-0 flex-1 truncate text-sm text-slate-500 dark:text-slate-400">
-              {enderecoPublico}
-            </p>
+            <div className="min-w-0 flex-1 text-sm text-slate-500 dark:text-slate-400">
+              <p className="truncate">{enderecoPublico}</p>
+              {/* Linha própria: junto do endereço, o truncate engolia o aviso. */}
+              {dominioPendente && (
+                <Link
+                  href="/settings/blog"
+                  className="block truncate text-xs text-nota-atencao hover:underline"
+                >
+                  Domínio próprio ainda não confirmado — publicado em{" "}
+                  {new URL(enderecoPublico).host}
+                </Link>
+              )}
+            </div>
 
             <div className="flex items-center gap-0.5 rounded-lg border border-slate-300 dark:border-slate-700 p-0.5">
               {(["desktop", "mobile"] as const).map((tipo) => {

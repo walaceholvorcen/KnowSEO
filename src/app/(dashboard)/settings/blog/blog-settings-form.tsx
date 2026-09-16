@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { IdentidadeVisual } from "./identidade-visual";
 import { normalizarDominio, numeroWhatsAppNaUrl } from "@/lib/cta";
+import { ehDominioRaiz } from "@/lib/dominio";
 import type { Blog } from "@/types";
 
 export function BlogSettingsForm({ blog }: { blog: Blog }) {
@@ -38,8 +39,18 @@ export function BlogSettingsForm({ blog }: { blog: Blog }) {
 
   const numeroNaUrl = ctaType === "link" ? numeroWhatsAppNaUrl(ctaUrl) : null;
 
+  // Apex ("cliente.com") ou "www." apontados para nós substituiriam o site
+  // do cliente pelo blog. O aviso em publicar-no-dominio.tsx cobre o dado
+  // já salvo; aqui o erro aparece na digitação e barra o salvamento.
+  const dominioDigitado = normalizarDominio(customDomain);
+  const dominioEhRaiz =
+    !!dominioDigitado &&
+    (ehDominioRaiz(dominioDigitado) || dominioDigitado.startsWith("www."));
+  const dominioSugerido = `blog.${dominioDigitado.replace(/^www\./, "")}`;
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (dominioEhRaiz) return;
     setSaving(true);
     setSaved(false);
     setError(null);
@@ -127,13 +138,34 @@ export function BlogSettingsForm({ blog }: { blog: Blog }) {
         <input
           value={customDomain}
           onChange={(e) => setCustomDomain(e.target.value)}
+          aria-invalid={dominioEhRaiz}
+          aria-describedby={dominioEhRaiz ? "dominio-raiz-erro" : undefined}
           className={cn(campo(), "w-full")}
           placeholder="blog.suempresa.com"
         />
-        <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
-          Use um subdomínio, como blog.suaempresa.com. O passo a passo para
-          apontar o DNS está logo abaixo, pronto para enviar ao cliente.
-        </p>
+        {dominioEhRaiz ? (
+          <div
+            id="dominio-raiz-erro"
+            className="mt-2 rounded-lg bg-slate-100 dark:bg-slate-800 px-3 py-2.5 text-sm"
+          >
+            <p className="text-nota-critico">
+              Esse é o endereço principal do site. Use um subdomínio, como{" "}
+              {dominioSugerido}.
+            </p>
+            <button
+              type="button"
+              onClick={() => setCustomDomain(dominioSugerido)}
+              className={cn(botao("secundario", "sm"), "mt-2")}
+            >
+              Usar {dominioSugerido}
+            </button>
+          </div>
+        ) : (
+          <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
+            Use um subdomínio, como blog.suaempresa.com. O passo a passo para
+            apontar o DNS está logo abaixo, pronto para enviar ao cliente.
+          </p>
+        )}
       </div>
 
       <div className="border-t border-slate-100 pt-4 dark:border-slate-800">
@@ -233,7 +265,7 @@ export function BlogSettingsForm({ blog }: { blog: Blog }) {
 
       <button
         type="submit"
-        disabled={saving}
+        disabled={saving || dominioEhRaiz}
         className={botao("primario")}
       >
         {saving ? "Salvando..." : saved ? "Salvo" : "Salvar"}

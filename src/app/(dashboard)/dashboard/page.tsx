@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { requireUserAndWorkspace, getBlogAtivo } from "@/lib/workspace";
 import { encontrarGargalo } from "@/lib/gargalo";
+import { enderecoDoBlog } from "@/lib/blog-endereco";
 import { carregarInicio } from "./dados";
 import { InicioBoard } from "./inicio-board";
 
@@ -25,10 +26,7 @@ export default async function DashboardHomePage() {
   return (
     <InicioBoard
       blogNome={blog.name}
-      endereco={
-        blog.custom_domain ??
-        `${blog.subdomain}.${process.env.NEXT_PUBLIC_ROOT_DOMAIN || "localhost:3000"}`
-      }
+      endereco={enderecoDoBlog(blog)}
       statusDominio={blog.domain_status}
       feitos={workspace.onboarding_steps}
       gargalo={gargalo}
