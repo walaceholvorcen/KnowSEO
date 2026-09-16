@@ -5,6 +5,8 @@
 // que é um vetor clássico de SSRF - por isso todo host passa por
 // isPublicHttpUrl() antes de qualquer fetch.
 
+import { tituloDaPagina } from "./titulo.ts";
+
 const MAX_URLS = 200;
 const MAX_TITLE_FETCHES = 60;
 const FETCH_TIMEOUT_MS = 8000;
@@ -195,7 +197,13 @@ function decodeEntities(value: string): string {
     .trim();
 }
 
-async function fetchPageMeta(url: string): Promise<CrawledPage> {
+// `tituloDaHome` é null quando a própria home está sendo lida. Nas demais,
+// um <title> igual ao da home denuncia SPA e o título vem de outro lugar
+// (ver titulo.ts).
+async function fetchPageMeta(
+  url: string,
+  tituloDaHome: string | null,
+): Promise<CrawledPage> {
   const res = await safeFetch(url);
   if (!res) return { url, title: null, description: null };
 
@@ -206,14 +214,13 @@ async function fetchPageMeta(url: string): Promise<CrawledPage> {
 
   const html = (await res.text()).slice(0, 200_000);
 
-  const titleMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
   const descMatch = html.match(
     /<meta[^>]+name=["']description["'][^>]+content=["']([^"']*)["']/i,
   );
 
   return {
     url,
-    title: titleMatch ? decodeEntities(titleMatch[1]).slice(0, 200) : null,
+    title: tituloDaPagina(html, url, tituloDaHome)?.slice(0, 200) ?? null,
     description: descMatch ? decodeEntities(descMatch[1]).slice(0, 300) : null,
   };
 }
@@ -252,13 +259,19 @@ export async function crawlSite(siteUrl: string): Promise<CrawledPage[]> {
   const withMeta = urls.slice(0, MAX_TITLE_FETCHES);
   const withoutMeta = urls.slice(MAX_TITLE_FETCHES);
 
+  // A home vai primeiro e sozinha: o título dela é a referência que diz,
+  // nas outras páginas, se o <title> é próprio ou o index.html repetido de
+  // uma SPA.
+  const semBarra = (u: string) => u.replace(/\/$/, "");
+  const home = await fetchPageMeta(origin, null);
   const crawled = await mapWithConcurrency(
-    withMeta,
+    withMeta.filter((u) => semBarra(u) !== origin),
     CONCURRENCY,
-    fetchPageMeta,
+    (url) => fetchPageMeta(url, home.title),
   );
 
   return [
+    ...(withMeta.some((u) => semBarra(u) === origin) ? [home] : []),
     ...crawled,
     ...withoutMeta.map((url) => ({ url, title: null, description: null })),
   ];

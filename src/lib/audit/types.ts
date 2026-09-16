@@ -72,4 +72,9 @@ export interface SiteSignals {
   urlsQuebradas?: UrlComProblema[];
   /** URLs anunciadas que redirecionam para outro endereço. */
   urlsRedirecionadas?: UrlComProblema[];
+  /** Resposta a um caminho inventado (`/knowseo-404-<aleatório>`). Site sadio
+   *  devolve 404; SPA mal configurada devolve 200 com a home. `igualHome` =
+   *  mesmo title e (mesmo h1 ou corpo do mesmo tamanho). Opcional pelo mesmo
+   *  motivo dos campos acima. */
+  soft404?: { url: string; status: number | null; igualHome: boolean };
 }

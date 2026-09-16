@@ -1,7 +1,7 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
 import { parsePage } from "./parse.ts";
-import { runRules, computeScores, robotsBloqueiaTudo } from "./rules.ts";
+import { runRules, computeScores, robotsBloqueiaTudo, pareceHome } from "./rules.ts";
 import type { PageSnapshot, SiteSignals } from "./types.ts";
 
 const ORIGIN = "https://cliente.es";
@@ -150,6 +150,35 @@ describe("runRules - rastreamento e indexação", () => {
       `<html><head><meta name="robots" content="noindex, follow"></head><body></body></html>`,
     );
     assert.ok(codes(signals({ pages: [p] })).includes("NOINDEX_ON_PAGES"));
+  });
+
+  test("soft 404: caminho inventado com 200 vira achado de site inteiro", () => {
+    const soft404 = { url: `${ORIGIN}/knowseo-404-abc`, status: 200, igualHome: true };
+    const findings = runRules(signals({ pages: [page(GOOD_HTML)], soft404 }));
+    const f = findings.find((x) => x.code === "SOFT_404");
+    assert.ok(f);
+    assert.equal(f.severity, "high");
+    assert.match(f.evidence, /HTTP 200 com o conteúdo da home/);
+    // high = 12, e não dilui por número de páginas.
+    assert.equal(computeScores(findings, 25).google, 88);
+  });
+
+  test("soft 404: 404 de verdade e sinal ausente ficam calados", () => {
+    const base = { pages: [page(GOOD_HTML)] };
+    const c404 = codes(signals({ ...base, soft404: { url: `${ORIGIN}/x`, status: 404, igualHome: false } }));
+    assert.ok(!c404.includes("SOFT_404"));
+    assert.ok(!codes(signals(base)).includes("SOFT_404"));
+  });
+
+  test("pareceHome: mesmo título e H1, ou mesmo título e tamanho", () => {
+    const home = page(GOOD_HTML);
+    assert.equal(pareceHome(page(GOOD_HTML, `${ORIGIN}/fantasma`), home), true);
+    const soTitulo = page(
+      `<html><head><title>Clínica dental en Madrid especializada en ortodoncia</title></head><body><h1>Otra</h1><p>curto</p></body></html>`,
+      `${ORIGIN}/fantasma`,
+    );
+    assert.equal(pareceHome(soTitulo, home), false);
+    assert.equal(pareceHome(page(`<html><head><title>404</title></head></html>`), home), false);
   });
 
   test("'index, follow' não vira achado de noindex", () => {

@@ -7,7 +7,7 @@ import {
   collectUrlsFromSitemaps,
 } from "@/lib/crawler";
 import { parsePage } from "./parse";
-import { runRules, computeScores } from "./rules";
+import { runRules, computeScores, pareceHome } from "./rules";
 import type {
   Finding,
   PageSnapshot,
@@ -155,7 +155,27 @@ export async function auditSite(siteUrl: string): Promise<AuditResult | null> {
   // e devolver zero achados seria pior que devolver erro.
   if (snapshots.length === 0) return null;
 
+  // Soft 404: caminho que não existe tem que responder 404. SPA hospedada
+  // com fallback para index.html responde 200 com a home (dataknow.es,
+  // set/2026) e a auditoria dava nota 100 para um site que indexa lixo.
+  const fantasma = await lerUrl(
+    `${origin}/knowseo-404-${Math.random().toString(36).slice(2, 8)}`,
+    origin,
+  );
+  const home = snapshots.find((s) => s.url === origin);
+  const soft404 =
+    fantasma.tipo === "pagina"
+      ? {
+          url: fantasma.snapshot.url,
+          status: fantasma.snapshot.statusCode,
+          igualHome: home ? pareceHome(fantasma.snapshot, home) : false,
+        }
+      : fantasma.tipo === "quebrada"
+        ? { url: fantasma.problema.url, status: fantasma.problema.status, igualHome: false }
+        : undefined;
+
   const signals: SiteSignals = {
+    soft404,
     origin,
     isHttps: origin.startsWith("https://"),
     robotsTxt: { found: Boolean(robotsRes), body: robotsBody },

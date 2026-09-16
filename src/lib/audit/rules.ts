@@ -87,6 +87,18 @@ export function robotsBloqueiaTudo(body: string): boolean {
   return grupos.filter((g) => g.agentes.includes("*")).some((g) => g.bloqueia);
 }
 
+// A resposta a um caminho inventado é a home disfarçada? Mesmo título e
+// mesmo H1 fecham a questão; sem H1 comparável, corpo do mesmo tamanho
+// (±10%) com o mesmo título também basta - é o index.html repetido.
+export function pareceHome(pagina: PageSnapshot, home: PageSnapshot): boolean {
+  const mesmoTitle = Boolean(pagina.title) && pagina.title === home.title;
+  const mesmoH1 = pagina.h1s.length > 0 && pagina.h1s[0] === home.h1s[0];
+  const tamanho =
+    Math.min(pagina.html.length, home.html.length) /
+    Math.max(pagina.html.length, home.html.length, 1);
+  return mesmoTitle && (mesmoH1 || tamanho > 0.9);
+}
+
 export function runRules(signals: SiteSignals): Finding[] {
   const findings: Finding[] = [];
   const { pages } = signals;
@@ -226,6 +238,26 @@ export function runRules(signals: SiteSignals): Finding[] {
   }
 
   // ------------------------------------------------------------- indexação
+  //
+  // Caminho inventado que responde 2xx é soft 404: o Google não tem como
+  // saber que a página não existe. Sem o sinal (testes antigos, leitura que
+  // não é HTML) a regra fica calada.
+  const soft404 = signals.soft404;
+  if (soft404 && soft404.status !== null && soft404.status < 400) {
+    add({
+      code: "SOFT_404",
+      severity: "high",
+      category: "indexation",
+      title: "Página inexistente responde como se existisse",
+      impact:
+        "Todo endereço errado vira uma página 'válida': o Google indexa lixo, dilui o rastreamento entre cópias da mesma coisa, e um link quebrado nunca aparece como erro - nem para o Google, nem no Search Console.",
+      evidence: `${soft404.url} devolveu HTTP ${soft404.status}${soft404.igualHome ? " com o conteúdo da home" : ""}`,
+      fix: "Devolva 404 ou 410 para caminho inexistente; em SPA, configure a rota de fallback do hospedeiro para responder 404 em vez de servir o index.html.",
+      affectedUrls: [soft404.url],
+      affectedCount: 1,
+    });
+  }
+
   const noindexPages = pages.filter((p) => /noindex/i.test(p.robotsMeta ?? ""));
   if (noindexPages.length) {
     add({
@@ -670,6 +702,7 @@ const GEO_CATEGORIES = new Set(["geo"]);
 // identidade é uma só. Um sameAs faltando pesa igual num site de 3 ou de 300
 // páginas.
 const SITE_INTEIRO = new Set([
+  "SOFT_404",
   "NO_LLMS_TXT",
   "SEM_ENTIDADE",
   "ENTIDADE_SEM_SAMEAS",
