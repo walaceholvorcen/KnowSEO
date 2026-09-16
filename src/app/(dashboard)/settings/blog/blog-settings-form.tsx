@@ -121,8 +121,8 @@ export function BlogSettingsForm({ blog }: { blog: Blog }) {
           placeholder="blog.suempresa.com"
         />
         <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
-          Depois de salvar, aponte um registro CNAME do seu domínio para o
-          endereço fornecido no README de deploy.
+          Use um subdomínio, como blog.suaempresa.com. O passo a passo para
+          apontar o DNS está logo abaixo, pronto para enviar ao cliente.
         </p>
       </div>
 

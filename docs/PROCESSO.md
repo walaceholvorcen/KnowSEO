@@ -1577,3 +1577,25 @@ A coluna `credits` continua no banco (sem migração): quando a cobrança
 entrar, o saldo volta vindo do plano. O risco que isso tirava do lançamento
 era concreto — a conta de teste estava com 1 crédito, e o segundo artigo
 seria recusado com "no credits available".
+
+## 36. Passo a passo do domínio, pronto para enviar ao cliente
+
+O DNS é do cliente e ninguém entrega esse acesso a uma agência, então
+conectar o blog nunca vai ser automático. O painel passou a entregar a única
+coisa que resolve: o texto pronto para mandar, com o endereço já preenchido
+(Configurações → Blog e Domínio → Publicar no domínio do cliente).
+
+- Quatro passos em linguagem de quem nunca ouviu falar de CNAME, com
+  "Copiar para enviar ao cliente" — o texto sai numerado, para WhatsApp.
+- **Domínio raiz vira aviso, não passo.** O campo aceitava `cliente.com`, e
+  apontar o endereço principal para nós substituiria o site do cliente pelo
+  blog. Quando o valor salvo é raiz (`ehDominioRaiz`, com a lista de
+  terminações de dois níveis: `com.br`, `co.uk`...), a tela diz isso e o
+  passo a passo já usa `blog.cliente.com`.
+- **"Conferir se já está no ar"** bate no endereço de verdade
+  (`/api/blog/verificar-dominio`) e separa três desfechos: não respondeu
+  (DNS propagando), respondeu outra coisa (falta liberar o domínio no
+  projeto da Vercel), respondeu o blog. A marca que a checagem procura é o
+  `generator: "Know SEO"` do blog público. Isso também conserta o
+  `domain_status`, que era escrito no cadastro e nunca mais — a tela dizia
+  "aguardando DNS" para sempre.

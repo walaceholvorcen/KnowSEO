@@ -21,6 +21,9 @@ export async function generateMetadata({
 
   return {
     metadataBase: await tenantBaseUrl(domain),
+    // Marca de fábrica, e é ela que a checagem de domínio procura para saber
+    // se quem responde naquele endereço é o blog ou a página antiga do site.
+    generator: "Know SEO",
     title: blog.name,
     description: blog.theme.tagline ?? undefined,
     openGraph: {

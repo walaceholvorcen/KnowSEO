@@ -5,6 +5,7 @@ import type { InternalLink } from "@/types";
 import { SettingsNav } from "../settings-nav";
 import { BlogSettingsForm } from "./blog-settings-form";
 import { InternalLinksManager } from "./internal-links-manager";
+import { PublicarNoDominio } from "./publicar-no-dominio";
 import { Lede, Secao } from "@/components/lede";
 
 export default async function BlogSettingsPage() {
@@ -46,6 +47,14 @@ export default async function BlogSettingsPage() {
       </Lede>
 
       <BlogSettingsForm blog={blog} />
+
+      <Secao>Publicar no domínio do cliente</Secao>
+      <div className="mt-4">
+        <PublicarNoDominio
+          dominio={blog.custom_domain}
+          statusInicial={blog.domain_status}
+        />
+      </div>
 
       <Secao>Linkagem interna</Secao>
       <p className="text-sm text-slate-600 dark:text-slate-400">
