@@ -41,10 +41,14 @@ export function StrategyBoard({
   blogId,
   initialKeywords,
   pais,
+  idioma,
 }: {
   blogId: string;
   initialKeywords: Keyword[];
   pais: string;
+  /** Idioma em que as pautas saem, deduzido do domínio. Fica na abertura
+   *  para o cliente ver a dedução antes de gerar, não pelo artigo pronto. */
+  idioma: string;
 }) {
   const router = useRouter();
   const supabase = createClient();
@@ -107,6 +111,7 @@ export function StrategyBoard({
   return (
     <div className={pagina()}>
       <Lede
+        apoio={`Volume medido ${pais}. Pautas e artigos saem em ${idioma}.`}
         acao={
           <button
             onClick={handleFindIdeas}

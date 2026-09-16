@@ -66,21 +66,32 @@ const TLD_PARA_PAIS: Record<string, string> = {
 export function paisDoBlog(params: {
   dominio: string | null;
   idioma: string;
-}): { chave: string; constante: string; rotulo: string; preposicao: string } {
+}): {
+  chave: string;
+  constante: string;
+  rotulo: string;
+  preposicao: string;
+  /** Quem decidiu. O idioma do conteúdo (idioma.ts) precisa saber se o
+   *  domínio falou ou se caiu na reserva, para não impor espanhol a um
+   *  blog em inglês só porque a reserva do país é a Espanha. */
+  origem: "dominio" | "idioma";
+} {
   const { dominio, idioma } = params;
 
   if (dominio) {
     const partes = dominio.toLowerCase().split(".");
     const ultimo = partes[partes.length - 1];
     const chave = TLD_PARA_PAIS[ultimo];
-    if (chave && PAIS[chave]) return { chave, ...PAIS[chave] };
+    if (chave && PAIS[chave]) return { chave, origem: "dominio", ...PAIS[chave] };
   }
 
   const padrao = idioma === "pt" ? "br" : "es";
-  return { chave: padrao, ...PAIS[padrao] };
+  return { chave: padrao, origem: "idioma", ...PAIS[padrao] };
 }
 
-export function idiomaDoBlog(idioma: string): string {
+// Renomeada de idiomaDoBlog: esse nome agora é do idioma do conteúdo em
+// src/lib/idioma.ts. Aqui é só a constante de segmentação do Google Ads.
+export function constanteDeIdioma(idioma: string): string {
   return IDIOMA[idioma] ?? IDIOMA.es;
 }
 

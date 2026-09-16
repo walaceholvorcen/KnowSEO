@@ -5,14 +5,20 @@ import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { dnaContradizIdioma, type IdiomaDoBlog } from "@/lib/idioma";
 import type { BrandDna } from "@/types";
 
 export function BrandDnaForm({
   blogId,
   initial,
+  idioma,
 }: {
   blogId: string;
   initial: BrandDna | null;
+  /** Idioma real do blog (domínio primeiro). A regra de estilo em texto
+   *  livre não consegue mudá-lo, e o cliente precisa saber disso aqui,
+   *  antes de descobrir pelo artigo. */
+  idioma: IdiomaDoBlog;
 }) {
   const router = useRouter();
   const supabase = createClient();
@@ -122,6 +128,12 @@ export function BrandDnaForm({
           className={cn(campo(), "w-full")}
           placeholder="Ex: Trate o leitor por você. Frases curtas. Explique todo termo técnico."
         />
+        {dnaContradizIdioma(writingStyle, idioma.codigo) && (
+          <p className="mt-1.5 text-sm text-nota-atencao">
+            Esta regra pede outro idioma e é ignorada: pautas e artigos
+            deste blog saem em {idioma.rotulo}.
+          </p>
+        )}
       </div>
 
       <div>

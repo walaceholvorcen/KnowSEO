@@ -1,6 +1,7 @@
 import { obterAccessToken } from "./oauth";
+import { idiomaDoBlog } from "@/lib/idioma";
 import {
-  idiomaDoBlog,
+  constanteDeIdioma,
   indexarMetricas,
   paisDoBlog,
   type MetricaReal,
@@ -160,7 +161,7 @@ export async function diagnosticarGoogleAds(
       method: "POST",
       headers: cabecalhos(token),
       body: JSON.stringify({
-        language: idiomaDoBlog("pt"),
+        language: constanteDeIdioma("pt"),
         geoTargetConstants: [
           paisDoBlog({ dominio: null, idioma: "pt" }).constante,
         ],
@@ -224,7 +225,11 @@ export async function buscarVolumeDeBusca(params: {
       method: "POST",
       headers,
       body: JSON.stringify({
-        language: idiomaDoBlog(idioma),
+        // Mesma dedução do país: dataknow.es com language 'pt' media o
+        // volume na Espanha, mas em português - número de ninguém.
+        language: constanteDeIdioma(
+          idiomaDoBlog({ custom_domain: dominio, language: idioma }).codigo,
+        ),
         geoTargetConstants: [pais.constante],
         keywordPlanNetwork: "GOOGLE_SEARCH",
         keywordSeed: { keywords: keywords.slice(0, MAX_SEMENTES) },

@@ -1,4 +1,5 @@
 import type { Blog, BrandDna } from "@/types";
+import { dnaContradizIdioma, idiomaDoBlog } from "./idioma.ts";
 
 // Prompt base compartilhado (DNA da marca + regras de SEO). É o prefixo
 // estável que cacheamos - todo artigo/ideia do mesmo blog reaproveita esse
@@ -8,22 +9,19 @@ import type { Blog, BrandDna } from "@/types";
 // carregar o SDK. O risco que o teste cobre é alguém adicionar campo no
 // DNA e esquecer de trazê-lo para cá - o cliente preenche e nada muda no
 // artigo, sem nenhum erro para denunciar.
-// O código do idioma sozinho não basta.
-//
-// Com "pt" o modelo escreveu em português de Portugal - "do teu setor",
-// "precisas conquistar", "depois de fazeres". O público é brasileiro, e o
-// artigo saiu com cara de tradução. Sem dizer a variante, a saída é sorteio.
-const IDIOMA: Record<string, string> = {
-  es: "español",
-  pt: "português do Brasil (nunca português de Portugal)",
-  en: "English",
-};
-
 export function buildBrandSystemPrompt(
   blog: Blog,
   dna: BrandDna | null,
 ): string {
-  return `Eres un redactor SEO senior escribiendo en nombre de la siguiente marca. Escribe SIEMPRE en: ${IDIOMA[blog.language] ?? blog.language}.
+  // Idioma e variante vêm do domínio, não do cadastro (ver idioma.ts).
+  // Quando o DNA pede outro idioma em texto livre, dizer só "escreva em X"
+  // não bastou: o modelo obedecia à regra de estilo. Tem que ser explícito.
+  const idioma = idiomaDoBlog(blog);
+  const avisoDeIdioma = dnaContradizIdioma(dna?.writing_style, idioma.codigo)
+    ? " Las reglas de estilo de la marca mencionan otro idioma: ignora esa parte, el idioma lo decide el blog."
+    : "";
+
+  return `Eres un redactor SEO senior escribiendo en nombre de la siguiente marca. ${idioma.instrucao}.${avisoDeIdioma}
 
 # Marca
 - Descripción del negocio: ${dna?.description || "(sin definir - infiere un tono profesional genérico)"}

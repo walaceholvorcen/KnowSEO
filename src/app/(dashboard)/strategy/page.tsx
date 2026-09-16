@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { requireUserAndWorkspace, getBlogAtivo } from "@/lib/workspace";
 import { paisDoBlog } from "@/lib/keywords/metricas";
+import { idiomaDoBlog } from "@/lib/idioma";
 import type { Keyword } from "@/types";
 import { StrategyBoard } from "./strategy-board";
 
@@ -27,6 +28,7 @@ export default async function StrategyPage() {
       blogId={blog.id}
       initialKeywords={(keywords as Keyword[]) ?? []}
       pais={`${pais.preposicao} ${pais.rotulo}`}
+      idioma={idiomaDoBlog(blog).rotulo}
     />
   );
 }

@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   enriquecer,
-  idiomaDoBlog,
+  constanteDeIdioma,
   indexarMetricas,
   numeroOuNulo,
   paisDoBlog,
@@ -47,7 +47,7 @@ test("a preposição concorda com o país", () => {
 });
 
 test("idioma desconhecido não quebra: cai no espanhol", () => {
-  assert.equal(idiomaDoBlog("xx"), idiomaDoBlog("es"));
+  assert.equal(constanteDeIdioma("xx"), constanteDeIdioma("es"));
 });
 
 test("numeroOuNulo aceita string da API REST e preserva zero", () => {

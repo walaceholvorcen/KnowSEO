@@ -37,8 +37,12 @@ export function MarketBoard({
   gscPronto: boolean;
 }) {
   const router = useRouter();
+  // Sem concorrente cadastrado, o formulário já nasce com os que o Raio X
+  // viu citados no lugar da marca: é o melhor palpite que o produto tem, e
+  // uma caixa vazia só adiava a primeira análise.
+  const doRaioX = sugeridos.slice(0, MAX_CONCORRENTES);
   const [lista, setLista] = useState<string[]>(
-    analise?.competitor_domains ?? [],
+    analise?.competitor_domains?.length ? analise.competitor_domains : doRaioX,
   );
   const [rascunho, setRascunho] = useState("");
   const [rodando, setRodando] = useState(false);
@@ -109,6 +113,11 @@ export function MarketBoard({
   }
 
   const lacunas = temas.filter((t) => t.situacao === "lacuna").length;
+  // "Não achamos temas em comum" costuma ser concorrente errado. Quando o
+  // Raio X tem rivais reais e eles ainda não estão na lista, o atalho fica
+  // ao lado do veredito, não escondido na fileira de sugestões.
+  const semTemas = analise?.status === "done" && temas.length === 0;
+  const raioXAjuda = semTemas && doRaioX.some((d) => !lista.includes(d));
 
   const veredito = !analise
     ? "Antes de escrever, olhe o mercado: onde seus concorrentes publicam e você não."
@@ -146,18 +155,28 @@ export function MarketBoard({
           )
         }
         acao={
-          <button
-            onClick={analisar}
-            disabled={rodando || lista.length === 0}
-            className={botao("primario")}
-          >
-            <Radar size={15} />
-            {rodando
-              ? "Analisando..."
-              : analise
-                ? "Refazer análise"
-                : "Analisar mercado"}
-          </button>
+          <>
+            {raioXAjuda && (
+              <button
+                onClick={() => setLista(doRaioX)}
+                className={botao("secundario")}
+              >
+                Usar os concorrentes do Raio X
+              </button>
+            )}
+            <button
+              onClick={analisar}
+              disabled={rodando || lista.length === 0}
+              className={botao("primario")}
+            >
+              <Radar size={15} />
+              {rodando
+                ? "Analisando..."
+                : analise
+                  ? "Refazer análise"
+                  : "Analisar mercado"}
+            </button>
+          </>
         }
       >
         {veredito}

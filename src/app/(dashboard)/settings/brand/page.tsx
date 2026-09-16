@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { pagina } from "@/components/ui";
 import { requireUserAndWorkspace, getBlogAtivo } from "@/lib/workspace";
+import { idiomaDoBlog } from "@/lib/idioma";
 import type { BrandDna } from "@/types";
 import { SettingsNav } from "../settings-nav";
 import { BrandDnaForm } from "./brand-dna-form";
@@ -45,7 +46,11 @@ export default async function BrandDnaPage() {
       <Lede apoio="Isso alimenta o prompt de todo artigo gerado pela IA - é a diferença entre um texto genérico e um com a voz da sua marca.">
         {veredito}
       </Lede>
-      <BrandDnaForm blogId={blog.id} initial={perfil} />
+      <BrandDnaForm
+        blogId={blog.id}
+        initial={perfil}
+        idioma={idiomaDoBlog(blog)}
+      />
 
       <Secao>Identidade da marca</Secao>
       <p className="text-sm text-slate-600 dark:text-slate-400">

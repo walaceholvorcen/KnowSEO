@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { buildBrandSystemPrompt } from "./brand-prompt.ts";
 import type { Blog, BrandDna } from "@/types";
 
-const BLOG = { language: "es" } as Blog;
+const BLOG = { language: "es", custom_domain: null } as Blog;
 
 // Valores-sentinela: strings que nunca apareceriam por acaso no prompt.
 // Se um campo do DNA não chegar ao prompt, o sentinela some e o teste cai.
@@ -39,22 +39,35 @@ describe("DNA da marca chega ao prompt", () => {
 
   test("pt pede a variante brasileira, não só o código", () => {
     // O código sozinho fez o modelo escrever em português de Portugal.
-    const prompt = buildBrandSystemPrompt({ language: "pt" } as Blog, FULL_DNA);
+    const prompt = buildBrandSystemPrompt(
+      { language: "pt", custom_domain: null } as Blog,
+      FULL_DNA,
+    );
     assert.ok(prompt.includes("português do Brasil"));
     assert.ok(prompt.includes("nunca português de Portugal"));
   });
 
   test("os outros idiomas continuam nomeados", () => {
+    assert.ok(buildBrandSystemPrompt(BLOG, FULL_DNA).includes("espanhol"));
     assert.ok(
-      buildBrandSystemPrompt({ language: "es" } as Blog, FULL_DNA).includes(
-        "español",
-      ),
+      buildBrandSystemPrompt(
+        { language: "en", custom_domain: null } as Blog,
+        FULL_DNA,
+      ).includes("inglês"),
     );
-    assert.ok(
-      buildBrandSystemPrompt({ language: "en" } as Blog, FULL_DNA).includes(
-        "English",
-      ),
+  });
+
+  test("o domínio vence o cadastro e o DNA: dataknow.es com 'pt' e regra em português sai em espanhol", () => {
+    // O caso real: agência espanhola, language 'pt' por erro de cadastro e
+    // "Escreva em português do Brasil" nas regras de estilo.
+    const prompt = buildBrandSystemPrompt(
+      { language: "pt", custom_domain: "dataknow.es" } as Blog,
+      { ...FULL_DNA, writing_style: "Escreva em português do Brasil" },
     );
+    assert.ok(prompt.includes("Escreva em espanhol da Espanha"));
+    assert.ok(prompt.includes("ignora esa parte"));
+    // Sem contradição, o aviso não entra: prompt cacheado não muda à toa.
+    assert.ok(!buildBrandSystemPrompt(BLOG, FULL_DNA).includes("ignora esa parte"));
   });
 
   test("DNA vazio não quebra e cai em texto neutro", () => {

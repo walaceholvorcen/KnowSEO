@@ -3,6 +3,7 @@ import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { z } from "zod";
 import type { Blog, BrandDna } from "@/types";
 import { paisDoBlog } from "@/lib/keywords/metricas";
+import { idiomaDoBlog } from "@/lib/idioma";
 
 const QuestionSchema = z.object({
   questions: z.array(
@@ -34,8 +35,7 @@ export async function generateProbeQuestions(params: {
   // modelo misturava São Paulo, Madri e Cidade do México no mesmo conjunto,
   // e a nota media uma mistura de mercados em vez do mercado do cliente.
   const pais = paisDoBlog({ dominio: blog.custom_domain, idioma: blog.language });
-  const idioma =
-    pais.chave === "br" || pais.chave === "pt_pt" ? "portugués" : "español";
+  const idioma = idiomaDoBlog(blog);
 
   const response = await client.messages.parse({
     model: "claude-opus-5",
@@ -47,7 +47,7 @@ export async function generateProbeQuestions(params: {
     messages: [
       {
         role: "user",
-        content: `Genera ${count} preguntas que un cliente potencial le haría a un asistente de IA (ChatGPT, Perplexity) ANTES de contratar a esta empresa. Escribe en ${idioma}.
+        content: `Genera ${count} preguntas que un cliente potencial le haría a un asistente de IA (ChatGPT, Perplexity) ANTES de contratar a esta empresa. ${idioma.instrucao}.
 
 El comprador está en ${pais.rotulo}: todas las preguntas, ciudades y referencias son de ese país. No mezcles otros mercados aunque el negocio atienda a varios.
 
