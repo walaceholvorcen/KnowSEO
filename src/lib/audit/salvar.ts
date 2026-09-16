@@ -8,6 +8,8 @@ export type ResultadoRegistro =
       auditId: string | null;
       status: 422 | 500;
       mensagem: string;
+      /** Causa técnica (mensagem do Supabase/exceção) - vai para o log, não para a tela. */
+      erro?: string;
     };
 
 // Uma auditoria do começo ao fim: abre o registro, roda, grava os achados e
@@ -47,6 +49,7 @@ export async function registrarAuditoria(params: {
       auditId: null,
       status: 500,
       mensagem: createError?.message ?? "Não foi possível abrir a auditoria.",
+      erro: createError?.message,
     };
   }
 
@@ -118,6 +121,9 @@ export async function registrarAuditoria(params: {
       auditId,
       status: 500,
       mensagem: "A auditoria falhou. Tente de novo.",
+      // A tela recebe a frase genérica; quem chama sem tela (o cron) precisa
+      // da causa real para o log, senão a falha some.
+      erro: String(err),
     };
   }
 }

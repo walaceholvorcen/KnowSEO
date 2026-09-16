@@ -42,13 +42,23 @@ export async function GET(request: Request) {
   }
 
   const admin = createAdminClient();
-  const { data: blogs } = await admin.from("blogs").select("*");
+  // Ordem fixa: sem ela o Postgres devolve em qualquer ordem e o mesmo blog
+  // pode cair sempre fora dos MAX_BLOGS - nunca é reauditado.
+  const { data: blogs } = await admin
+    .from("blogs")
+    .select("*")
+    .order("created_at", { ascending: true });
   const providers = getProviders();
 
-  const tarefas: Promise<unknown>[] = [];
+  // Cada tarefa leva um rótulo: é o que permite dizer no log QUAL blog e
+  // QUAL etapa falhou, em vez de só contar falhas.
+  const tarefas: { rotulo: string; promessa: Promise<unknown> }[] = [];
   const feito: { blog: string; auditoria?: string; radar?: string }[] = [];
 
-  for (const bruto of ((blogs as Blog[]) ?? []).slice(0, MAX_BLOGS)) {
+  const lote = ((blogs as Blog[]) ?? []).slice(0, MAX_BLOGS);
+  console.log(`[cron semanal] início, ${lote.length} blogs`);
+
+  for (const bruto of lote) {
     const blog = bruto;
     const registro: (typeof feito)[number] = { blog: blog.name };
 
@@ -65,13 +75,14 @@ export async function GET(request: Request) {
     const auditoria = ultima as { site_url: string; created_at: string } | null;
     if (auditoria && venceu(auditoria.created_at)) {
       registro.auditoria = auditoria.site_url;
-      tarefas.push(
-        registrarAuditoria({
+      tarefas.push({
+        rotulo: `auditoria ${blog.name} (${auditoria.site_url})`,
+        promessa: registrarAuditoria({
           blogId: blog.id,
           siteUrl: auditoria.site_url,
           tipo: "agendada",
         }),
-      );
+      });
     }
 
     // Raio X - GEO: mesma lógica - só onde já existe conjunto de perguntas.
@@ -98,8 +109,9 @@ export async function GET(request: Request) {
 
       if (perguntas.length && venceu(inicio) && !(await rodadaEmAndamento(blog.id))) {
         registro.radar = `${perguntas.length} perguntas`;
-        tarefas.push(
-          iniciarRodada({
+        tarefas.push({
+          rotulo: `raio x ${blog.name}`,
+          promessa: iniciarRodada({
             blogId: blog.id,
             providers,
             perguntas: perguntas.length,
@@ -107,7 +119,7 @@ export async function GET(request: Request) {
           }).then((runId) =>
             executarRodada({ runId, blog, queries: perguntas, providers }),
           ),
-        );
+        });
       }
     }
 
@@ -116,8 +128,28 @@ export async function GET(request: Request) {
 
   // Tudo em paralelo: cada blog é independente, e em sequência cinco blogs
   // estourariam o limite de cinco minutos da função.
-  const resultados = await Promise.allSettled(tarefas);
-  const falhas = resultados.filter((r) => r.status === "rejected").length;
+  const resultados = await Promise.allSettled(tarefas.map((t) => t.promessa));
+
+  // registrarAuditoria não lança: devolve `{ ok: false }` resolvido. Contar
+  // só os rejeitados respondia "falhas: 0" com tudo quebrado - foi assim que
+  // a reauditoria de segunda passou semanas sem aparecer e sem rastro.
+  let falhas = 0;
+  resultados.forEach((r, i) => {
+    const detalhe =
+      r.status === "rejected"
+        ? r.reason
+        : r.value && typeof r.value === "object" && "ok" in r.value && r.value.ok === false
+          ? ((r.value as { erro?: string; mensagem?: string }).erro ??
+            (r.value as { mensagem?: string }).mensagem)
+          : null;
+    if (detalhe === null) return;
+    falhas++;
+    console.error(`[cron semanal] falhou: ${tarefas[i].rotulo}`, detalhe);
+  });
+
+  console.log(
+    `[cron semanal] fim: ${feito.length} blogs, ${tarefas.length} tarefas, ${falhas} falhas`,
+  );
 
   return NextResponse.json({ blogs: feito, tarefas: tarefas.length, falhas });
 }

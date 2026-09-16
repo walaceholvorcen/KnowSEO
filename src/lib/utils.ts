@@ -39,10 +39,15 @@ export function htmlParaTexto(html: string): string {
     .trim();
 }
 
+// UTC explícito: sem fuso, o servidor (UTC) e o navegador (BRT) formatavam
+// dias diferentes perto da meia-noite e a hidratação acusava divergência.
+// ponytail: fuso fixo em UTC; o fuso do leitor viria por cookie definido no
+// cliente e lido aqui, se algum dia o dia "errado" incomodar.
 export function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString("pt-BR", {
     day: "2-digit",
     month: "short",
     year: "numeric",
+    timeZone: "UTC",
   });
 }

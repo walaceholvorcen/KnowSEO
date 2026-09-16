@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import { Lede, Linha, NotaCard, Secao } from "@/components/lede";
 import { resumirComparacao, type Comparacao } from "@/lib/audit/comparar";
 import type { AuditRow, FindingRow } from "./page";
-import type { Jornada } from "@/lib/audit/jornada";
+import { dataCurta, type Jornada } from "@/lib/audit/jornada";
 import { JornadaDoSite, ProximaVerificacaoCard } from "./jornada-do-site";
 import { FichaParaColar, separarFicha } from "./ficha-para-colar";
 
@@ -169,7 +169,7 @@ export function AuditBoard({
             <NotaCard
               label="Nota IA"
               score={latest.score_ai}
-              hint="Prontidão para ser citado por ChatGPT e afins"
+              hint="Prontidão para ser citado por assistentes de IA"
             />
             {jornada ? (
               <ProximaVerificacaoCard proxima={jornada.proxima} />
@@ -198,7 +198,7 @@ export function AuditBoard({
             <>
               <Secao>
                 O que mudou desde{" "}
-                {new Date(anterior.created_at).toLocaleDateString("pt-BR")}
+                {dataCurta(anterior.created_at)}
               </Secao>
               <p className="text-sm text-slate-600 dark:text-slate-400">
                 Nota Google{" "}
@@ -433,7 +433,7 @@ export function AuditBoard({
               <Linha key={a.id}>
                 <div className="flex items-baseline justify-between gap-4 text-sm">
                   <span className="min-w-0 truncate text-slate-600 dark:text-slate-400">
-                    {new Date(a.created_at).toLocaleDateString("pt-BR")} ·{" "}
+                    {dataCurta(a.created_at)} ·{" "}
                     {a.site_url}
                     {a.origem === "agendada" && " · semanal"}
                   </span>
