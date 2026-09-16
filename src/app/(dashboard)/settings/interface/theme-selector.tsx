@@ -41,8 +41,9 @@ export function ThemeSelector() {
     setTheme(value);
   }
 
+  // flex-wrap: a 371px o "Sistema" saía do card.
   return (
-    <div className="flex gap-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4">
+    <div className="flex flex-wrap gap-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4">
       {OPTIONS.map((opt) => {
         const Icon = opt.icon;
         const active = theme === opt.value;

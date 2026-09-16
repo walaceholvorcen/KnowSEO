@@ -19,6 +19,7 @@ import {
   MapPin,
   Lock,
   Radar,
+  ExternalLink,
   Menu,
   Plus,
   X,
@@ -260,14 +261,27 @@ export function Sidebar({
           </p>
         </div>
 
-        <Link
-          href="/onboarding?novo=1"
-          onClick={() => setAberto(false)}
-          className="mx-3 mt-1.5 flex items-center gap-1.5 px-1 text-xs text-slate-500 hover:text-cobalto-600 dark:text-slate-400 dark:hover:text-cobalto-400"
-        >
-          <Plus size={12} aria-hidden="true" />
-          Adicionar cliente
-        </Link>
+        <div className="mx-3 mt-1.5 flex flex-wrap gap-x-4 gap-y-1 px-1 text-xs text-slate-500 dark:text-slate-400">
+          {/* Único caminho do painel até o blog publicado: sem isto o cliente
+              precisava digitar o endereço na mão. */}
+          <a
+            href={`https://${blog.endereco}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 hover:text-cobalto-600 dark:hover:text-cobalto-400"
+          >
+            <ExternalLink size={12} aria-hidden="true" />
+            Abrir blog
+          </a>
+          <Link
+            href="/onboarding?novo=1"
+            onClick={() => setAberto(false)}
+            className="flex items-center gap-1.5 hover:text-cobalto-600 dark:hover:text-cobalto-400"
+          >
+            <Plus size={12} aria-hidden="true" />
+            Adicionar cliente
+          </Link>
+        </div>
 
         <nav
           aria-label="Principal"

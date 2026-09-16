@@ -64,7 +64,8 @@ function Lista({
           </span>
         ))}
 
-        <div className="flex items-center gap-2">
+        {/* flex-wrap e max-w-full: a 371px o "Adicionar" saía pela borda. */}
+        <div className="flex flex-wrap items-center gap-2">
           <input
             value={rascunho}
             onChange={(e) => setRascunho(e.target.value)}
@@ -76,7 +77,7 @@ function Lista({
             }}
             placeholder={placeholder}
             aria-label={titulo}
-            className={cn(campo("sm"), "w-52")}
+            className={cn(campo("sm"), "w-52 max-w-full")}
           />
           <button
             type="button"

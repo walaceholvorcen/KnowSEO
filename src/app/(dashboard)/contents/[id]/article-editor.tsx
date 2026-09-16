@@ -343,20 +343,25 @@ export function ArticleEditor({
                 </div>
               )}
 
-            <input
+            {/* textarea de uma linha que cresce com o texto: <input> não quebra
+                linha e no celular o título saía cortado. Quebra de linha vira
+                espaço - título é uma linha só. */}
+            <textarea
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              rows={1}
+              onChange={(e) => setTitle(e.target.value.replace(/\n/g, " "))}
               placeholder="Título"
-              className="w-full border-none bg-transparent text-3xl font-bold text-slate-900 dark:text-slate-100 outline-none placeholder:text-slate-300"
+              className="w-full resize-none border-none bg-transparent text-3xl font-bold text-slate-900 dark:text-slate-100 outline-none field-sizing-content placeholder:text-slate-300"
             />
 
-            <div className="mt-2 flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400">
+            <div className="mt-2 flex items-baseline gap-1.5 text-sm text-slate-500 dark:text-slate-400">
               <span>/</span>
-              <input
+              <textarea
                 value={slug}
-                onChange={(e) => setSlug(e.target.value)}
+                rows={1}
+                onChange={(e) => setSlug(e.target.value.replace(/\n/g, ""))}
                 placeholder="endereco-do-artigo"
-                className="min-w-0 flex-1 border-none bg-transparent outline-none focus:text-slate-900 dark:focus:text-slate-100"
+                className="min-w-0 flex-1 resize-none break-all border-none bg-transparent outline-none field-sizing-content focus:text-slate-900 dark:focus:text-slate-100"
               />
             </div>
             {status === "published" && slug !== article.slug && (
@@ -438,11 +443,16 @@ export function ArticleEditor({
                 <label className="mb-1 block text-sm text-slate-500 dark:text-slate-400">
                   Título da busca ({seoTitle.length}/60)
                 </label>
-                <input
+                {/* Mesma razão do título: em tela estreita o <input> escondia o
+                    fim do texto. */}
+                <textarea
                   value={seoTitle}
+                  rows={1}
                   maxLength={60}
-                  onChange={(e) => setSeoTitle(e.target.value)}
-                  className={cn(campo(), "w-full")}
+                  onChange={(e) =>
+                    setSeoTitle(e.target.value.replace(/\n/g, " "))
+                  }
+                  className={cn(campo(), "w-full resize-none field-sizing-content")}
                 />
               </div>
               <div>
@@ -454,13 +464,17 @@ export function ArticleEditor({
                   maxLength={155}
                   onChange={(e) => setSeoDescription(e.target.value)}
                   rows={2}
-                  className={cn(campo(), "w-full")}
+                  // Altura real do texto: com 2 linhas fixas a descrição de 155
+                  // caracteres rolava dentro do campo e a primeira linha sumia.
+                  className={cn(campo(), "w-full field-sizing-content")}
                 />
               </div>
             </div>
 
             <div className="mt-8 space-y-4 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
-              <div className="flex items-center justify-between gap-4">
+              {/* flex-wrap: em tela estreita o botão desce para baixo do rótulo
+                  em vez de espremê-lo em três linhas. */}
+              <div className="flex flex-wrap items-center justify-between gap-4">
                 <h3 className="flex items-center gap-2 font-medium text-slate-900 dark:text-slate-100">
                   <GalleryHorizontal size={16} className="text-slate-400 dark:text-slate-500" />
                   Carrossel para Instagram

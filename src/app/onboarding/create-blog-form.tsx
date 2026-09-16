@@ -48,8 +48,8 @@ export function CreateBlogForm({ workspaceId }: { workspaceId: string }) {
     if (insertError || !blog) {
       setError(
         insertError?.message.includes("duplicate")
-          ? "Ese subdominio ya está en uso, prueba otro."
-          : (insertError?.message ?? "Error al crear el blog"),
+          ? "Esse subdomínio já está em uso, tente outro."
+          : (insertError?.message ?? "Erro ao criar o blog"),
       );
       setLoading(false);
       return;
@@ -66,7 +66,7 @@ export function CreateBlogForm({ workspaceId }: { workspaceId: string }) {
     >
       <div>
         <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
-          Nombre del blog
+          Nome do blog
         </label>
         <input
           type="text"
@@ -77,13 +77,13 @@ export function CreateBlogForm({ workspaceId }: { workspaceId: string }) {
             if (!subdomain) setSubdomain(slugify(e.target.value));
           }}
           className={cn(campo(), "w-full")}
-          placeholder="Blog de mi empresa"
+          placeholder="Blog da minha empresa"
         />
       </div>
 
       <div>
         <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
-          Dirección
+          Endereço
         </label>
         <div className="flex items-center rounded-lg border border-slate-300 dark:border-slate-700 focus-within:border-cobalto-500 dark:focus-within:border-cobalto-400 focus-within:ring-3 focus-within:ring-cobalto-500/15 dark:focus-within:ring-cobalto-400/20">
           <input
@@ -91,8 +91,8 @@ export function CreateBlogForm({ workspaceId }: { workspaceId: string }) {
             required
             value={subdomain}
             onChange={(e) => setSubdomain(slugify(e.target.value))}
-            className="w-full rounded-l-lg px-3 py-2 text-sm outline-none"
-            placeholder="mi-empresa"
+            className="w-full min-w-0 rounded-l-lg px-3 py-2 text-sm outline-none"
+            placeholder="minha-empresa"
           />
           <span className="whitespace-nowrap rounded-r-lg bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm text-slate-500 dark:text-slate-400">
             .{rootDomain}
@@ -102,16 +102,16 @@ export function CreateBlogForm({ workspaceId }: { workspaceId: string }) {
 
       <div>
         <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
-          Idioma del contenido
+          Idioma do conteúdo
         </label>
         <select
           value={language}
           onChange={(e) => setLanguage(e.target.value as "es" | "pt" | "en")}
           className={cn(campo(), "w-full")}
         >
-          <option value="es">Español</option>
+          <option value="es">Espanhol</option>
           <option value="pt">Português</option>
-          <option value="en">English</option>
+          <option value="en">Inglês</option>
         </select>
       </div>
 
@@ -126,7 +126,7 @@ export function CreateBlogForm({ workspaceId }: { workspaceId: string }) {
         disabled={loading}
         className={cn(botao("primario"), "w-full")}
       >
-        {loading ? "Creando..." : "Crear blog"}
+        {loading ? "Criando..." : "Criar blog"}
       </button>
     </form>
   );

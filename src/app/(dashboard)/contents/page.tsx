@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { requireUserAndWorkspace, getBlogAtivo } from "@/lib/workspace";
 import { formatDate } from "@/lib/utils";
+import { versaoDaIdentidade } from "@/lib/blog-endereco";
 import { Lede } from "@/components/lede";
 import type { Article } from "@/types";
 
@@ -68,7 +69,10 @@ export default async function ContentsPage() {
               className="group overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 transition hover:border-cobalto-400 dark:hover:border-cobalto-500"
             >
               <Image
-                src={article.cover_image_url || `/api/og/${article.id}`}
+                src={
+                  article.cover_image_url ||
+                  `/api/og/${article.id}?v=${versaoDaIdentidade(blog)}`
+                }
                 alt=""
                 width={1200}
                 height={630}

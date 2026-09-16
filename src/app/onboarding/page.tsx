@@ -18,8 +18,10 @@ export default async function OnboardingPage({
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-950 px-4">
-      <div className="w-full max-w-md space-y-6">
+    // Centralizado só a partir de sm: em tela estreita o card flutuava no
+    // meio de uma tela vazia e ficava cortado à direita.
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 px-4 py-10 sm:flex sm:items-center sm:justify-center">
+      <div className="mx-auto w-full max-w-md space-y-6">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
             {novoCliente ? "Adicionar cliente" : "Crie seu primeiro blog"}
