@@ -48,7 +48,12 @@ export function ArticleView({
           {article.title}
         </h1>
 
-        <Image
+        {/* unoptimized: a capa já sai pronta da nossa rota /api/og, o
+                    otimizador não tem o que ganhar - e no Next 16 ele recusa
+                    imagem local com "?v=" na URL (a versão que fura o cache
+                    quando a identidade muda), deixando o card sem imagem. */}
+                <Image
+                  unoptimized
           src={article.cover_image_url || `/api/og/${article.id}?v=${versaoDaIdentidade(blog)}`}
           alt={article.title}
           width={1200}

@@ -68,7 +68,12 @@ export default async function ContentsPage() {
               href={`/contents/${article.id}`}
               className="group overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 transition hover:border-cobalto-400 dark:hover:border-cobalto-500"
             >
-              <Image
+              {/* unoptimized: a capa já sai pronta da nossa rota /api/og, o
+                    otimizador não tem o que ganhar - e no Next 16 ele recusa
+                    imagem local com "?v=" na URL (a versão que fura o cache
+                    quando a identidade muda), deixando o card sem imagem. */}
+                <Image
+                  unoptimized
                 src={
                   article.cover_image_url ||
                   `/api/og/${article.id}?v=${versaoDaIdentidade(blog)}`
