@@ -1,6 +1,7 @@
 import { ImageResponse } from "next/og";
 import { textoSobre } from "@/lib/contrast";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { CACHE_DA_CAPA } from "@/lib/blog-endereco";
 
 // 1080x1350 (proporção 4:5): o formato que ocupa mais espaço no feed do
 // Instagram hoje, tanto em post único quanto em carrossel.
@@ -132,6 +133,12 @@ export async function GET(
         />
       </div>
     ),
-    { width: LARGURA, height: ALTURA },
+    {
+      width: LARGURA, height: ALTURA,
+      // Navegador revalida sempre (max-age=0); a CDN guarda por um dia e
+      // serve a cópia velha enquanto renova. A URL carrega ?v=<identidade>,
+      // então trocar nome, cor ou logo muda a URL e fura o cache na hora.
+      headers: { "Cache-Control": CACHE_DA_CAPA },
+    },
   );
 }

@@ -8,6 +8,7 @@ import {
   tenantAssetOrigin,
 } from "@/lib/tenant";
 import { ArticleView } from "@/components/article-view";
+import { versaoDaIdentidade } from "@/lib/blog-endereco";
 import { PageviewTracker } from "./pageview-tracker";
 
 export async function generateMetadata({
@@ -37,7 +38,7 @@ export async function generateMetadata({
   // do tenant.
   const image =
     article.cover_image_url ||
-    `${await tenantAssetOrigin(domain)}/api/og/${article.id}`;
+    `${await tenantAssetOrigin(domain)}/api/og/${article.id}?v=${versaoDaIdentidade(blog)}`;
 
   return {
     metadataBase: await tenantBaseUrl(domain),
@@ -90,7 +91,7 @@ export default async function TenantArticlePage({
     "@type": "Article",
     headline: article.title,
     description: article.seo_description || article.excerpt || undefined,
-    image: article.cover_image_url || `${assetOrigin}/api/og/${article.id}`,
+    image: article.cover_image_url || `${assetOrigin}/api/og/${article.id}?v=${versaoDaIdentidade(blog)}`,
     datePublished: article.published_at,
     dateModified: article.updated_at || article.published_at,
     mainEntityOfPage: `${origin}/${article.slug}`,

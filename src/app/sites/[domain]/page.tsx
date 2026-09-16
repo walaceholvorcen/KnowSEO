@@ -5,6 +5,7 @@ import type { Metadata } from "next";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { resolveBlogByHost, tenantBaseUrl } from "@/lib/tenant";
 import { textoSobre } from "@/lib/contrast";
+import { versaoDaIdentidade } from "@/lib/blog-endereco";
 import { formatDate } from "@/lib/utils";
 import type { Article } from "@/types";
 
@@ -95,7 +96,7 @@ export default async function TenantBlogHome({
                 className="block border-b border-slate-100 dark:border-slate-800 pb-8"
               >
                 <Image
-                  src={article.cover_image_url || `/api/og/${article.id}`}
+                  src={article.cover_image_url || `/api/og/${article.id}?v=${versaoDaIdentidade(blog)}`}
                   alt={article.title}
                   width={1200}
                   height={630}

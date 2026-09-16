@@ -48,24 +48,47 @@ const DIRETORIOS = new Set([
   "youtube.com", "linkedin.com", "facebook.com", "instagram.com",
   "twitter.com", "x.com", "tiktok.com", "pinterest.com", "medium.com",
   "github.com", "amazon.com", "amazon.es", "google.com", "blogspot.com",
-  "wordpress.com", "wix.com", "substack.com",
-  // Imprensa e publicações de marketing da Espanha: citam agências em
-  // listas e reportagens, mas não disputam cliente. Apareceram como
-  // "concorrente" na primeira rodada real em espanhol (set/2026).
-  // ponytail: lista curada; a cauda longa de portais novos entra conforme aparecer.
+  "wordpress.com", "wix.com", "substack.com", "hubspot.es",
+]);
+
+// Imprensa e publicações de marketing da Espanha: citam agências em
+// listas e reportagens, mas não disputam cliente. Apareceram como
+// "concorrente" na primeira rodada real em espanhol (set/2026). Lista
+// separada dos diretórios porque a ação é outra: em diretório se cria
+// perfil; em imprensa se aparece (assessoria, artigo convidado).
+// ponytail: lista curada; a cauda longa de portais novos entra conforme aparecer.
+const IMPRENSA = new Set([
   "puromarketing.com", "marketinginsiderreview.com", "totbarcelona.cat",
   "barcelonaconecta.es", "reasonwhy.es", "marketingdirecto.com",
   "marketing4ecommerce.net", "elpais.com", "expansion.com",
   "eleconomista.es", "cincodias.elpais.com", "lavanguardia.com",
-  "20minutos.es", "xataka.com", "emprendedores.es", "hubspot.es",
+  "20minutos.es", "xataka.com", "emprendedores.es", "atalayar.com",
 ]);
 
-export function isDirectory(domain: string): boolean {
-  if (DIRETORIOS.has(domain)) return true;
-  for (const conhecido of DIRETORIOS) {
+// Sinal de veículo de imprensa no próprio host, para o que não está na
+// lista. Heurística: erra pouco no que importa (chamar revista de
+// concorrente era pior que chamar um "post.com" de imprensa).
+const PARECE_IMPRENSA =
+  /news|noticias|diario|jornal|periodico|revista|magazine|press|times|post|gazeta|tribuna/;
+
+function naLista(lista: Set<string>, domain: string): boolean {
+  if (lista.has(domain)) return true;
+  for (const conhecido of lista) {
     if (domain.endsWith(`.${conhecido}`)) return true;
   }
   return false;
+}
+
+// Diretório ou imprensa: os dois ficam fora de `competitors`.
+export function isDirectory(domain: string): boolean {
+  return naLista(DIRETORIOS, domain) || isImprensa(domain);
+}
+
+export function isImprensa(domain: string): boolean {
+  if (naLista(IMPRENSA, domain)) return true;
+  // "wordpress.com" contém "press": plataforma conhecida vence a heurística.
+  if (naLista(DIRETORIOS, domain)) return false;
+  return domain.endsWith(".news") || PARECE_IMPRENSA.test(domain);
 }
 
 // Sufixos societários que não fazem parte do nome real da marca.

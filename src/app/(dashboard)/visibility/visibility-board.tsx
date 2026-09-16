@@ -175,6 +175,7 @@ export function VisibilityBoard({
   const previous =
     timeline.length > 1 ? timeline[timeline.length - 2].score : null;
   const delta = score !== null && previous !== null ? score - previous : null;
+  const semCitacao = timeline.every((t) => t.score === 0);
 
   const fontes = lerFontes(latest);
 
@@ -254,7 +255,7 @@ export function VisibilityBoard({
   const achadoSemCitar = latest.filter(
     (c) => !c.cited && c.found_in_search,
   ).length;
-  const rival = fontes.fontes.find((f) => f.tipo === "empresa");
+  const rival = fontes.fontes.find((f) => f.tipo === "site");
   const [primeiroRival, vezesRival] = rival
     ? [rival.dominio, rival.perguntas]
     : [null, 0];
@@ -398,30 +399,54 @@ export function VisibilityBoard({
       {timeline.length > 1 && (
         <>
           <Secao>Evolução</Secao>
-          <div className="mt-4 flex h-32 items-end gap-3">
-            {timeline.map((t) => (
-              <div
-                key={t.chave}
-                className="flex h-full flex-1 flex-col items-center justify-end gap-1.5"
-              >
-                <span className="tabular text-sm text-slate-600 dark:text-slate-400">
-                  {t.score}%
-                </span>
-                {/* Trilho com altura definida: sem ele o % da barra não
-                    resolve e o gráfico aparece vazio. */}
-                <div className="flex h-full w-full items-end">
-                  <div
-                    className="w-full bg-cobalto-600 dark:bg-cobalto-500"
-                    style={{ height: `${Math.max(t.score, 2)}%` }}
-                  />
-                </div>
-                <span className="tabular text-sm text-slate-400 dark:text-slate-500">
-                  {t.day.slice(5)}
-                </span>
+          {semCitacao ? (
+            // Série toda em zero: barra vazia com "0%" flutuando no topo lia
+            // como gráfico quebrado. Fica só a linha de base com as datas e
+            // a leitura do que falta acontecer.
+            <div className="mt-4">
+              <div className="flex justify-between gap-3 border-t border-slate-300 pt-1.5 dark:border-slate-700">
+                {timeline.map((t) => (
+                  <span
+                    key={t.chave}
+                    className="tabular text-sm text-slate-400 dark:text-slate-500"
+                  >
+                    {t.day.slice(5)}
+                  </span>
+                ))}
               </div>
-            ))}
-          </div>
-          {delta !== null && (
+              <p className="mt-3 text-sm text-slate-600 dark:text-slate-400">
+                Nenhuma citação em {timeline.length} rodadas. A linha começa a
+                subir quando a IA passar a citar você.
+              </p>
+            </div>
+          ) : (
+            <div className="mt-4 flex h-32 items-end gap-3">
+              {timeline.map((t) => (
+                <div
+                  key={t.chave}
+                  className="flex h-full flex-1 flex-col items-center justify-end gap-1.5"
+                >
+                  {/* Trilho com altura definida: sem ele o % da barra não
+                      resolve e o gráfico aparece vazio. O rótulo mora dentro
+                      do trilho, colado ao topo da barra - fora dele ia parar
+                      no alto da coluna, longe do dado que descreve. */}
+                  <div className="flex h-full w-full flex-col items-center justify-end">
+                    <span className="tabular text-sm text-slate-600 dark:text-slate-400">
+                      {t.score}%
+                    </span>
+                    <div
+                      className="w-full bg-cobalto-600 dark:bg-cobalto-500"
+                      style={{ height: `${Math.max(t.score, 2)}%` }}
+                    />
+                  </div>
+                  <span className="tabular text-sm text-slate-400 dark:text-slate-500">
+                    {t.day.slice(5)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+          {delta !== null && !semCitacao && (
             <p className="mt-3 text-sm text-slate-600 dark:text-slate-400">
               {delta === 0
                 ? "Sem mudança em relação à rodada anterior."

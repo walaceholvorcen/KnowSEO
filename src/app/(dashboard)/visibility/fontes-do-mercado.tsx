@@ -4,6 +4,13 @@ import { cn } from "@/lib/utils";
 import { ROTULO_MOTOR } from "@/lib/ai-visibility/resumo";
 import type { LeituraFontes } from "@/lib/ai-visibility/fontes";
 
+// "Site citado" é neutro de propósito: a lista não sabe se é concorrente.
+const ROTULO_TIPO: Record<LeituraFontes["fontes"][number]["tipo"], string> = {
+  plataforma: "Plataforma",
+  imprensa: "Imprensa",
+  site: "Site citado",
+};
+
 const nomesDosMotores = (motores: string[]) =>
   motores.map((m) => ROTULO_MOTOR[m] ?? m).join(", ");
 
@@ -34,7 +41,8 @@ export function FontesDoMercado({ leitura }: { leitura: LeituraFontes }) {
   itens.splice(Math.min(fontesAFrente, itens.length), 0, { tipo: "marca" });
 
   const temPlataforma = fontes.some((f) => f.tipo === "plataforma");
-  const temEmpresa = fontes.some((f) => f.tipo === "empresa");
+  const temImprensa = fontes.some((f) => f.tipo === "imprensa");
+  const temSite = fontes.some((f) => f.tipo === "site");
 
   const barra = (n: number, marca = false) => (
     <span className="hidden h-1.5 w-32 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800 sm:block">
@@ -109,7 +117,7 @@ export function FontesDoMercado({ leitura }: { leitura: LeituraFontes }) {
                     {item.fonte.dominio}
                   </a>
                   <span className="mt-0.5 block text-sm text-slate-500 dark:text-slate-400">
-                    {item.fonte.tipo === "plataforma" ? "Plataforma" : "Concorrente"}
+                    {ROTULO_TIPO[item.fonte.tipo]}
                     {" em "}
                     {nomesDosMotores(item.fonte.motores)}
                   </span>
@@ -143,19 +151,31 @@ export function FontesDoMercado({ leitura }: { leitura: LeituraFontes }) {
             </dd>
           </div>
         )}
-        {temEmpresa && (
+        {temImprensa && (
           <div>
             <dt className="inline font-medium text-slate-900 dark:text-slate-100">
-              Concorrente:{" "}
+              Imprensa:{" "}
             </dt>
             <dd className="inline text-slate-600 dark:text-slate-400">
-              ele respondeu melhor ao que a IA procurava.{" "}
+              apareça nessa publicação (assessoria, artigo convidado). É de
+              lá que a IA tira o que diz sobre o setor.
+            </dd>
+          </div>
+        )}
+        {temSite && (
+          <div>
+            <dt className="inline font-medium text-slate-900 dark:text-slate-100">
+              Site citado:{" "}
+            </dt>
+            <dd className="inline text-slate-600 dark:text-slate-400">
+              veja o que ele publica sobre o tema; se for concorrente direto,{" "}
               <Link
                 href="/market"
                 className="font-medium text-cobalto-700 hover:underline dark:text-cobalto-300"
               >
-                Comparar o que ele publica
+                compare no Mercado
               </Link>
+              .
             </dd>
           </div>
         )}

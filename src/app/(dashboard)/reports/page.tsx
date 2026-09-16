@@ -3,15 +3,26 @@ import { botao, pagina } from "@/components/ui";
 import Link from "next/link";
 import { requireUserAndWorkspace, getBlogAtivo } from "@/lib/workspace";
 import { Lede, Linha, Secao } from "@/components/lede";
+import { enderecoDoBlog } from "@/lib/blog-endereco";
+import { DIAS_JANELA } from "../dashboard/dados";
 import type { AnalyticsEvent } from "@/types";
+
+// Número nunca sai sem unidade: "3" sozinho obrigava o cliente a adivinhar
+// se era visita, conversa ou dia.
+const visitasTxt = (n: number) => `${n} ${n === 1 ? "visita" : "visitas"}`;
+const conversasTxt = (n: number) => `${n} ${n === 1 ? "conversa" : "conversas"}`;
+const PERIODO = `nos últimos ${DIAS_JANELA} dias`;
 
 export default async function ReportsPage() {
   const { supabase, workspace } = await requireUserAndWorkspace();
   const blog = await getBlogAtivo(supabase, workspace.id);
   if (!blog) redirect("/onboarding");
 
+  // Mesma janela do Início, para os dois painéis não discordarem.
   const desde = new Date();
-  desde.setDate(desde.getDate() - 28);
+  desde.setDate(desde.getDate() - (DIAS_JANELA - 1));
+  const host = enderecoDoBlog(blog);
+  const origemPublica = `${host.includes("localhost") ? "http" : "https"}://${host}`;
 
   const [{ data: events }, { data: artigos }] = await Promise.all([
     supabase
@@ -23,7 +34,7 @@ export default async function ReportsPage() {
     // valeu a pena", não só "quantas visitas teve o site".
     supabase
       .from("articles")
-      .select("id, title, status, keywords(keyword, suggested_title)")
+      .select("id, title, slug, status, keywords(keyword, suggested_title)")
       .eq("blog_id", blog.id)
       .eq("status", "published"),
   ]);
@@ -55,6 +66,7 @@ export default async function ReportsPage() {
   type ArtigoComKeyword = {
     id: string;
     title: string;
+    slug: string;
     // PostgREST devolve objeto único aqui (keyword_id -> keywords.id é
     // muitos-para-um) - o tipo array era só o TypeScript inferindo sem
     // saber a cardinalidade real da relação.
@@ -65,6 +77,7 @@ export default async function ReportsPage() {
     .map((a) => ({
       id: a.id,
       titulo: a.title,
+      slug: a.slug,
       pauta: a.keywords?.keyword ?? null,
       visitas: porArtigo.get(a.id)?.visitas ?? 0,
       conversas: porArtigo.get(a.id)?.conversas ?? 0,
@@ -77,10 +90,10 @@ export default async function ReportsPage() {
   // relação declarada entre eles.
   const veredito =
     visitas === 0
-      ? "Ainda não houve visita nos últimos 28 dias. O rastreio já está ligado — falta divulgar o link."
+      ? `Ainda não houve visita ${PERIODO}. O rastreio já está ligado — falta divulgar o link.`
       : conversas === 0
-        ? `${visitas} ${visitas === 1 ? "visita" : "visitas"} nos últimos 28 dias, e nenhuma virou conversa ainda.`
-        : `${visitas} ${visitas === 1 ? "visita" : "visitas"} nos últimos 28 dias, ${conversas} ${conversas === 1 ? "virou conversa" : "viraram conversa"}.`;
+        ? `${visitasTxt(visitas)} ${PERIODO}, e nenhuma virou conversa ainda.`
+        : `${visitasTxt(visitas)} ${PERIODO}, ${conversas} ${conversas === 1 ? "virou conversa" : "viraram conversa"}.`;
 
   return (
     <div className={pagina()}>
@@ -102,15 +115,15 @@ export default async function ReportsPage() {
 
       {conversas > 0 && (
         <>
-          <Secao>De onde vieram as conversas</Secao>
+          <Secao>De onde vieram as conversas {PERIODO}</Secao>
           <ul className="mt-4">
             <Linha>
               <div className="flex items-baseline justify-between gap-4">
                 <span className="text-slate-700 dark:text-slate-300">
                   WhatsApp
                 </span>
-                <span className="tabular font-display text-2xl text-slate-900 dark:text-slate-100">
-                  {cliquesZap}
+                <span className="tabular text-slate-900 dark:text-slate-100">
+                  {conversasTxt(cliquesZap)}
                 </span>
               </div>
             </Linha>
@@ -119,8 +132,8 @@ export default async function ReportsPage() {
                 <span className="text-slate-700 dark:text-slate-300">
                   Botão do artigo
                 </span>
-                <span className="tabular font-display text-2xl text-slate-900 dark:text-slate-100">
-                  {cliquesCta}
+                <span className="tabular text-slate-900 dark:text-slate-100">
+                  {conversasTxt(cliquesCta)}
                 </span>
               </div>
             </Linha>
@@ -128,7 +141,7 @@ export default async function ReportsPage() {
         </>
       )}
 
-      <Secao>Qual pauta valeu a pena</Secao>
+      <Secao>Qual pauta valeu a pena {PERIODO}</Secao>
       {desempenho.length === 0 ? (
         <p className="mt-2 text-slate-500 dark:text-slate-400">
           Nada registrado ainda. Assim que alguém abrir um artigo, ele aparece
@@ -136,26 +149,39 @@ export default async function ReportsPage() {
         </p>
       ) : (
         <ul className="mt-4">
+          {/* Visitas e conversas lado a lado, com unidade, em cada linha: a
+              comparação entre pautas é a pergunta desta lista. Dois links por
+              linha - o artigo no painel e a página pública que foi medida. */}
           {desempenho.map((a) => (
             <Linha key={a.id}>
-              <Link
-                href={`/contents/${a.id}`}
-                className="group flex items-baseline justify-between gap-4"
-              >
+              <div className="flex items-baseline justify-between gap-4">
                 <span className="min-w-0">
-                  <span className="block truncate text-slate-900 dark:text-slate-100 group-hover:text-cobalto-600 dark:group-hover:text-cobalto-400">
+                  <Link
+                    href={`/contents/${a.id}`}
+                    className="block truncate text-slate-900 hover:text-cobalto-600 dark:text-slate-100 dark:hover:text-cobalto-400"
+                  >
                     {a.titulo}
-                  </span>
-                  <span className="block text-slate-500 dark:text-slate-400">
+                  </Link>
+                  <span className="block text-sm text-slate-500 dark:text-slate-400">
                     {a.pauta ? `Pauta: ${a.pauta}` : "Sem pauta vinculada"}
-                    {a.conversas > 0 &&
-                      ` · ${a.conversas} ${a.conversas === 1 ? "conversa" : "conversas"}`}
+                    {" · "}
+                    <a
+                      href={`${origemPublica}/${a.slug}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-cobalto-700 hover:underline dark:text-cobalto-300"
+                    >
+                      Ver página pública
+                    </a>
                   </span>
                 </span>
-                <span className="tabular shrink-0 font-display text-2xl text-slate-900 dark:text-slate-100">
-                  {a.visitas}
+                <span className="tabular flex shrink-0 gap-4 text-sm text-slate-600 dark:text-slate-400">
+                  <span className="text-slate-900 dark:text-slate-100">
+                    {visitasTxt(a.visitas)}
+                  </span>
+                  <span>{conversasTxt(a.conversas)}</span>
                 </span>
-              </Link>
+              </div>
             </Linha>
           ))}
         </ul>

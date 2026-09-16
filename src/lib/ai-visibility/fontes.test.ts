@@ -26,9 +26,27 @@ test("diretório vira plataforma, inclusive o misturado em competitors", () => {
     check("q1", "chatgpt", ["https://www.sortlist.com/x", "rival.es"], ["clutch.co"]),
   ]);
   const tipo = Object.fromEntries(fontes.map((f) => [f.dominio, f.tipo]));
-  assert.equal(tipo["rival.es"], "empresa");
+  assert.equal(tipo["rival.es"], "site");
   assert.equal(tipo["sortlist.com"], "plataforma");
   assert.equal(tipo["clutch.co"], "plataforma");
+});
+
+test("imprensa por lista ou pelo host; site pessoal fica neutro", () => {
+  const { fontes } = lerFontes([
+    check(
+      "q1",
+      "claude",
+      ["revista-atalayar.com", "aliciazunzunegui.com", "wordpress.com", "algo.news"],
+      ["elpais.com"],
+    ),
+  ]);
+  const tipo = Object.fromEntries(fontes.map((f) => [f.dominio, f.tipo]));
+  assert.equal(tipo["revista-atalayar.com"], "imprensa");
+  assert.equal(tipo["algo.news"], "imprensa");
+  assert.equal(tipo["elpais.com"], "imprensa");
+  assert.equal(tipo["aliciazunzunegui.com"], "site");
+  // "press" dentro de wordpress.com não faz dele imprensa.
+  assert.equal(tipo["wordpress.com"], "plataforma");
 });
 
 test("posição da marca entre as fontes", () => {

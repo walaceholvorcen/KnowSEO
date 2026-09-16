@@ -1,6 +1,7 @@
 import { ImageResponse } from "next/og";
 import { textoSobre } from "@/lib/contrast";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { CACHE_DA_CAPA } from "@/lib/blog-endereco";
 
 // Capa gerada na hora, com a cor da marca do cliente. Serve como imagem
 // do artigo no blog E como preview quando alguém compartilha o link no
@@ -121,6 +122,12 @@ export async function GET(
         />
       </div>
     ),
-    { width: 1200, height: 630 },
+    {
+      width: 1200, height: 630,
+      // Navegador revalida sempre (max-age=0); a CDN guarda por um dia e
+      // serve a cópia velha enquanto renova. A URL carrega ?v=<identidade>,
+      // então trocar nome, cor ou logo muda a URL e fura o cache na hora.
+      headers: { "Cache-Control": CACHE_DA_CAPA },
+    },
   );
 }

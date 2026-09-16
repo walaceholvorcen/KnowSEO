@@ -210,6 +210,15 @@ function GraficoNotas({ pontos }: { pontos: Jornada["evolucao"] }) {
   }
 
   const larguraFaixa = 100 / (n - 1);
+  // Marcas do eixo em passo regular de 10, do piso até 100: com marcas só
+  // nos limiares o eixo lia 40, 50, 70, 90 e parava antes do teto. Os
+  // limiares 50/70/90 continuam mais fortes; o rótulo escrito fica neles,
+  // no piso e no 100, para não poluir.
+  const LIMIARES = [50, 70, 90];
+  const marcas: number[] = [];
+  for (let v = piso; v <= 100; v += 10) marcas.push(v);
+  const rotulada = (v: number) =>
+    v === piso || v === 100 || LIMIARES.includes(v);
 
   return (
     <figure className="mt-8">
@@ -231,7 +240,7 @@ function GraficoNotas({ pontos }: { pontos: Jornada["evolucao"] }) {
       <div className="mt-4 flex gap-3">
         {/* Limiares das faixas à esquerda: os mesmos 50/70/90 da régua. */}
         <div className="relative h-36 w-6 shrink-0 text-right text-xs text-slate-500 dark:text-slate-400" aria-hidden="true">
-          {[90, 70, 50, piso].filter((t, i, a) => a.indexOf(t) === i).map((t) => (
+          {marcas.filter(rotulada).map((t) => (
             <span
               key={t}
               className="tabular absolute right-0 -translate-y-1/2"
@@ -249,7 +258,7 @@ function GraficoNotas({ pontos }: { pontos: Jornada["evolucao"] }) {
             className="absolute inset-0 h-full w-full overflow-visible"
             aria-hidden="true"
           >
-            {[50, 70, 90].map((t) => (
+            {marcas.filter((t) => t > piso).map((t) => (
               <line
                 key={t}
                 x1="0"
@@ -257,9 +266,13 @@ function GraficoNotas({ pontos }: { pontos: Jornada["evolucao"] }) {
                 y1={y(t)}
                 y2={y(t)}
                 strokeWidth="1"
-                strokeDasharray="2 4"
+                strokeDasharray={LIMIARES.includes(t) ? "2 4" : "1 6"}
                 vectorEffect="non-scaling-stroke"
-                className="stroke-slate-300 dark:stroke-slate-700"
+                className={
+                  LIMIARES.includes(t)
+                    ? "stroke-slate-300 dark:stroke-slate-700"
+                    : "stroke-slate-200 dark:stroke-slate-800"
+                }
               />
             ))}
             <line

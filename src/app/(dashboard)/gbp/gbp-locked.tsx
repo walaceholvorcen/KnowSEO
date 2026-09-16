@@ -5,6 +5,10 @@ import { Lede } from "@/components/lede";
 // A auditoria de verdade (src/lib/gbp) está pronta e testada - guardada
 // como upsell futuro, não removida. Trocar este componente pelo
 // <GbpBoard /> real é o único passo para reativar o módulo.
+// Canal do dono do produto (mailto: ou https://wa.me/...). Sem a variável,
+// a frase fica sem link em vez de apontar para um endereço inventado.
+const contato = process.env.NEXT_PUBLIC_CONTATO;
+
 export function GbpLocked() {
   return (
     <div className={pagina()}>
@@ -16,7 +20,16 @@ export function GbpLocked() {
 
       <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
         <Lock size={15} />
-        Fale com a gente para liberar este recurso.
+        {contato ? (
+          <a
+            href={contato}
+            className="font-medium text-cobalto-700 hover:underline dark:text-cobalto-300"
+          >
+            Fale com a gente para liberar este recurso.
+          </a>
+        ) : (
+          "Fale com a gente para liberar este recurso."
+        )}
       </div>
     </div>
   );

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { textoSobre } from "@/lib/contrast";
+import { versaoDaIdentidade } from "@/lib/blog-endereco";
 import { CtaBanner } from "@/app/sites/[domain]/[slug]/cta-banner";
 import type { Article, Blog } from "@/types";
 
@@ -48,7 +49,7 @@ export function ArticleView({
         </h1>
 
         <Image
-          src={article.cover_image_url || `/api/og/${article.id}`}
+          src={article.cover_image_url || `/api/og/${article.id}?v=${versaoDaIdentidade(blog)}`}
           alt={article.title}
           width={1200}
           height={630}

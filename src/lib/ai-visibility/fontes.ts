@@ -1,4 +1,4 @@
-import { extractDomain, isDirectory } from "../citation.ts";
+import { extractDomain, isDirectory, isImprensa } from "../citation.ts";
 
 // As fontes que a IA usa para responder sobre o mercado do cliente.
 //
@@ -23,8 +23,12 @@ export interface CheckFonte {
 
 export interface Fonte {
   dominio: string;
-  /** Empresa do mesmo mercado, ou plataforma onde empresas são listadas. */
-  tipo: "empresa" | "plataforma";
+  /** Plataforma onde empresas são listadas, veículo de imprensa, ou um
+   *  site qualquer que a IA citou. "Site" é neutro de propósito: uma
+   *  revista e um site pessoal apareciam como "Concorrente" só porque não
+   *  estavam na lista de diretórios - afirmar concorrência por dedução
+   *  é o tipo de erro que faz o cliente desconfiar da tela inteira. */
+  tipo: "site" | "plataforma" | "imprensa";
   /** Perguntas distintas em que o domínio foi citado, em qualquer motor. */
   perguntas: number;
   motores: string[];
@@ -48,6 +52,12 @@ export interface LeituraFontes {
 const MIN_CITACOES_CONCENTRACAO = 12;
 const FONTES_NA_CONCENTRACAO = 5;
 
+function tipoDaFonte(dominio: string): Fonte["tipo"] {
+  if (isImprensa(dominio)) return "imprensa";
+  if (isDirectory(dominio)) return "plataforma";
+  return "site";
+}
+
 export function lerFontes(checks: CheckFonte[], limite = 6): LeituraFontes {
   const porDominio = new Map<
     string,
@@ -62,10 +72,13 @@ export function lerFontes(checks: CheckFonte[], limite = 6): LeituraFontes {
       const d = extractDomain(bruto) ?? bruto;
       // Checagens antigas têm diretório misturado em `competitors` - a
       // separação de coluna é posterior. Classificado na leitura.
-      daResposta.set(d, isDirectory(d) ? "plataforma" : "empresa");
+      daResposta.set(d, tipoDaFonte(d));
     }
     for (const bruto of c.directories ?? []) {
-      daResposta.set(extractDomain(bruto) ?? bruto, "plataforma");
+      const d = extractDomain(bruto) ?? bruto;
+      // Imprensa gravada em `directories` (a lista de mídia vive junto da
+      // de diretórios no detector) volta a ser imprensa aqui.
+      daResposta.set(d, isImprensa(d) ? "imprensa" : "plataforma");
     }
 
     for (const [dominio, tipo] of daResposta) {

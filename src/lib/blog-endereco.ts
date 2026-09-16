@@ -19,3 +19,26 @@ export function enderecoDoBlog(
   }
   return `${blog.subdomain}.${rootDomain}`;
 }
+
+/**
+ * Versão curta da identidade visual do blog, para carimbar a URL da capa
+ * gerada (`/api/og/:id?v=...`). A capa é desenhada na hora com nome, cor e
+ * logo; sem a versão na URL, navegador e CDN seguem servindo a capa antiga
+ * depois que o cliente troca a marca. Hash djb2 - só precisa mudar quando a
+ * identidade muda, não ser criptográfico.
+ */
+export function versaoDaIdentidade(blog: {
+  name: string;
+  theme: { primary_color: string; logo_url: string | null };
+}): string {
+  const texto = `${blog.name}|${blog.theme.primary_color}|${blog.theme.logo_url ?? ""}`;
+  let h = 5381;
+  for (let i = 0; i < texto.length; i++) {
+    h = ((h << 5) + h + texto.charCodeAt(i)) >>> 0;
+  }
+  return h.toString(36);
+}
+
+/** Cache das imagens geradas (capa e carrossel) - ver versaoDaIdentidade. */
+export const CACHE_DA_CAPA =
+  "public, max-age=0, s-maxage=86400, stale-while-revalidate";
