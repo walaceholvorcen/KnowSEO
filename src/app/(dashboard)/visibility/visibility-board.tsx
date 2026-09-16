@@ -28,6 +28,15 @@ const INTENT_LABEL: Record<string, string> = {
 // existe e onde ainda não chega, em vez de achar que "a IA" é um lugar só.
 const TODOS_OS_MOTORES = ["chatgpt", "gemini", "perplexity", "claude"];
 
+// Motor sem chave não entra na tela. Antes ele aparecia apagado, com "Sem
+// chave configurada": para quem opera o painel é um lembrete de uma conta que
+// ele não vai abrir, e para o cliente é uma coluna vazia no lugar mais nobre
+// da análise. Rodada antiga continua visível pelo dado gravado.
+const motoresNaTela = (ligados: string[], medidos: Iterable<string>) => {
+  const vistos = new Set([...ligados, ...medidos]);
+  return TODOS_OS_MOTORES.filter((n) => vistos.has(n));
+};
+
 export interface RodadaResumo {
   id: string;
   status: "running" | "done" | "error";
@@ -275,6 +284,8 @@ export function VisibilityBoard({
       </>
     );
 
+  const colunas = motoresNaTela(motores, porMotor.keys());
+
   const pct = progresso.total
     ? Math.min(100, Math.round((progresso.concluidas / progresso.total) * 100))
     : 0;
@@ -339,11 +350,15 @@ export function VisibilityBoard({
       {/* Um placar por assistente. A divergência entre eles é a informação:
           cada um busca num índice diferente, e aparecer no Perplexity e
           sumir no ChatGPT é diagnóstico, não erro de medição. */}
-      {latest.length > 0 && (
-        <dl className="mb-2 grid grid-cols-2 sm:grid-cols-4 divide-x divide-y sm:divide-y-0 divide-slate-200 dark:divide-slate-800 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
-          {TODOS_OS_MOTORES.map((nome) => {
+      {latest.length > 0 && colunas.length > 1 && (
+        <dl
+          className={cn(
+            "mb-2 grid grid-cols-2 divide-x divide-y sm:divide-y-0 divide-slate-200 rounded-xl border border-slate-200 bg-white dark:divide-slate-800 dark:border-slate-800 dark:bg-slate-900",
+            colunas.length === 3 ? "sm:grid-cols-3" : "sm:grid-cols-4",
+          )}
+        >
+          {colunas.map((nome) => {
             const p = porMotor.get(nome);
-            const ligado = motores.includes(nome);
             return (
               <div key={nome} className="px-4 py-3">
                 <dt className="text-sm text-slate-500 dark:text-slate-400">
@@ -364,9 +379,7 @@ export function VisibilityBoard({
                       </span>
                     </span>
                   ) : (
-                    <span className="text-sm">
-                      {ligado ? "Entra na próxima análise" : "Sem chave configurada"}
-                    </span>
+                    <span className="text-sm">Entra na próxima análise</span>
                   )}
                 </dd>
               </div>

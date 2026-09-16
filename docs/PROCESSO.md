@@ -1534,3 +1534,20 @@ Os achados de entidade (`SEM_ENTIDADE`, `ENTIDADE_SEM_SAMEAS`,
   mostrando só o texto.
 - Validado: dataknow.es (site em JS, perfis não estão no HTML → formulário
   pede); seogenome.com (Instagram e YouTube achados sozinhos no rodapé).
+
+## 33. Motor sem chave sai da tela do Raio X - GEO
+
+Pedido do dono: sem chave paga de ChatGPT, Gemini e Perplexity, os três não
+deviam aparecer no painel. Eles já não entravam na rodada (`getProviders()`
+filtra por `isConfigured()`), mas o placar mostrava as quatro colunas, três
+delas com "Sem chave configurada" — uma coluna vazia no lugar mais nobre da
+análise, e um lembrete de conta que ninguém vai abrir.
+
+Agora o placar só lista motor com chave **ou** com dado gravado (rodada
+antiga continua legível), e **some inteiro quando sobra um só**: com um
+motor, o placar repetiria o número que o veredito já dá. As frases da tela
+("Medido em Claude", "Consultando Claude") já saíam da lista de motores
+ligados e passaram a ficar certas sozinhas.
+
+Os adaptadores dos quatro continuam no código: não custam nada desligados e
+basta a variável de ambiente para religar qualquer um.
