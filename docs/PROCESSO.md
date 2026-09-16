@@ -1564,3 +1564,16 @@ Dois defeitos que só apareceram com o produto em uso:
   branca ocupava a coluna inteira e o telefone tem 390px: sobravam ~160px de
   branco à direita, que leem como página quebrada. A moldura passou a ter a
   largura do aparelho escolhido, centralizada.
+
+## 35. Créditos fora do painel
+
+Decisão do dono, já anunciada na seção de avaliação: quanto o cliente pode
+gerar passa a ser o plano que ele assina, não um contador interno. Saíram:
+o bloco "Créditos" da barra lateral, o veredito "seus créditos acabaram" da
+Estratégia, o bloqueio 402 e o débito na rota de geração, e o +1 por passo
+do onboarding.
+
+A coluna `credits` continua no banco (sem migração): quando a cobrança
+entrar, o saldo volta vindo do plano. O risco que isso tirava do lançamento
+era concreto — a conta de teste estava com 1 crédito, e o segundo artigo
+seria recusado com "no credits available".

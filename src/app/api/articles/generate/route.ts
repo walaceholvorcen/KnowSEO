@@ -34,13 +34,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 
-  if (workspace.credits <= 0) {
-    return NextResponse.json(
-      { error: "no credits available" },
-      { status: 402 },
-    );
-  }
-
   const { data: dna } = await supabase
     .from("brand_dna")
     .select("*")
@@ -147,12 +140,6 @@ export async function POST(request: Request) {
       .eq("id", draft.id)
       .select()
       .single();
-
-    // Debita 1 crédito pelo artigo gerado.
-    await supabase
-      .from("workspaces")
-      .update({ credits: Math.max(0, workspace.credits - 1) })
-      .eq("id", workspace.id);
 
     // A avaliação vai junto para a tela poder abrir já dizendo o que ficou
     // pendente, em vez de o cliente descobrir só ao clicar em Publicar.

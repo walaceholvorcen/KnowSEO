@@ -26,7 +26,6 @@ export default async function StrategyPage() {
     <StrategyBoard
       blogId={blog.id}
       initialKeywords={(keywords as Keyword[]) ?? []}
-      credits={workspace.credits}
       pais={`${pais.preposicao} ${pais.rotulo}`}
     />
   );

@@ -84,11 +84,9 @@ export interface BlogDaBarra {
 }
 
 export function Sidebar({
-  credits,
   blogs,
   blogAtivoId,
 }: {
-  credits: number;
   blogs: BlogDaBarra[];
   blogAtivoId: string;
 }) {
@@ -289,24 +287,6 @@ export function Sidebar({
 
         <div className="border-t border-slate-200 px-3 pb-4 pt-3 dark:border-slate-800">
           <ul>{renderItem(CONFIGURACOES)}</ul>
-
-          {/* Créditos como leitura de instrumento: número em mono, alinhado
-              à direita, e o que ele significa em artigos logo embaixo. */}
-          <div className="mt-3 px-3">
-            <div className="flex items-baseline justify-between">
-              <span className="text-sm text-slate-500 dark:text-slate-400">
-                Créditos
-              </span>
-              <span className="tabular font-display text-lg text-slate-900 dark:text-slate-100">
-                {credits}
-              </span>
-            </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              {credits === 1
-                ? "Dá para gerar 1 artigo"
-                : `Dá para gerar ${credits} artigos`}
-            </p>
-          </div>
 
           <button
             type="button"

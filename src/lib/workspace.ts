@@ -66,9 +66,10 @@ export const getWorkspaceBlogs = cache(
   },
 );
 
-// Marca um passo do onboarding como concluído e credita +1 artigo,
-// só na primeira vez (idempotente) - é o mecanismo de "créditos por
-// progresso" que substitui um trial por tempo.
+// Marca um passo do onboarding como concluído. O crédito por passo saiu
+// junto com a contagem de créditos: quanto o cliente pode gerar passa a ser
+// o plano que ele assina, e um contador que ninguém cobrava só travava a
+// geração ao chegar a zero.
 export async function completeOnboardingStep(
   supabase: Awaited<ReturnType<typeof createClient>>,
   workspace: Workspace,
@@ -82,7 +83,6 @@ export async function completeOnboardingStep(
     .from("workspaces")
     .update({
       onboarding_steps: updatedSteps,
-      credits: workspace.credits + 1,
     })
     .eq("id", workspace.id);
 }

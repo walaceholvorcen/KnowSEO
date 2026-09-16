@@ -27,7 +27,6 @@ export default async function DashboardLayout({
     // barra: são duas camadas de neutro, e a barra lê como moldura.
     <div className="flex h-screen flex-col overflow-hidden bg-slate-50 dark:bg-background lg:flex-row">
       <Sidebar
-        credits={workspace.credits}
         blogAtivoId={blog.id}
         blogs={blogs.map((b) => ({
           id: b.id,

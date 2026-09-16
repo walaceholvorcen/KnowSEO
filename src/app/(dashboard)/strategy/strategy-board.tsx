@@ -40,12 +40,10 @@ const OPPORTUNITY_LABEL: Record<string, string> = {
 export function StrategyBoard({
   blogId,
   initialKeywords,
-  credits,
   pais,
 }: {
   blogId: string;
   initialKeywords: Keyword[];
-  credits: number;
   pais: string;
 }) {
   const router = useRouter();
@@ -101,11 +99,8 @@ export function StrategyBoard({
     }
   }
 
-  const semCreditos = credits <= 0;
-
-  const veredito = semCreditos
-    ? "Seus créditos acabaram. Conclua a configuração para ganhar mais."
-    : suggested.length === 0
+  const veredito =
+    suggested.length === 0
       ? "Nenhuma pauta sugerida ainda. Peça à IA para olhar o blog e sugerir por onde escrever."
       : `${suggested.length} ${suggested.length === 1 ? "pauta esperando" : "pautas esperando"} escolha.`;
 
@@ -113,16 +108,14 @@ export function StrategyBoard({
     <div className={pagina()}>
       <Lede
         acao={
-          !semCreditos && (
-            <button
-              onClick={handleFindIdeas}
-              disabled={loadingIdeas}
-              className={botao("primario")}
-            >
-              <Sparkles size={15} />
-              {loadingIdeas ? "Buscando..." : "Buscar pautas"}
-            </button>
-          )
+          <button
+            onClick={handleFindIdeas}
+            disabled={loadingIdeas}
+            className={botao("primario")}
+          >
+            <Sparkles size={15} />
+            {loadingIdeas ? "Buscando..." : "Buscar pautas"}
+          </button>
         }
       >
         {veredito}
@@ -195,7 +188,7 @@ export function StrategyBoard({
                 </button>
                 <button
                   onClick={() => handleWrite(kw.id)}
-                  disabled={generatingId === kw.id || semCreditos}
+                  disabled={generatingId === kw.id}
                   className={cn(botao("primario", "sm"), "ml-auto")}
                 >
                   <PenLine size={14} />
