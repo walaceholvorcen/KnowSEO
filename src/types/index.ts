@@ -35,6 +35,12 @@ export interface Workspace {
 
 export interface BlogTheme {
   primary_color: string;
+  /** Segunda cor da marca: acento no carrossel, na capa e no botão de CTA. */
+  secondary_color?: string | null;
+  /** Largura dividida pela altura do logo, medida no envio. A capa e o
+   *  carrossel são desenhados no servidor e precisam do tamanho antes de
+   *  buscar a imagem. */
+  logo_ratio?: number | null;
   logo_url: string | null;
   tagline: string | null;
 }

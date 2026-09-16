@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { destacaDoFundo, textoSobre } from "@/lib/contrast";
+import { IdentidadeVisual } from "./identidade-visual";
 import { normalizarDominio, numeroWhatsAppNaUrl } from "@/lib/cta";
 import type { Blog } from "@/types";
 
@@ -18,6 +18,12 @@ export function BlogSettingsForm({ blog }: { blog: Blog }) {
   const [primaryColor, setPrimaryColor] = useState(
     blog.theme.primary_color ?? "#15191c",
   );
+  const [secondaryColor, setSecondaryColor] = useState(
+    blog.theme.secondary_color ?? "#15191c",
+  );
+  // O logo sobe sozinho e já grava; guardar aqui evita que salvar o resto do
+  // formulário reescreva o tema com o valor antigo da carga da página.
+  const [logoUrl, setLogoUrl] = useState(blog.theme.logo_url);
   const [ctaText, setCtaText] = useState(blog.cta_config.button_text ?? "");
   const [ctaUrl, setCtaUrl] = useState(blog.cta_config.button_url ?? "");
   const [whatsapp, setWhatsapp] = useState(
@@ -30,7 +36,6 @@ export function BlogSettingsForm({ blog }: { blog: Blog }) {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const corTexto = textoSobre(primaryColor);
   const numeroNaUrl = ctaType === "link" ? numeroWhatsAppNaUrl(ctaUrl) : null;
 
   async function handleSubmit(e: React.FormEvent) {
@@ -53,7 +58,12 @@ export function BlogSettingsForm({ blog }: { blog: Blog }) {
         // blog publicado e na barra lateral para sempre.
         name: nome.trim() || blog.name,
         custom_domain: dominio || null,
-        theme: { ...blog.theme, primary_color: primaryColor },
+        theme: {
+          ...blog.theme,
+          primary_color: primaryColor,
+          secondary_color: secondaryColor,
+          logo_url: logoUrl,
+        },
         cta_config: {
           type: ctaType,
           button_text: ctaText,
@@ -126,47 +136,17 @@ export function BlogSettingsForm({ blog }: { blog: Blog }) {
         </p>
       </div>
 
-      <div>
-        <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
-          Cor principal
-        </label>
-        <div className="flex items-center gap-3">
-          <input
-            type="color"
-            value={primaryColor}
-            onChange={(e) => setPrimaryColor(e.target.value)}
-            className="h-10 w-20 rounded-lg border border-slate-300 dark:border-slate-700"
-          />
-          <span className="tabular text-sm text-slate-500 dark:text-slate-400">
-            {primaryColor}
-          </span>
-        </div>
-
-        {/* Prévia com o mesmo cálculo de contraste que o blog usa. O cliente
-            vê o resultado antes de publicar em vez de descobrir depois. */}
-        <div className="mt-3 overflow-hidden rounded-lg border border-slate-200 dark:border-slate-800">
-          <div
-            className="px-4 py-5 text-center"
-            style={{ backgroundColor: primaryColor, color: corTexto }}
-          >
-            <p className="font-semibold">{blog.name}</p>
-            <p className="mt-3">
-              <span
-                className="inline-block rounded-lg px-4 py-2 text-sm font-semibold"
-                style={{ backgroundColor: corTexto, color: primaryColor }}
-              >
-                {ctaText || "Saber más"}
-              </span>
-            </p>
-          </div>
-        </div>
-
-        {!destacaDoFundo(primaryColor) && (
-          <p className="mt-2 text-sm text-nota-atencao">
-            Essa cor é clara demais: o cabeçalho e o botão quase somem no
-            fundo branco do blog. Escolha um tom mais fechado.
-          </p>
-        )}
+      <div className="border-t border-slate-100 pt-4 dark:border-slate-800">
+        <IdentidadeVisual
+          blogNome={nome || blog.name}
+          ctaText={ctaText}
+          logo={logoUrl}
+          setLogo={setLogoUrl}
+          principal={primaryColor}
+          setPrincipal={setPrimaryColor}
+          secundaria={secondaryColor}
+          setSecundaria={setSecondaryColor}
+        />
       </div>
 
       <div className="border-t border-slate-100 dark:border-slate-800 pt-4">

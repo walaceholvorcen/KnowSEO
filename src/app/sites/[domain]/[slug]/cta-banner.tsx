@@ -44,6 +44,12 @@ export function CtaBanner({
   // o fundo do botão é o oposto legível dela, e o texto volta a ser a cor
   // da marca - contraste garantido nos dois sentidos.
   const corTexto = textoSobre(blog.theme.primary_color);
+  // Com cor secundária definida, o botão é ela - é para isso que a segunda
+  // cor da marca serve. Sem ela, continua o par calculado da principal.
+  const fundoBotao = blog.theme.secondary_color || corTexto;
+  const tintaBotao = blog.theme.secondary_color
+    ? textoSobre(blog.theme.secondary_color)
+    : blog.theme.primary_color;
 
   return (
     <div
@@ -59,10 +65,7 @@ export function CtaBanner({
         rel="noopener noreferrer"
         onClick={handleClick}
         className="inline-block rounded-lg px-6 py-2.5 font-semibold"
-        style={{
-          backgroundColor: corTexto,
-          color: blog.theme.primary_color,
-        }}
+        style={{ backgroundColor: fundoBotao, color: tintaBotao }}
       >
         {cta.button_text}
       </a>

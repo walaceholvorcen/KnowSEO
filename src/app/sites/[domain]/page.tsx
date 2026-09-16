@@ -62,7 +62,20 @@ export default async function TenantBlogHome({
           color: textoSobre(blog.theme.primary_color),
         }}
       >
-        <h1 className="text-3xl font-bold">{blog.name}</h1>
+        {/* O logo substitui o nome escrito: quem tem marca desenhada quer
+            ver a marca, e o nome continua no título da página e no JSON-LD. */}
+        {blog.theme.logo_url ? (
+          <Image
+            src={blog.theme.logo_url}
+            alt={blog.name}
+            width={280}
+            height={80}
+            unoptimized
+            className="mx-auto max-h-16 w-auto object-contain"
+          />
+        ) : (
+          <h1 className="text-3xl font-bold">{blog.name}</h1>
+        )}
         {blog.theme.tagline && (
           <p className="mt-2 opacity-90">{blog.theme.tagline}</p>
         )}

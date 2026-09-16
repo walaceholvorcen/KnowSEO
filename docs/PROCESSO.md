@@ -1641,3 +1641,38 @@ quando o domínio próprio ainda não foi confirmado.
   depois da primeira; tudo o mais vai junto no mesmo `Promise.all`.
 - **`painel.tsx`** guarda `Painel`, `Numero` e `Vazio`. Painel novo no
   Início usa essas peças antes de inventar layout.
+
+## 38. Identidade visual do cliente: logo e duas cores, num lugar só
+
+Pedido do dono: "um local para colocar toda a identidade visual do cliente,
+para sair nos blogs e nos carrosséis — logo, cor principal e secundária; até
+mesmo a IA pegar as cores do logo".
+
+Existia só "Cor principal", em Blog e Domínio. E `theme.logo_url` estava no
+banco desde o primeiro dia **sem nenhuma tela que o preenchesse**.
+
+### As decisões
+
+- **Arquivo, não endereço do site do cliente.** Logo servido do site dele
+  costuma ter proteção contra uso externo, e a capa e o carrossel são
+  desenhados no servidor: precisam buscar a imagem. Vai para o balde público
+  `marca` do Supabase Storage (2 MB, PNG/JPG/WEBP/SVG), caminho por blog.
+- **As cores saem do logo no navegador, não da IA** (`src/lib/paleta.ts`,
+  6 testes). Canvas, agrupamento em 16 níveis por canal, fundo branco e
+  transparente descartados, e uma cor com saturação vence o preto do texto
+  desde que apareça em 5% dos pixels lidos — logo preto com símbolo colorido
+  tem a cor da marca no símbolo. Sem segunda cor no logo, a secundária é a
+  principal escurecida. É instantâneo, não custa chamada de API, e o cliente
+  confere as duas amostras antes de aceitar ("Usar estas cores").
+- **A proporção do logo é medida no envio** e guardada em `theme.logo_ratio`:
+  o satori (capa e carrossel) exige largura e altura, e não busca a imagem
+  para descobrir. SVG não entra na capa nem no carrossel — nem sempre
+  desenha — mas aparece normal no blog.
+- **Onde a identidade sai:** topo do blog (logo no lugar do nome escrito),
+  capa do artigo, slides do carrossel e botão de CTA, que passa a usar a
+  cor secundária quando existe. Filete de acento na capa e no carrossel
+  também vira a secundária; igual à principal, volta a ser a cor de texto.
+
+Validado com um logo de verdade no banco: capa e carrossel renderizaram com
+o logo no topo e o acento amarelo. O teste foi revertido depois (o blog do
+cliente voltou sem logo).
