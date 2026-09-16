@@ -1,12 +1,14 @@
 import Link from "next/link";
-import { Check, ArrowRight } from "lucide-react";
+import { Check } from "lucide-react";
 import { botao, pagina } from "@/components/ui";
-import { cn } from "@/lib/utils";
+import { cn, formatDate } from "@/lib/utils";
 import { Lede, Linha, Secao, Regua } from "@/components/lede";
 import { scoreBand } from "@/lib/audit/rules";
+import { ROTULO_MOTOR } from "@/lib/ai-visibility/resumo";
 import type { Gargalo, Etapa } from "@/lib/gargalo";
-import type { OnboardingSteps } from "@/types";
+import type { DomainStatus, OnboardingSteps } from "@/types";
 import { EvolucaoDosArtigos } from "./evolucao";
+import { Numero, Painel, Vazio } from "./painel";
 import { DIAS_JANELA, type DadosInicio } from "./dados";
 
 // O passo "veja as primeiras visitas" saiu: ver um número não é
@@ -45,68 +47,50 @@ const STEPS: {
   },
 ];
 
-// A corrente do produto, na ordem em que uma coisa depende da outra. É a
-// mesma ordem que o diagnóstico de gargalo percorre, para que a frase de
-// cima e a lista de baixo nunca contem histórias diferentes.
-const ETAPA_DA_LINHA: Record<string, Etapa> = {
-  site: "site",
-  pautas: "pauta",
-  artigos: "conteudo",
-  visitas: "alcance",
-  conversas: "conversao",
-  ia: "ia",
+const cor = (banda: ReturnType<typeof scoreBand>) =>
+  banda === "excelente" || banda === "bom"
+    ? "bg-nota-excelente"
+    : banda === "atencao"
+      ? "bg-nota-atencao"
+      : "bg-nota-critico";
+
+const FAIXA: Record<ReturnType<typeof scoreBand>, string> = {
+  excelente: "Excelente",
+  bom: "Bom",
+  atencao: "Precisa atenção",
+  critico: "Crítico",
 };
 
-// Visitas dia a dia, em barras. É a diferença entre foto e filme: o total
-// sozinho não conta se a semana passada foi melhor que esta. Escala pelo
-// maior dia da janela; dia sem visita fica só com a linha de base.
-function BarrasPorDia({ porDia }: { porDia: number[] }) {
-  const max = Math.max(...porDia, 1);
-  const largura = porDia.length * 5.5 - 1.5;
+// Nota com régua: a escala graduada é a assinatura visual do produto, e é
+// ela que diz que 88 é "Bom" e que faltam dois pontos para "Excelente".
+function NotaComRegua({ rotulo, nota }: { rotulo: string; nota: number }) {
+  const banda = scoreBand(nota);
   return (
-    <svg
-      viewBox={`0 0 ${largura} 26`}
-      className="h-7 w-28"
-      preserveAspectRatio="none"
-      aria-hidden="true"
-    >
-      <line
-        x1="0"
-        y1="25.5"
-        x2={largura}
-        y2="25.5"
-        className="stroke-slate-300 dark:stroke-slate-700"
-        strokeWidth="1"
-      />
-      {porDia.map((v, i) => {
-        if (v === 0) return null;
-        const altura = Math.max(2, (v / max) * 22);
-        return (
-          <rect
-            key={i}
-            x={i * 5.5}
-            y={24 - altura}
-            width="4"
-            height={altura}
-            rx="1"
-            className="fill-cobalto-500/80 dark:fill-cobalto-400/80"
-          />
-        );
-      })}
-    </svg>
+    <div className="min-w-0 flex-1">
+      <div className="flex items-baseline justify-between gap-2">
+        <span className="text-sm text-slate-600 dark:text-slate-400">
+          {rotulo}
+        </span>
+        <Numero valor={nota} de="de 100" />
+      </div>
+      <Regua score={nota} corMarcador={cor(banda)} className="mt-2" />
+      <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+        {FAIXA[banda]}
+      </p>
+    </div>
   );
 }
 
-// Uma célula por pergunta do Radar: cheia quando algum assistente citou a
+// Uma célula por pergunta do Raio X: cheia quando algum assistente citou a
 // marca naquela pergunta. A proporção vira forma, não só fração escrita.
 function Celulas({ total, cheias }: { total: number; cheias: number }) {
   return (
-    <div className="flex h-7 w-28 items-center gap-[3px]" aria-hidden="true">
+    <div className="mt-3 flex items-center gap-[3px]" aria-hidden="true">
       {Array.from({ length: total }, (_, i) => (
         <span
           key={i}
           className={cn(
-            "h-1.5 min-w-0 flex-1 rounded-full",
+            "h-2 min-w-0 flex-1 rounded-full",
             i < cheias
               ? "bg-cobalto-500 dark:bg-cobalto-400"
               : "bg-slate-200 dark:bg-slate-800",
@@ -117,13 +101,81 @@ function Celulas({ total, cheias }: { total: number; cheias: number }) {
   );
 }
 
+// Visitas dia a dia. É a diferença entre foto e filme: o total sozinho não
+// conta se a semana passada foi melhor que esta.
+function BarrasPorDia({ porDia }: { porDia: number[] }) {
+  const max = Math.max(...porDia, 1);
+  return (
+    <div className="mt-3 flex h-16 items-end gap-[3px]" aria-hidden="true">
+      {porDia.map((v, i) => (
+        <span
+          key={i}
+          className={cn(
+            "min-w-0 flex-1 rounded-sm",
+            v > 0
+              ? "bg-cobalto-500/80 dark:bg-cobalto-400/80"
+              : "bg-slate-200 dark:bg-slate-800",
+          )}
+          style={{ height: v > 0 ? `${Math.max(8, (v / max) * 100)}%` : "2px" }}
+        />
+      ))}
+    </div>
+  );
+}
+
+// Tema do mercado: o que o cliente publicou contra o que os concorrentes
+// publicaram, na mesma escala. Normalizar por linha faria 2 artigos
+// parecerem do tamanho de 22.
+function BarraDoTema({
+  cliente,
+  concorrentes,
+  maior,
+}: {
+  cliente: number;
+  concorrentes: number;
+  maior: number;
+}) {
+  const pct = (n: number) => `${Math.round((n / maior) * 100)}%`;
+  return (
+    <div className="mt-1.5 flex h-1.5 gap-px" aria-hidden="true">
+      <span
+        className="rounded-l-sm bg-cobalto-600 dark:bg-cobalto-400"
+        style={{ width: pct(cliente) }}
+      />
+      <span
+        className="rounded-r-sm bg-slate-300 dark:bg-slate-700"
+        style={{ width: pct(concorrentes) }}
+      />
+    </div>
+  );
+}
+
+// Qual painel leva o filete de "travado". A corrente é a mesma que o
+// diagnóstico de gargalo percorre: a frase de cima e o painel marcado nunca
+// podem contar histórias diferentes.
+const ETAPA: Record<string, Etapa[]> = {
+  site: ["site"],
+  geo: ["ia"],
+  pautas: ["pauta"],
+  conteudo: ["conteudo"],
+  // Alcance e conversão moram no mesmo painel: os dois são o que o blog
+  // publicado devolveu. Sem "conversao" aqui, o gargalo mais comum depois
+  // das primeiras visitas não marcava painel nenhum.
+  resultado: ["alcance", "conversao"],
+};
+
 export function InicioBoard({
   blogNome,
+  endereco,
+  statusDominio,
   feitos,
   gargalo,
   dados,
 }: {
   blogNome: string;
+  /** Endereço público do blog, sem esquema. */
+  endereco: string;
+  statusDominio: DomainStatus;
   feitos: OnboardingSteps;
   gargalo: Gargalo;
   dados: DadosInicio;
@@ -131,99 +183,46 @@ export function InicioBoard({
   const faltando = STEPS.filter((s) => !feitos[s.key]);
   const configurando = faltando.length > 0;
 
-  const banda = dados.notaGoogle != null ? scoreBand(dados.notaGoogle) : null;
-  const corMarcador =
-    banda === "excelente" || banda === "bom"
-      ? "bg-nota-excelente"
-      : banda === "atencao"
-        ? "bg-nota-atencao"
-        : "bg-nota-critico";
-
   const totalCelulas = dados.perguntasRodada || dados.perguntas;
-
-  const linhas: {
-    id: string;
-    titulo: string;
-    valor: number | null;
-    sufixo?: string;
-    estado?: ReturnType<typeof scoreBand> | null;
-    href: string;
-    vazio: string;
-    /** Texto para valor 0 quando 0 não significa "nunca medido". */
-    zero?: string;
-    leitura?: React.ReactNode;
-  }[] = [
-    {
-      id: "site",
-      titulo: "Saúde do site",
-      valor: dados.notaGoogle,
-      sufixo: "de 100",
-      estado: banda,
-      href: "/audit",
-      vazio: "Nunca auditado",
-      leitura:
-        dados.notaGoogle != null ? (
-          <div className="w-28">
-            <Regua
-              score={dados.notaGoogle}
-              corMarcador={corMarcador}
-              className="mt-0"
-            />
-          </div>
-        ) : undefined,
-    },
-    {
-      id: "pautas",
-      titulo: "Pautas esperando",
-      valor: dados.pautas,
-      href: "/strategy",
-      vazio: "Nenhuma sugerida",
-    },
-    {
-      id: "artigos",
-      titulo: "Artigos no ar",
-      valor: dados.publicados,
-      href: "/contents",
-      vazio: "Nenhum publicado",
-    },
-    {
-      id: "visitas",
-      titulo: `Visitas em ${DIAS_JANELA} dias`,
-      valor: dados.visitas,
-      href: "/reports",
-      vazio: "Ninguém ainda",
-      leitura:
-        dados.visitas > 0 ? (
-          <BarrasPorDia porDia={dados.visitasPorDia} />
-        ) : undefined,
-    },
-    {
-      id: "conversas",
-      titulo: `Conversas em ${DIAS_JANELA} dias`,
-      valor: dados.conversas,
-      href: "/reports",
-      vazio: "Ninguém chamou",
-    },
-    {
-      id: "ia",
-      titulo: "Perguntas em que a IA cita você",
-      valor: dados.citacoes,
-      sufixo: totalCelulas ? `de ${totalCelulas}` : undefined,
-      href: "/visibility",
-      vazio: "Nunca consultado",
-      // 0 depois de uma rodada é uma medição, não ausência dela.
-      zero: "Nenhuma citação na última rodada",
-      leitura:
-        dados.citacoes !== null && totalCelulas > 0 ? (
-          <Celulas total={totalCelulas} cheias={dados.citacoes} />
-        ) : undefined,
-    },
-  ];
+  const delta =
+    dados.notaGoogle != null && dados.notaGoogleAnterior != null
+      ? dados.notaGoogle - dados.notaGoogleAnterior
+      : null;
+  const maiorTema = Math.max(
+    1,
+    ...dados.temas.map((t) => t.paginasCliente + t.paginasConcorrentes),
+  );
+  const travado = (chave: string) => ETAPA[chave].includes(gargalo.etapa);
 
   return (
     <div className={pagina()}>
       <Lede
-        apoio={configurando ? undefined : `Blog ${blogNome}.`}
+        apoio={
+          configurando ? undefined : (
+            <>
+              Blog {blogNome}, em{" "}
+              <a
+                href={`https://${endereco}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-cobalto-700 hover:underline dark:text-cobalto-300"
+              >
+                {endereco}
+              </a>
+              {statusDominio !== "active" && dados.publicados > 0 && (
+                <>
+                  {" · "}
+                  <Link
+                    href="/settings/blog"
+                    className="text-nota-atencao hover:underline"
+                  >
+                    domínio próprio ainda não confirmado
+                  </Link>
+                </>
+              )}
+            </>
+          )
+        }
         acao={
           <Link href={gargalo.acaoHref} className={botao("primario")}>
             {gargalo.acaoTexto}
@@ -239,8 +238,7 @@ export function InicioBoard({
         <>
           <Secao>Configuração</Secao>
           <p className="text-sm text-slate-600 dark:text-slate-400">
-            {STEPS.length - faltando.length} de {STEPS.length} prontos. Cada
-            passo concluído libera mais um artigo.
+            {STEPS.length - faltando.length} de {STEPS.length} prontos.
           </p>
           <ul className="mt-4">
             {STEPS.map((step) => {
@@ -259,7 +257,7 @@ export function InicioBoard({
                         className={
                           feito
                             ? "text-slate-400 dark:text-slate-500"
-                            : "text-slate-900 dark:text-slate-100 group-hover:text-cobalto-600 dark:group-hover:text-cobalto-400"
+                            : "text-slate-900 group-hover:text-cobalto-600 dark:text-slate-100 dark:group-hover:text-cobalto-400"
                         }
                       >
                         {step.title}
@@ -278,90 +276,270 @@ export function InicioBoard({
         </>
       )}
 
-      <Secao>A operação</Secao>
+      <Secao>Diagnóstico</Secao>
       <p className="text-sm text-slate-600 dark:text-slate-400">
-        Uma coisa depende da anterior. A ordem é a da corrente.
+        O que o Google e os assistentes de IA encontram hoje.
       </p>
 
-      <ul className="mt-4">
-        {linhas.map((l) => {
-          // O elo travado ganha o filete e o rótulo; os outros ficam
-          // quietos. Marcar todos seria o mesmo que não marcar nenhum.
-          const travado = ETAPA_DA_LINHA[l.id] === gargalo.etapa;
-          const corFaixa =
-            l.estado === "excelente" || l.estado === "bom"
-              ? "text-nota-excelente"
-              : l.estado === "atencao"
-                ? "text-nota-atencao"
-                : l.estado === "critico"
-                  ? "text-nota-critico"
-                  : "";
+      <div className="mt-4 grid gap-4 lg:grid-cols-2">
+        <Painel
+          titulo="Saúde do site"
+          href="/audit"
+          acao={dados.notaGoogle == null ? "Auditar" : "Ver auditoria"}
+          travado={travado("site")}
+          rodape={
+            dados.auditoriaEm ? (
+              <>
+                Auditado em {formatDate(dados.auditoriaEm)}
+                {delta !== null && delta !== 0 && (
+                  <>
+                    {" · "}
+                    <span
+                      className={
+                        delta > 0 ? "text-nota-excelente" : "text-nota-atencao"
+                      }
+                    >
+                      {delta > 0 ? "+" : ""}
+                      {delta} no Google desde a anterior
+                    </span>
+                  </>
+                )}
+              </>
+            ) : undefined
+          }
+        >
+          {dados.notaGoogle == null ? (
+            <Vazio>
+              O site nunca foi auditado. São 26 regras técnicas e de entidade,
+              em menos de um minuto.
+            </Vazio>
+          ) : (
+            <>
+              <div className="flex flex-col gap-5 sm:flex-row sm:gap-8">
+                <NotaComRegua rotulo="No Google" nota={dados.notaGoogle} />
+                {dados.notaIa != null && (
+                  <NotaComRegua rotulo="Para a IA" nota={dados.notaIa} />
+                )}
+              </div>
+              <p className="mt-4 text-sm text-slate-600 dark:text-slate-400">
+                {dados.achadosTotal === 0
+                  ? "Nenhum problema encontrado."
+                  : dados.achadosGraves > 0
+                    ? `${dados.achadosGraves} ${dados.achadosGraves === 1 ? "problema grave" : "problemas graves"} de ${dados.achadosTotal} encontrados.`
+                    : `${dados.achadosTotal} ${dados.achadosTotal === 1 ? "ajuste" : "ajustes"}, nenhum grave.`}
+              </p>
+            </>
+          )}
+        </Painel>
 
-          return (
-            <Linha key={l.id}>
-              <Link
-                href={l.href}
-                className="group flex items-center justify-between gap-4"
-              >
-                <span className="flex min-w-0 items-baseline gap-2">
-                  {travado && (
-                    <span className="h-0.5 w-4 shrink-0 translate-y-[-0.3em] bg-nota-atencao" />
-                  )}
-                  <span className="min-w-0">
-                    <span className="text-slate-900 dark:text-slate-100 group-hover:text-cobalto-600 dark:group-hover:text-cobalto-400">
-                      {l.titulo}
-                    </span>
-                    <span className="mt-0.5 block text-slate-500 dark:text-slate-400">
-                      {travado ? (
-                        <span className="text-nota-atencao">
-                          É aqui que está travado
-                        </span>
-                      ) : l.estado ? (
-                        <span className={corFaixa}>
-                          {l.estado === "atencao"
-                            ? "Precisa atenção"
-                            : l.estado === "critico"
-                              ? "Crítico"
-                              : l.estado === "bom"
-                                ? "Bom"
-                                : "Excelente"}
-                        </span>
-                      ) : l.valor === null ? (
-                        l.vazio
-                      ) : l.valor === 0 ? (
-                        (l.zero ?? l.vazio)
-                      ) : (
-                        ""
-                      )}
-                    </span>
-                  </span>
+        <Painel
+          titulo="Raio X - GEO"
+          href="/visibility"
+          acao={dados.citacoes === null ? "Analisar" : "Ver análise"}
+          travado={travado("geo")}
+          rodape={
+            dados.geoEm ? (
+              <>
+                {dados.motoresMedidos
+                  .map((m) => ROTULO_MOTOR[m] ?? m)
+                  .join(", ")}{" "}
+                em {formatDate(dados.geoEm)}
+                {dados.fontes > 0 && ` · ${dados.fontes} sites citados`}
+              </>
+            ) : undefined
+          }
+        >
+          {dados.citacoes === null ? (
+            <Vazio>
+              Ninguém perguntou ainda. A análise faz {totalCelulas || 10}{" "}
+              perguntas de comprador aos assistentes e mede se a marca aparece.
+            </Vazio>
+          ) : (
+            <>
+              <div className="flex items-baseline justify-between gap-2">
+                <span className="text-sm text-slate-600 dark:text-slate-400">
+                  Perguntas em que a IA cita você
                 </span>
+                <Numero valor={dados.citacoes} de={`de ${totalCelulas}`} />
+              </div>
+              <Celulas total={totalCelulas} cheias={dados.citacoes} />
+              <p className="mt-3 text-sm text-slate-600 dark:text-slate-400">
+                {dados.rivalCitado
+                  ? `No seu lugar a IA cita ${dados.rivalCitado}.`
+                  : dados.citacoes > 0
+                    ? "Nenhum concorrente domina as respostas."
+                    : "Nenhuma citação na última rodada."}
+              </p>
+            </>
+          )}
+        </Painel>
 
-                <span className="flex shrink-0 items-center gap-4">
-                  {/* A leitura em miniatura: régua, barras ou células. Slot
-                      de largura fixa para os números baterem em coluna. */}
-                  <span className="hidden w-28 sm:block">{l.leitura}</span>
-                  {/* Sufixo em coluna de largura fixa (presente mesmo
-                      vazio): é o que faz os números baterem em coluna de
-                      uma linha para a outra. */}
-                  <span className="flex items-baseline gap-1.5">
-                    <span className="tabular min-w-[2ch] text-right font-display text-3xl text-slate-900 dark:text-slate-100">
-                      {l.valor === null ? "—" : l.valor}
+        <Painel
+          titulo="Mercado"
+          href="/market"
+          acao={dados.mercadoEm ? "Ver temas" : "Analisar mercado"}
+          className="lg:col-span-2"
+          rodape={
+            dados.mercadoEm ? (
+              <>
+                Analisado em {formatDate(dados.mercadoEm)}
+                {dados.chances > 0 &&
+                  ` · ${dados.chances} ${dados.chances === 1 ? "termo onde você já quase ganha" : "termos onde você já quase ganha"}`}
+              </>
+            ) : undefined
+          }
+        >
+          {dados.temas.length === 0 ? (
+            <Vazio>
+              Aponte de 2 a 4 concorrentes diretos e o sistema lê o que eles
+              publicaram, tema a tema, para mostrar onde falta conteúdo seu.
+            </Vazio>
+          ) : (
+            <ul className="grid gap-4 sm:grid-cols-2">
+              {dados.temas.map((t) => (
+                <li key={t.termo}>
+                  <div className="flex items-baseline justify-between gap-3">
+                    <span className="min-w-0 truncate text-slate-900 dark:text-slate-100">
+                      {t.termo}
                     </span>
-                    <span className="w-14 text-sm text-slate-400 dark:text-slate-500">
-                      {l.valor !== null ? (l.sufixo ?? "") : ""}
+                    <span className="tabular shrink-0 text-sm text-slate-500 dark:text-slate-400">
+                      {t.paginasCliente} seus · {t.paginasConcorrentes} deles
                     </span>
-                  </span>
-                  <ArrowRight
-                    size={16}
-                    className="text-slate-300 group-hover:text-cobalto-600 dark:text-slate-700 dark:group-hover:text-cobalto-400"
+                  </div>
+                  <BarraDoTema
+                    cliente={t.paginasCliente}
+                    concorrentes={t.paginasConcorrentes}
+                    maior={maiorTema}
                   />
-                </span>
-              </Link>
-            </Linha>
-          );
-        })}
-      </ul>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Painel>
+      </div>
+
+      <Secao>Produção</Secao>
+      <p className="text-sm text-slate-600 dark:text-slate-400">
+        O que está na fila e o que já foi ao ar.
+      </p>
+
+      <div className="mt-4 grid gap-4 lg:grid-cols-2">
+        <Painel
+          titulo="Pautas esperando escolha"
+          href="/strategy"
+          acao={dados.pautas === 0 ? "Buscar pautas" : "Escolher"}
+          travado={travado("pautas")}
+        >
+          <Numero
+            valor={dados.pautas}
+            de={dados.pautas === 1 ? "pauta" : "pautas"}
+          />
+          {dados.proximasPautas.length === 0 ? (
+            <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">
+              Nenhuma sugerida ainda.
+            </p>
+          ) : (
+            <ul className="mt-3">
+              {dados.proximasPautas.map((p) => (
+                <Linha key={p.id}>
+                  <div className="flex items-baseline justify-between gap-3">
+                    <span className="min-w-0 truncate text-slate-900 dark:text-slate-100">
+                      {p.termo}
+                    </span>
+                    <span className="tabular shrink-0 text-sm text-slate-500 dark:text-slate-400">
+                      {p.volume
+                        ? `${p.volume.toLocaleString("pt-BR")}/mês`
+                        : "sem volume"}
+                    </span>
+                  </div>
+                </Linha>
+              ))}
+            </ul>
+          )}
+        </Painel>
+
+        <Painel
+          titulo="Conteúdo"
+          href="/contents"
+          acao="Ver conteúdos"
+          travado={travado("conteudo")}
+          rodape={
+            dados.rascunhos > 0 ? (
+              <>
+                {dados.rascunhos}{" "}
+                {dados.rascunhos === 1
+                  ? "rascunho esperando revisão"
+                  : "rascunhos esperando revisão"}
+              </>
+            ) : undefined
+          }
+        >
+          <Numero
+            valor={dados.publicados}
+            de={dados.publicados === 1 ? "artigo no ar" : "artigos no ar"}
+          />
+          {dados.ultimosArtigos.length === 0 ? (
+            <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">
+              Nenhum artigo publicado.
+            </p>
+          ) : (
+            <ul className="mt-3">
+              {dados.ultimosArtigos.map((a) => (
+                <Linha key={a.id}>
+                  <Link
+                    href={`/contents/${a.id}`}
+                    className="group flex items-baseline justify-between gap-3"
+                  >
+                    <span className="min-w-0 truncate text-slate-900 group-hover:text-cobalto-600 dark:text-slate-100 dark:group-hover:text-cobalto-400">
+                      {a.titulo}
+                    </span>
+                    <span className="tabular shrink-0 text-sm text-slate-500 dark:text-slate-400">
+                      {a.visitas} {a.visitas === 1 ? "visita" : "visitas"}
+                    </span>
+                  </Link>
+                </Linha>
+              ))}
+            </ul>
+          )}
+        </Painel>
+      </div>
+
+      <Secao>Resultado</Secao>
+      <p className="text-sm text-slate-600 dark:text-slate-400">
+        Os últimos {DIAS_JANELA} dias no blog publicado.
+      </p>
+
+      <div className="mt-4">
+        <Painel
+          titulo={`Visitas e conversas em ${DIAS_JANELA} dias`}
+          href="/reports"
+          acao="Ver relatórios"
+          travado={travado("resultado")}
+        >
+          <div className="flex flex-wrap items-baseline gap-x-10 gap-y-3">
+            <div>
+              <span className="block text-sm text-slate-600 dark:text-slate-400">
+                Visitas
+              </span>
+              <Numero valor={dados.visitas} />
+            </div>
+            <div>
+              <span className="block text-sm text-slate-600 dark:text-slate-400">
+                Conversas
+              </span>
+              <Numero valor={dados.conversas} />
+            </div>
+          </div>
+          {dados.visitas > 0 ? (
+            <BarrasPorDia porDia={dados.visitasPorDia} />
+          ) : (
+            <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">
+              Ninguém leu ainda. O tráfego de artigo novo costuma aparecer
+              depois de algumas semanas.
+            </p>
+          )}
+        </Painel>
+      </div>
 
       <EvolucaoDosArtigos primeiraPublicacao={dados.primeiraPublicacao} />
     </div>

@@ -1599,3 +1599,45 @@ coisa que resolve: o texto pronto para mandar, com o endereço já preenchido
   `generator: "Know SEO"` do blog público. Isso também conserta o
   `domain_status`, que era escrito no cadastro e nunca mais — a tela dizia
   "aguardando DNS" para sempre.
+
+## 37. Início vira painel: tudo o que o produto sabe, numa tela
+
+Pedido do dono: "no início, um dashboard completo e visual com tudo — SEO,
+GEO, mercado, blog, perguntas, estratégia e conteúdo — para ter uma
+visualização de tudo em uma página só".
+
+A tela antiga já tinha o veredito de gargalo e a corrente em lista, mas cada
+elo era só um número: nota, pautas, artigos, visitas. Quem abria o painel
+via o placar e ia para outra tela descobrir o que ele significava.
+
+### O que passou a caber na tela
+
+Seis painéis, um por assunto, cada um com a leitura em forma própria (a
+regra da seção 15 vale: a forma é a informação, não enfeite):
+
+| Painel | O que mostra |
+|---|---|
+| Saúde do site | notas Google e IA nas duas réguas, faixa escrita, quantos problemas graves, "+7 desde a anterior" |
+| Raio X - GEO | células por pergunta citada, quem a IA cita no lugar, motores medidos, quantos sites ela usou |
+| Mercado | temas com barra dupla (seus artigos × dos concorrentes), termos na página 2 |
+| Pautas | quantas esperam e as três de maior volume |
+| Conteúdo | artigos no ar, últimos três com as visitas de cada um, rascunhos pendentes |
+| Visitas e conversas | totais de 28 dias e as barras dia a dia |
+
+O endereço do blog publicado entra na linha de apoio do veredito, com aviso
+quando o domínio próprio ainda não foi confirmado.
+
+### Decisões
+
+- **O gargalo continua mandando.** A frase de cima é a mesma de antes, e o
+  painel do elo travado ganha filete âmbar e a frase "É aqui que está
+  travado". Alcance e conversão marcam o mesmo painel — os dois são o que o
+  blog publicado devolveu.
+- **Vazio é convite, não buraco.** Painel sem dado explica o que aquela
+  análise faz e o link do cabeçalho vira a ação ("Auditar", "Analisar
+  mercado").
+- **Duas levas de consulta, não uma por painel.** A segunda leva
+  (achados da auditoria, temas do mercado) depende de um id que só existe
+  depois da primeira; tudo o mais vai junto no mesmo `Promise.all`.
+- **`painel.tsx`** guarda `Painel`, `Numero` e `Vazio`. Painel novo no
+  Início usa essas peças antes de inventar layout.

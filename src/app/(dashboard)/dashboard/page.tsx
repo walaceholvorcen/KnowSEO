@@ -24,7 +24,12 @@ export default async function DashboardHomePage() {
 
   return (
     <InicioBoard
-      blogNome={blog?.name ?? ""}
+      blogNome={blog.name}
+      endereco={
+        blog.custom_domain ??
+        `${blog.subdomain}.${process.env.NEXT_PUBLIC_ROOT_DOMAIN || "localhost:3000"}`
+      }
+      statusDominio={blog.domain_status}
       feitos={workspace.onboarding_steps}
       gargalo={gargalo}
       dados={dados}
