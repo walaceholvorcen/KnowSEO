@@ -1676,3 +1676,50 @@ banco desde o primeiro dia **sem nenhuma tela que o preenchesse**.
 Validado com um logo de verdade no banco: capa e carrossel renderizaram com
 o logo no topo e o acento amarelo. O teste foi revertido depois (o blog do
 cliente voltou sem logo).
+
+## 39. Backlog de correção de 15/09 — 25 itens em sete blocos
+
+Revisão externa (Claude Cowork, conta `dataknow`, testada a 371px) listou 25
+defeitos. Foram atacados em blocos paralelos, cada um com teste onde havia
+lógica. O que cada bloco resolveu, e o que se aprendeu:
+
+- **Idioma (07).** O prompt forçava português do Brasil por código, e o DNA
+  repetia isso em texto livre — para uma agência espanhola, 17 pautas e 3
+  artigos saíram no idioma errado. `src/lib/idioma.ts`: o idioma vem do país
+  do domínio, com o idioma cadastrado como reserva; a regra de estilo do DNA
+  que contradiz perde, e o formulário avisa. Mesma dedução do volume de busca
+  (seção 19) — TLD primeiro.
+- **Mercado (08).** A tela dizia "não achamos temas em comum" com
+  concorrentes brasileiros cadastrados, enquanto listava logo abaixo os
+  espanhóis que o próprio Raio X descobriu. Agora o formulário já vem com
+  eles.
+- **Datas (01).** `formatDate` sem `timeZone` = UTC no servidor e local no
+  navegador: a mesma auditoria aparecia em dois dias, e o React acusava
+  hidratação (#418). Um fuso só, UTC, nos dois lados.
+- **Cron (06).** A migração 0011 está aplicada em produção — a causa está
+  fora do código. A rota, porém, engolia a falha: `{ok:false}` resolvido
+  contava como sucesso e devolvia 200. Agora conta falha, registra no log e
+  ordena os blogs.
+- **Domínio (03, 04).** O link "ver no ar" usava o domínio próprio mesmo sem
+  DNS: como o site do cliente responde 200 em qualquer caminho, o link
+  *parecia* funcionar. `enderecoDoBlog()` só usa o domínio quando
+  `domain_status` é `active`; o campo recusa apex e `www` na digitação.
+- **Raio X (12, 13, 09, 10).** Markdown cru virou HTML (`src/lib/markdown.ts`,
+  escapa antes de marcar); a resposta é gravada inteira; a manchete nomeia o
+  motor quando só um foi medido; e imprensa deixou de ser chamada de
+  concorrente — três tipos agora: plataforma, imprensa e site citado.
+- **Auditoria (05, 02).** `SOFT_404`: pedimos um caminho inventado e
+  comparamos com a home. dataknow.es respondia 200 com a home em qualquer
+  rota e tirava 100 — agora tira 88, com o achado. O crawler ganhou
+  `tituloDaPagina()` para não repetir o título da home em site feito em JS.
+- **Interface (14–18, 21–25).** Passada a 371px: campos que quebram linha em
+  vez de cortar, onboarding em português e responsivo, 404 próprio, "Abrir
+  blog" na barra lateral, eixo do gráfico em passo regular até 100, estado
+  vazio para série zerada, e a linha do tempo duplicada no DOM removida.
+
+Duas correções que só apareceram na revisão do diff: a capa e o carrossel
+agora respondem com cache de um dia, então a URL leva `?v=` derivado da
+identidade (nome, cores, logo) — sem isso, trocar a marca serviria a imagem
+velha; e o detector de imprensa casava por pedaço de palavra
+("express**press**", "com**post**ela"), o que roubava domínios legítimos da
+lista de concorrentes.

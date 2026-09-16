@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { requireUserAndWorkspace } from "@/lib/workspace";
-import { enderecoDoBlog } from "@/lib/blog-endereco";
+import { enderecoDoBlog, versaoDaIdentidade } from "@/lib/blog-endereco";
 import type { Article, Blog } from "@/types";
 import { ArticleEditor } from "./article-editor";
 
@@ -52,6 +52,7 @@ export default async function ArticleEditorPage({
       article={article as Article}
       enderecoPublico={`${protocolo}://${host}/${article.slug}`}
       dominioPendente={!!blog.custom_domain && blog.domain_status !== "active"}
+      versaoMarca={versaoDaIdentidade(blog)}
       pauta={(pauta as { keyword: string } | null)?.keyword ?? null}
       linksConhecidos={
         ((paginas as { url: string }[]) ?? []).map((l) => l.url)

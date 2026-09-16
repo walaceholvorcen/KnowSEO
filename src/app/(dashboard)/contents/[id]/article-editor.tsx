@@ -41,6 +41,7 @@ export function ArticleEditor({
   pauta = null,
   linksConhecidos = [],
   keywordsPublicadas = [],
+  versaoMarca,
 }: {
   article: Article;
   /** Endereço do artigo no blog do cliente, mostrado acima da prévia. */
@@ -51,6 +52,10 @@ export function ArticleEditor({
   pauta?: string | null;
   linksConhecidos?: string[];
   keywordsPublicadas?: string[];
+  /** Versão da identidade visual, carimbada na URL de cada slide: a rota do
+   *  carrossel responde com s-maxage de um dia, então sem isto um slide
+   *  regerado ou uma marca trocada serviriam a imagem velha. */
+  versaoMarca: string;
 }) {
   const router = useRouter();
   const supabase = createClient();
@@ -510,13 +515,13 @@ export function ArticleEditor({
                   {slides.map((_, i) => (
                     <a
                       key={i}
-                      href={`/api/carousel/${article.id}/${i + 1}`}
+                      href={`/api/carousel/${article.id}/${i + 1}?v=${versaoMarca}`}
                       download={`${article.slug}-${i + 1}.png`}
                       className="group relative shrink-0"
                     >
                       {/* eslint-disable-next-line @next/next/no-img-element -- imagem gerada dinamicamente pela nossa própria rota, sem otimização do Next a ganhar aqui */}
                       <img
-                        src={`/api/carousel/${article.id}/${i + 1}`}
+                        src={`/api/carousel/${article.id}/${i + 1}?v=${versaoMarca}`}
                         alt={`Slide ${i + 1} do carrossel`}
                         className="h-40 w-32 rounded-lg border border-slate-200 dark:border-slate-800 object-cover"
                       />

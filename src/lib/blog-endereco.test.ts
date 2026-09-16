@@ -44,10 +44,13 @@ describe("versão da identidade para a URL da capa", () => {
     assert.match(versaoDaIdentidade(base), /^[a-z0-9]{1,7}$/);
   });
 
-  test("muda quando nome, cor ou logo mudam", () => {
+  test("muda quando qualquer peça desenhada na capa muda", () => {
     const v = versaoDaIdentidade(base);
     assert.notEqual(v, versaoDaIdentidade({ ...base, name: "Outra" }));
     assert.notEqual(v, versaoDaIdentidade({ ...base, theme: { ...base.theme, primary_color: "#000000" } }));
     assert.notEqual(v, versaoDaIdentidade({ ...base, theme: { ...base.theme, logo_url: "https://x/logo.png" } }));
+    // Secundária e proporção entram no carrossel e na capa como as outras.
+    assert.notEqual(v, versaoDaIdentidade({ ...base, theme: { ...base.theme, secondary_color: "#f0b429" } }));
+    assert.notEqual(v, versaoDaIdentidade({ ...base, theme: { ...base.theme, logo_ratio: 2.5 } }));
   });
 });

@@ -24,9 +24,12 @@ export interface MetricaReal {
 
 // Constantes de segmentação do Google Ads. São IDs fixos da API, não
 // configuração - por isso moram no código e não em variável de ambiente.
+// Inglês entrou porque idiomaDoBlog devolve "en": sem ele a chamada caía
+// calada no espanhol e media volume do mercado errado.
 const IDIOMA: Record<string, string> = {
   pt: "languageConstants/1014",
   es: "languageConstants/1003",
+  en: "languageConstants/1000",
 };
 
 // `preposicao` existe porque a frase da tela é "1.900 buscas por mês <X>":

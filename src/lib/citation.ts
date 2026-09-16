@@ -68,8 +68,21 @@ const IMPRENSA = new Set([
 // Sinal de veículo de imprensa no próprio host, para o que não está na
 // lista. Heurística: erra pouco no que importa (chamar revista de
 // concorrente era pior que chamar um "post.com" de imprensa).
-const PARECE_IMPRENSA =
-  /news|noticias|diario|jornal|periodico|revista|magazine|press|times|post|gazeta|tribuna/;
+//
+// Casa por rótulo inteiro, não por substring: com substring,
+// "expressmarketing.es" virava imprensa por causa de "press" e
+// "compostela.es" por causa de "post" - uma agência classificada como
+// veículo some da lista de concorrentes, que é o que o módulo vende.
+const PALAVRAS_DE_IMPRENSA = new Set([
+  "news", "noticias", "diario", "jornal", "periodico", "revista",
+  "magazine", "press", "times", "post", "gazeta", "tribuna",
+]);
+
+function pareceImprensa(domain: string): boolean {
+  return domain
+    .split(/[.-]/)
+    .some((parte) => PALAVRAS_DE_IMPRENSA.has(parte));
+}
 
 function naLista(lista: Set<string>, domain: string): boolean {
   if (lista.has(domain)) return true;
@@ -88,7 +101,7 @@ export function isImprensa(domain: string): boolean {
   if (naLista(IMPRENSA, domain)) return true;
   // "wordpress.com" contém "press": plataforma conhecida vence a heurística.
   if (naLista(DIRETORIOS, domain)) return false;
-  return domain.endsWith(".news") || PARECE_IMPRENSA.test(domain);
+  return domain.endsWith(".news") || pareceImprensa(domain);
 }
 
 // Sufixos societários que não fazem parte do nome real da marca.

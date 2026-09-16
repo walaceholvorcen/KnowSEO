@@ -316,3 +316,14 @@ test("imprensa de marketing da Espanha é plataforma, não concorrente", () => {
   assert.equal(isDirectory("puromarketing.com"), true);
   assert.equal(isDirectory("sayonara.es"), false);
 });
+
+test("palavra de imprensa dentro de outra palavra não conta", () => {
+  // "press" em expressmarketing, "post" em compostela: agência virando
+  // veículo some da lista de concorrentes, que é o dado que o módulo vende.
+  assert.equal(isDirectory("expressmarketing.es"), false);
+  assert.equal(isDirectory("compostela.es"), false);
+  // O rótulo inteiro continua valendo, com ponto ou hífen.
+  assert.equal(isDirectory("diario-de-madrid.es"), true);
+  assert.equal(isDirectory("noticias.example.es"), true);
+  assert.equal(isDirectory("exemplo.news"), true);
+});

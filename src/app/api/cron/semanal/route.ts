@@ -139,8 +139,11 @@ export async function GET(request: Request) {
       r.status === "rejected"
         ? r.reason
         : r.value && typeof r.value === "object" && "ok" in r.value && r.value.ok === false
-          ? ((r.value as { erro?: string; mensagem?: string }).erro ??
-            (r.value as { mensagem?: string }).mensagem)
+          ? // Sem erro nem mensagem o log saía "falhou: X undefined", que não
+            // diz se faltou o campo ou se a falha não tem detalhe.
+            ((r.value as { erro?: string; mensagem?: string }).erro ??
+            (r.value as { mensagem?: string }).mensagem ??
+            "sem detalhe")
           : null;
     if (detalhe === null) return;
     falhas++;
