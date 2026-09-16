@@ -562,7 +562,13 @@ export function ArticleEditor({
             ref={molduraRef}
             className="min-h-0 flex-1 overflow-hidden px-5 pb-5"
           >
-            <div className="h-full overflow-hidden rounded-xl border border-slate-300 dark:border-slate-800 bg-white">
+            {/* A moldura acompanha a largura do aparelho. Fixa, no celular
+                sobravam 160px de branco à direita do telefone, que lê como
+                página quebrada. */}
+            <div
+              className="mx-auto h-full overflow-hidden rounded-xl border border-slate-300 bg-white dark:border-slate-800"
+              style={{ width: LARGURA[aparelho] * escala }}
+            >
               <iframe
                 ref={iframeRef}
                 src={`/preview/${article.id}`}

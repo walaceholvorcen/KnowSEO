@@ -1551,3 +1551,16 @@ ligados e passaram a ficar certas sozinhas.
 
 Os adaptadores dos quatro continuam no código: não custam nada desligados e
 basta a variável de ambiente para religar qualquer um.
+
+## 34. Nome do cliente e a prévia no celular
+
+Dois defeitos que só apareceram com o produto em uso:
+
+- **O nome do blog não tinha onde ser corrigido.** Ele nasce no cadastro e
+  aparece no topo do blog publicado, no compartilhamento e na barra lateral
+  do painel — um "testando dataknow" digitado no primeiro dia ficava lá para
+  sempre. Virou o primeiro campo de Configurações → Blog e Domínio.
+- **A prévia do editor no modo celular deixava um bloco branco.** A moldura
+  branca ocupava a coluna inteira e o telefone tem 390px: sobravam ~160px de
+  branco à direita, que leem como página quebrada. A moldura passou a ter a
+  largura do aparelho escolhido, centralizada.

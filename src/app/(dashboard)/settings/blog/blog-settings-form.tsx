@@ -13,6 +13,7 @@ export function BlogSettingsForm({ blog }: { blog: Blog }) {
   const router = useRouter();
   const supabase = createClient();
 
+  const [nome, setNome] = useState(blog.name);
   const [customDomain, setCustomDomain] = useState(blog.custom_domain ?? "");
   const [primaryColor, setPrimaryColor] = useState(
     blog.theme.primary_color ?? "#15191c",
@@ -47,6 +48,10 @@ export function BlogSettingsForm({ blog }: { blog: Blog }) {
     const { error: saveError } = await supabase
       .from("blogs")
       .update({
+        // O nome do cliente vem do cadastro e não tinha onde ser corrigido:
+        // um "testando dataknow" digitado no primeiro dia ficava no topo do
+        // blog publicado e na barra lateral para sempre.
+        name: nome.trim() || blog.name,
         custom_domain: dominio || null,
         theme: { ...blog.theme, primary_color: primaryColor },
         cta_config: {
@@ -84,6 +89,27 @@ export function BlogSettingsForm({ blog }: { blog: Blog }) {
       onSubmit={handleSubmit}
       className="space-y-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6"
     >
+      <div>
+        <label
+          htmlFor="nome-do-blog"
+          className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300"
+        >
+          Nome do cliente
+        </label>
+        <input
+          id="nome-do-blog"
+          value={nome}
+          onChange={(e) => setNome(e.target.value)}
+          required
+          className={cn(campo(), "w-full")}
+          placeholder="Nome da empresa"
+        />
+        <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
+          Aparece no topo do blog publicado, no compartilhamento e na barra
+          lateral do painel.
+        </p>
+      </div>
+
       <div>
         <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
           Domínio próprio (opcional)
