@@ -32,6 +32,28 @@ export async function POST(request: Request) {
     );
   }
 
+  // Dedupe: a mesma auditoria já rodando (clique duplo, duas abas, ou o
+  // cliente que clicou de novo por não ver sinal) não abre outra. Devolve a
+  // que está em andamento e a tela espera por ela. Dois minutos cobrem o
+  // maxDuration; uma "running" mais velha que isso morreu sem fechar e não
+  // pode travar o botão para sempre.
+  const { data: emAndamento } = await supabase
+    .from("site_audits")
+    .select("id")
+    .eq("blog_id", blogId)
+    .eq("site_url", origem)
+    .eq("status", "running")
+    .gte("created_at", new Date(Date.now() - 2 * 60_000).toISOString())
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (emAndamento) {
+    return NextResponse.json(
+      { auditId: (emAndamento as { id: string }).id, emAndamento: true },
+      { status: 202 },
+    );
+  }
+
   const registro = await registrarAuditoria({
     blogId,
     siteUrl: origem,

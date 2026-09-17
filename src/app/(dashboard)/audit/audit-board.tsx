@@ -1,16 +1,28 @@
 "use client";
 
 import { botao, campo, pagina } from "@/components/ui";
-import { useState } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Check, ChevronDown, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Lede, Linha, NotaCard, Secao } from "@/components/lede";
 import { resumirComparacao, type Comparacao } from "@/lib/audit/comparar";
 import type { AuditRow, FindingRow } from "./page";
-import { dataCurta, type Jornada } from "@/lib/audit/jornada";
+import type { Jornada } from "@/lib/audit/jornada";
+import { CHECAGENS } from "@/lib/audit/rules";
+import { formatarData } from "@/lib/datas";
+import type { ExecucaoCron } from "@/app/api/cron/semanal/execucoes";
 import { JornadaDoSite, ProximaVerificacaoCard } from "./jornada-do-site";
 import { FichaParaColar, separarFicha } from "./ficha-para-colar";
+
+// Achados que a conferência rápida da home (/api/audit/conferir) sabe checar.
+const CONFERIVEIS = new Set([
+  "SEM_ENTIDADE",
+  "ENTIDADE_SEM_SAMEAS",
+  "ENTIDADE_INCOMPLETA",
+  "ENTIDADE_NOME_INCONSISTENTE",
+  "NO_SCHEMA",
+]);
 
 const SEVERITY_ORDER = ["critical", "high", "medium", "quick_win", "info"];
 
@@ -33,6 +45,8 @@ const SEVERITY_STYLE: Record<string, string> = {
   info: "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400",
 };
 
+const semBarra = (u: string) => u.replace(/\/$/, "");
+
 const CATEGORY_LABEL: Record<string, string> = {
   crawlability: "Rastreamento",
   indexation: "Indexação",
@@ -51,6 +65,8 @@ export function AuditBoard({
   comparacao,
   acompanhamentoAtivo,
   jornada = null,
+  fuso,
+  cron = null,
 }: {
   blogId: string;
   audits: AuditRow[];
@@ -60,12 +76,50 @@ export function AuditBoard({
   comparacao: Comparacao | null;
   acompanhamentoAtivo: boolean;
   jornada?: Jornada | null;
+  /** Fuso de quem opera o painel (cookie lido no servidor). */
+  fuso: string;
+  /** Último disparo registrado do acompanhamento semanal. */
+  cron?: ExecucaoCron | null;
 }) {
   const router = useRouter();
+  const dataCurta = (iso: string) => formatarData(iso, fuso, "curta");
   const [siteUrl, setSiteUrl] = useState(latest?.site_url ?? "");
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState<Set<number>>(new Set());
+  const [concluida, setConcluida] = useState<{ google: number; ai: number } | null>(null);
+  const [conferencia, setConferencia] = useState<
+    Record<string, { carregando: boolean; texto?: string; resolvido?: boolean }>
+  >({});
+
+  // Por que o botão "não dava sinal": a auditoria de um site pequeno leva de
+  // 2 a 5 segundos, e o `finally` devolvia o botão para "Analisar" no mesmo
+  // instante em que chamava router.refresh() - que não é aguardado. Durante o
+  // refresh a tela voltava idêntica (mesmo site, mesma nota), e quando o dado
+  // novo chegava nada visível tinha mudado. Agora o estado ocupado dura até o
+  // refresh terminar (transição) e a tela confirma o resultado com as notas.
+  const [atualizando, startTransition] = useTransition();
+  // Trava síncrona contra duplo envio: o estado do React só existe no próximo
+  // render, a ref já vale no segundo clique do mesmo frame.
+  const enviando = useRef(false);
+  // Auditoria que o servidor devolveu como já em andamento (dedupe). A tela
+  // espera por ela recarregando até ela sair de "running".
+  const [aguardando, setAguardando] = useState<string | null>(null);
+  const esperando =
+    aguardando !== null &&
+    (audits.find((a) => a.id === aguardando)?.status ?? "running") === "running";
+  const ocupado = running || atualizando || esperando;
+
+  useEffect(() => {
+    if (!esperando) return;
+    const timer = setInterval(() => startTransition(() => router.refresh()), 4000);
+    // Teto: passou do maxDuration (120s), a auditoria morreu sem fechar.
+    const teto = setTimeout(() => setAguardando(null), 150_000);
+    return () => {
+      clearInterval(timer);
+      clearTimeout(teto);
+    };
+  }, [esperando, router]);
 
   const sorted = [...findings].sort(
     (a, b) =>
@@ -86,11 +140,43 @@ export function AuditBoard({
     });
   }
 
+  async function conferir(code: string) {
+    setConferencia((c) => ({ ...c, [code]: { carregando: true } }));
+    try {
+      const res = await fetch("/api/audit/conferir", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code }),
+      });
+      const data = await res.json();
+      setConferencia((c) => ({
+        ...c,
+        [code]: !res.ok
+          ? { carregando: false, texto: data.error ?? "Não foi possível conferir agora." }
+          : data.resolvido
+            ? { carregando: false, resolvido: true, texto: "Resolvido na página inicial. A nota muda na próxima auditoria." }
+            : { carregando: false, resolvido: false, texto: `Ainda não: ${data.evidencia}` },
+      }));
+    } catch {
+      setConferencia((c) => ({
+        ...c,
+        [code]: { carregando: false, texto: "Não foi possível conferir agora. Tente de novo." },
+      }));
+    }
+  }
+
   async function handleRun(e: React.FormEvent) {
     e.preventDefault();
-    if (!siteUrl) return;
+    if (enviando.current || ocupado) return;
+    // Campo vazio voltava calado: o clique não fazia nada visível.
+    if (!siteUrl.trim()) {
+      setError("Cole o endereço do site para analisar.");
+      return;
+    }
+    enviando.current = true;
     setRunning(true);
     setError(null);
+    setConcluida(null);
 
     // Sem try/catch, uma auditoria que estourasse o tempo limite deixava o
     // botão preso em "Analisando..." até recarregar a página - e estourar é
@@ -103,15 +189,24 @@ export function AuditBoard({
       });
       const data = await res.json();
       if (!res.ok) setError(data.error ?? "Algo deu errado. Tente de novo.");
-      else router.refresh();
+      else {
+        if (data.emAndamento) setAguardando(data.auditId);
+        else setConcluida(data.scores);
+        startTransition(() => router.refresh());
+      }
     } catch {
       setError(
         "A auditoria demorou mais do que o limite ou a conexão caiu. Tente de novo; se repetir, o site pode estar lento para responder.",
       );
     } finally {
+      enviando.current = false;
       setRunning(false);
     }
   }
+
+  const doGoogle = CHECAGENS.filter((c) => c.nota === "google");
+  const daIa = CHECAGENS.filter((c) => c.nota === "ia");
+  const achadoDe = new Map(findings.map((f) => [f.code, f]));
 
   return (
     <div className={pagina()}>
@@ -140,15 +235,25 @@ export function AuditBoard({
           />
           <button
             type="submit"
-            disabled={running}
+            disabled={ocupado}
+            aria-busy={ocupado}
             className={botao("primario")}
           >
-            {running ? "Analisando..." : "Analisar"}
+            {ocupado ? "Analisando..." : "Analisar"}
           </button>
         </div>
-        {running && (
-          <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">
-            Lendo robots, sitemap e até 25 páginas. Pode levar até um minuto.
+        {/* Etapa fixa e honesta: o servidor não reporta progresso, então a
+            tela não inventa porcentagem. */}
+        {ocupado && (
+          <p role="status" className="mt-3 text-sm text-slate-500 dark:text-slate-400">
+            {esperando
+              ? "Esta auditoria já estava rodando. A tela atualiza quando ela terminar."
+              : "Lendo robots, sitemap e até 25 páginas. Leva até um minuto."}
+          </p>
+        )}
+        {!ocupado && concluida && (
+          <p role="status" className="mt-3 text-sm text-slate-600 dark:text-slate-400">
+            Auditoria concluída agora: {concluida.google} no Google e {concluida.ai} na IA.
           </p>
         )}
         {error && (
@@ -172,9 +277,9 @@ export function AuditBoard({
               hint="Prontidão para ser citado por assistentes de IA"
             />
             {jornada ? (
-              <ProximaVerificacaoCard proxima={jornada.proxima} />
+              <ProximaVerificacaoCard proxima={jornada.proxima} fuso={fuso} />
             ) : (
-            <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
+            <div className="h-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
               <p className="text-sm text-slate-500 dark:text-slate-400">
                 Páginas analisadas
               </p>
@@ -188,7 +293,58 @@ export function AuditBoard({
             )}
           </div>
 
-          {jornada && <JornadaDoSite jornada={jornada} />}
+          {/* A régua aberta: o que entra na conta, e o que passou. Sem ela
+              "88" era um número sem denominador - não dava para saber se
+              foram checadas 5 coisas ou 50. */}
+          <section>
+            <Secao>O que a nota mede</Secao>
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              {doGoogle.length} checagens no Google, {daIa.length} na prontidão para IA.
+            </p>
+            <div className="mt-3 grid gap-x-8 sm:grid-cols-2">
+              {[
+                { titulo: "Google", lista: doGoogle },
+                { titulo: "Prontidão para IA", lista: daIa },
+              ].map((grupo) => (
+                <div key={grupo.titulo} className="min-w-0">
+                  <p className="mt-3 text-sm font-medium text-slate-900 dark:text-slate-100">
+                    {grupo.titulo}
+                  </p>
+                  <ul>
+                    {grupo.lista.map((c) => {
+                      const achado = achadoDe.get(c.code);
+                      return (
+                        <Linha key={c.code} className="!py-2">
+                          <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5 text-sm">
+                            <span className="min-w-0 text-slate-700 dark:text-slate-300">
+                              {c.rotulo}
+                            </span>
+                            {achado ? (
+                              <a
+                                href={`#achado-${c.code}`}
+                                onClick={() =>
+                                  setOpen((prev) => new Set(prev).add(achado.id))
+                                }
+                                className="min-w-0 text-cobalto-700 underline-offset-2 hover:underline dark:text-cobalto-300"
+                              >
+                                {achado.title}
+                              </a>
+                            ) : (
+                              <span className="shrink-0 text-slate-500 dark:text-slate-400">
+                                passou
+                              </span>
+                            )}
+                          </div>
+                        </Linha>
+                      );
+                    })}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {jornada && <JornadaDoSite jornada={jornada} fuso={fuso} />}
 
           {/* O que transforma a auditoria de coisa que se roda três vezes em
               coisa que se acompanha. SEO não muda na hora; sem comparação,
@@ -314,7 +470,7 @@ export function AuditBoard({
                 {sorted.map((f) => {
                   const isOpen = open.has(f.id);
                   return (
-                    <li key={f.id}>
+                    <li key={f.id} id={`achado-${f.code}`} className="scroll-mt-6">
                       <button
                         onClick={() => toggle(f.id)}
                         className="flex w-full items-start gap-3 p-4 text-left hover:bg-slate-50 dark:hover:bg-slate-800/50"
@@ -386,6 +542,39 @@ export function AuditBoard({
                               </div>
                             );
                           })()}
+                          {CONFERIVEIS.has(f.code) &&
+                            // NO_SCHEMA só quando a home está entre as
+                            // afetadas: a conferência lê a home e nada mais.
+                            (f.code !== "NO_SCHEMA" ||
+                              f.affected_urls.some(
+                                (u) => semBarra(u) === semBarra(latest.site_url),
+                              )) && (
+                              <div>
+                                <button
+                                  type="button"
+                                  onClick={() => conferir(f.code)}
+                                  disabled={conferencia[f.code]?.carregando}
+                                  className={botao("secundario", "sm")}
+                                >
+                                  {conferencia[f.code]?.carregando
+                                    ? "Conferindo..."
+                                    : "Já colei, conferir agora"}
+                                </button>
+                                {conferencia[f.code]?.texto && (
+                                  <p
+                                    role="status"
+                                    className={cn(
+                                      "mt-2",
+                                      conferencia[f.code].resolvido
+                                        ? "text-nota-excelente"
+                                        : "text-slate-700 dark:text-slate-300",
+                                    )}
+                                  >
+                                    {conferencia[f.code].texto}
+                                  </p>
+                                )}
+                              </div>
+                            )}
                           {f.affected_urls.length > 0 && (
                             <div>
                               <p className="text-sm text-slate-500 dark:text-slate-400">
@@ -414,19 +603,30 @@ export function AuditBoard({
         </>
       )}
 
-      {!latest && !running && (
+      {!latest && !ocupado && (
         <div className="rounded-xl border border-dashed border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 p-12 text-center text-sm text-slate-500 dark:text-slate-400">
           Cole a URL de um site acima para receber o diagnóstico.
         </div>
       )}
 
-      {(audits.length > 1 || acompanhamentoAtivo) && latest && (
+      {(audits.length > 1 || acompanhamentoAtivo || cron) && latest && (
         <>
           <Secao>Histórico</Secao>
+          {/* Só afirma o que o registro do cron comprova. A promessa "toda
+              segunda" ficou semanas no ar sem o agendamento rodar. */}
           <p className="text-sm text-slate-600 dark:text-slate-400">
-            {acompanhamentoAtivo
-              ? "Reauditamos este site toda segunda-feira, sem você precisar clicar, e mostramos aqui o que mudou. As rodadas automáticas aparecem marcadas."
-              : "Cada auditoria fica guardada para ser comparada com a próxima."}
+            Cada auditoria fica guardada para ser comparada com a próxima.{" "}
+            {cron
+              ? `Último acompanhamento automático: ${dataCurta(cron.iniciada_em)}, ${
+                  cron.terminada_em === null
+                    ? "interrompido"
+                    : `${cron.tarefas ?? 0} ${cron.tarefas === 1 ? "tarefa" : "tarefas"}, ${cron.falhas ?? 0} ${cron.falhas === 1 ? "falha" : "falhas"}`
+                }. As rodadas automáticas aparecem marcadas.`
+              : // Sem registro mas com rodada marcada "automática" (tabela de
+                // execuções ausente), "ainda não rodou" desmentiria a lista.
+                audits.some((a) => a.origem === "agendada")
+                ? "O acompanhamento automático ainda não tem execução registrada. As rodadas automáticas aparecem marcadas."
+                : "O acompanhamento automático ainda não rodou."}
           </p>
           <ul className="mt-3">
             {audits.slice(0, 10).map((a) => (
@@ -435,7 +635,7 @@ export function AuditBoard({
                   <span className="min-w-0 truncate text-slate-600 dark:text-slate-400">
                     {dataCurta(a.created_at)} ·{" "}
                     {a.site_url}
-                    {a.origem === "agendada" && " · semanal"}
+                    {a.origem === "agendada" && " · automática"}
                   </span>
                   <span className="tabular shrink-0 font-display text-slate-900 dark:text-slate-100">
                     {a.status === "done"

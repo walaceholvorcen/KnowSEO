@@ -3,6 +3,7 @@ import { requireUserAndWorkspace } from "@/lib/workspace";
 import { urlDoArtigo, versaoDaIdentidade } from "@/lib/blog-endereco";
 import type { Article, Blog } from "@/types";
 import { ArticleEditor } from "./article-editor";
+import { lerFuso } from "@/lib/datas";
 
 export default async function ArticleEditorPage({
   params,
@@ -47,6 +48,7 @@ export default async function ArticleEditorPage({
   return (
     <ArticleEditor
       article={article as Article}
+      fuso={await lerFuso()}
       enderecoPublico={urlDoArtigo(blog, article.slug)}
       dominioPendente={!!blog.custom_domain && blog.domain_status !== "active"}
       versaoMarca={versaoDaIdentidade(blog)}

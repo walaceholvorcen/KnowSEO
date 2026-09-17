@@ -3,11 +3,8 @@ import { Check } from "lucide-react";
 import { botao } from "@/components/ui";
 import { Secao } from "@/components/lede";
 import { cn } from "@/lib/utils";
-import {
-  dataCurta,
-  type Jornada,
-  type ProximaVerificacao,
-} from "@/lib/audit/jornada";
+import type { Jornada, ProximaVerificacao } from "@/lib/audit/jornada";
+import { formatarData } from "@/lib/datas";
 
 // Cores das duas séries do gráfico, validadas no validador da skill de
 // dataviz contra os fundos claro (#f7f8f6) e escuro (#101312). Um tom só da
@@ -25,18 +22,20 @@ const PONTO_IA = "bg-[#94a6fa] dark:bg-[#3450d4]";
 // card responde "e agora?".
 export function ProximaVerificacaoCard({
   proxima,
+  fuso,
 }: {
   proxima: ProximaVerificacao;
+  fuso: string;
 }) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
+    <div className="h-full rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
       <p className="text-sm text-slate-500 dark:text-slate-400">
         Próxima verificação
       </p>
       <p className="mt-2 text-slate-900 dark:text-slate-100">
         {proxima.quando ? (
-          <span className="tabular font-display text-5xl leading-none tracking-tight">
-            {dataCurta(proxima.quando)}
+          <span className="tabular font-display text-5xl leading-none tracking-tight sm:text-4xl lg:text-5xl">
+            {formatarData(proxima.quando, fuso, "curta")}
           </span>
         ) : (
           <span className="text-4xl font-semibold leading-none tracking-tight">
@@ -67,7 +66,10 @@ const LEITURA_DA_ETAPA: Record<Jornada["atual"], string> = {
   diagnostico: "",
 };
 
-export function JornadaDoSite({ jornada }: { jornada: Jornada }) {
+// `fuso` vem do servidor (cookie do operador) e toda data sai com ele
+// explícito: o texto é o mesmo no servidor e no navegador, sem #418.
+export function JornadaDoSite({ jornada, fuso }: { jornada: Jornada; fuso: string }) {
+  const dataCurta = (iso: string) => formatarData(iso, fuso, "curta");
   const { etapas, atual, proxima, evolucao, ganhoGoogle } = jornada;
   const primeira = evolucao[0];
   const ultima = evolucao[evolucao.length - 1];
@@ -147,7 +149,7 @@ export function JornadaDoSite({ jornada }: { jornada: Jornada }) {
         ))}
       </ol>
 
-      {evolucao.length > 1 && <GraficoNotas pontos={evolucao} />}
+      {evolucao.length > 1 && <GraficoNotas pontos={evolucao} fuso={fuso} />}
 
       <div className="mt-6 rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
         <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
@@ -183,17 +185,21 @@ export function JornadaDoSite({ jornada }: { jornada: Jornada }) {
 // dois eixos). Linhas e grade em SVG
 // esticado com traço que não escala; pontos, rótulos e dica em HTML por
 // cima - assim o texto não deforma com a largura da tela.
-function GraficoNotas({ pontos }: { pontos: Jornada["evolucao"] }) {
+function GraficoNotas({
+  pontos,
+  fuso,
+}: {
+  pontos: Jornada["evolucao"];
+  fuso: string;
+}) {
+  const dataCurta = (iso: string) => formatarData(iso, fuso, "curta");
   const n = pontos.length;
   const x = (i: number) => (i / (n - 1)) * 100;
-  // Piso da escala: a dezena abaixo da menor nota, com folga de 10, nunca
-  // acima de 50 (o primeiro limiar precisa caber). Com o piso em 0, toda nota
-  // real ficava na metade de cima e o gráfico era meio vazio. O piso aparece
-  // escrito no eixo, então a escala não engana ninguém.
-  const menor = Math.min(...pontos.flatMap((p) => [p.google, p.ia]));
-  const piso = Math.max(0, Math.min(40, Math.floor((menor - 10) / 10) * 10));
-  const y = (v: number) =>
-    100 - ((Math.min(100, Math.max(piso, v)) - piso) / (100 - piso)) * 100;
+  // Escala fixa de 0 a 100, a mesma da régua da NotaCard. O piso móvel
+  // (dezena abaixo da menor nota) fazia 55 → 96 parecer ir do chão ao teto e
+  // mudava de forma a cada auditoria nova: o cliente comparava desenhos, não
+  // notas.
+  const y = (v: number) => 100 - Math.min(100, Math.max(0, v));
   const linha = (pegar: (p: (typeof pontos)[number]) => number) =>
     pontos.map((p, i) => `${x(i)},${y(pegar(p))}`).join(" ");
 
@@ -210,15 +216,13 @@ function GraficoNotas({ pontos }: { pontos: Jornada["evolucao"] }) {
   }
 
   const larguraFaixa = 100 / (n - 1);
-  // Marcas do eixo em passo regular de 10, do piso até 100: com marcas só
-  // nos limiares o eixo lia 40, 50, 70, 90 e parava antes do teto. Os
-  // limiares 50/70/90 continuam mais fortes; o rótulo escrito fica neles,
-  // no piso e no 100, para não poluir.
+  // Eixo em quartos (0/25/50/75/100), com rótulo só neles: passo regular, que
+  // se lê sem pensar. Os limiares das faixas (50/70/90) ficam como linhas
+  // finas de guia, sem número - dois conjuntos de rótulo no mesmo eixo
+  // (70 e 75 a 4px um do outro) viravam ruído.
+  const MARCAS = [0, 25, 50, 75, 100];
   const LIMIARES = [50, 70, 90];
-  const marcas: number[] = [];
-  for (let v = piso; v <= 100; v += 10) marcas.push(v);
-  const rotulada = (v: number) =>
-    v === piso || v === 100 || LIMIARES.includes(v);
+  const linhasGuia = [...new Set([...MARCAS, ...LIMIARES])].filter((t) => t > 0);
 
   return (
     <figure className="mt-8">
@@ -238,9 +242,9 @@ function GraficoNotas({ pontos }: { pontos: Jornada["evolucao"] }) {
       </figcaption>
 
       <div className="mt-4 flex gap-3">
-        {/* Limiares das faixas à esquerda: os mesmos 50/70/90 da régua. */}
+        {/* Rótulos do eixo: só as marcas em quartos. */}
         <div className="relative h-36 w-6 shrink-0 text-right text-xs text-slate-500 dark:text-slate-400" aria-hidden="true">
-          {marcas.filter(rotulada).map((t) => (
+          {MARCAS.map((t) => (
             <span
               key={t}
               className="tabular absolute right-0 -translate-y-1/2"
@@ -258,7 +262,7 @@ function GraficoNotas({ pontos }: { pontos: Jornada["evolucao"] }) {
             className="absolute inset-0 h-full w-full overflow-visible"
             aria-hidden="true"
           >
-            {marcas.filter((t) => t > piso).map((t) => (
+            {linhasGuia.map((t) => (
               <line
                 key={t}
                 x1="0"

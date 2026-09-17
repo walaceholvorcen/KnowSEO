@@ -66,15 +66,7 @@ export interface Jornada {
   ganhoGoogle: number | null;
 }
 
-// Datas em UTC de propósito: o mesmo texto no servidor e no navegador, sem
-// o dia "pular" por fuso na hidratação.
-export function dataCurta(iso: string): string {
-  return new Date(iso).toLocaleDateString("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-    timeZone: "UTC",
-  });
-}
+import { formatarData } from "../datas.ts";
 
 const somarDias = (iso: string, dias: number) =>
   new Date(new Date(iso).getTime() + dias * DIA).toISOString();
@@ -95,14 +87,20 @@ export function montarJornada({
   abertosPrioridade,
   agora,
   acompanhamentoAtivo,
+  fuso,
 }: {
   /** Auditorias concluídas do MESMO site, em qualquer ordem. */
   historico: AuditoriaDoSite[];
   /** Achados críticos e altos na auditoria mais recente. */
   abertosPrioridade: number;
   agora: Date;
+  /** Só true quando o acompanhamento semanal tem execução registrada
+   *  recente - sem isso a tela não promete reauditoria automática. */
   acompanhamentoAtivo: boolean;
+  /** Fuso de quem opera o painel: as datas dos textos saem prontas daqui. */
+  fuso: string;
 }): Jornada | null {
+  const dataCurta = (iso: string) => formatarData(iso, fuso, "curta");
   const cronologico = [...historico].sort((a, b) =>
     a.created_at.localeCompare(b.created_at),
   );
@@ -183,7 +181,7 @@ export function montarJornada({
     nome: "Manutenção",
     estado: efeitoFeito ? "atual" : "futura",
     detalhe: acompanhamentoAtivo
-      ? "Reauditoria automática toda segunda"
+      ? "Reauditoria automática semanal"
       : "Uma verificação por mês",
   });
 
@@ -215,8 +213,8 @@ export function montarJornada({
     if (acompanhamentoAtivo) {
       proxima = {
         quando: proximaSegunda(agora),
-        resumo: "Automática, toda segunda",
-        motivo: `${motivo} Já está agendada: reauditamos o site toda segunda-feira, sem você precisar clicar.`,
+        resumo: "Automática, semanal",
+        motivo: `${motivo} O acompanhamento automático já rodou e reaudita o site uma vez por semana, sem você precisar clicar.`,
         automatica: true,
         atrasada: false,
       };

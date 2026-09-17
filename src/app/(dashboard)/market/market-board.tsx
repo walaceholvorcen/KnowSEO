@@ -1,7 +1,7 @@
 "use client";
 
 import { botao, campo, pagina } from "@/components/ui";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChevronDown, ChevronRight, Plus, Radar, X } from "lucide-react";
@@ -63,6 +63,28 @@ export function MarketBoard({
   const [autoRodando, setAutoRodando] = useState(autoInicial);
   const [formAberto, setFormAberto] = useState(!autoInicial);
   const disparou = useRef(false);
+  // O botão só volta ao normal quando a tela já mostra o resultado. Antes o
+  // estado caía ao chegar a resposta e o refresh (não aguardado) ainda
+  // buscava os dados: por um instante a tela voltava igual, sem sinal.
+  const [atualizando, startTransition] = useTransition();
+  // Análise que o servidor disse já estar rodando (dedupe): a tela espera
+  // por ela recarregando, em vez de abrir outra.
+  const [aguardando, setAguardando] = useState<string | null>(null);
+  const esperando =
+    aguardando !== null &&
+    !(analise?.id === aguardando && analise.status !== "running");
+  const ocupado = rodando || atualizando || esperando;
+
+  useEffect(() => {
+    if (!esperando) return;
+    const timer = setInterval(() => startTransition(() => router.refresh()), 4000);
+    // Teto de 2,5 min: passou do maxDuration, a análise morreu sem fechar.
+    const teto = setTimeout(() => setAguardando(null), 150_000);
+    return () => {
+      clearInterval(timer);
+      clearTimeout(teto);
+    };
+  }, [esperando, router]);
 
   function adicionar(dominio: string) {
     const limpo = dominio
@@ -83,20 +105,27 @@ export function MarketBoard({
     setRodando(true);
     setErro(null);
 
-    const res = await fetch("/api/market/run", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ blogId, concorrentes }),
-    });
-    const data = await res.json().catch(() => ({}));
-    setRodando(false);
-
-    if (!res.ok) {
-      setErro(data.error ?? "Não foi possível analisar agora.");
+    // Sem try/catch, a conexão caindo deixava o botão preso em "Analisando...".
+    try {
+      const res = await fetch("/api/market/run", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ blogId, concorrentes }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setErro(data.error ?? "Não foi possível analisar agora.");
+        return false;
+      }
+      if (data.emAndamento) setAguardando(data.analysisId);
+      startTransition(() => router.refresh());
+      return true;
+    } catch {
+      setErro("Não foi possível analisar agora. Confira a conexão e tente de novo.");
       return false;
+    } finally {
+      setRodando(false);
     }
-    router.refresh();
-    return true;
   }
 
   // Uma vez por carga (o ref segura o efeito duplo do modo estrito e o
@@ -197,11 +226,11 @@ export function MarketBoard({
             )}
             <button
               onClick={() => analisar()}
-              disabled={rodando || lista.length === 0}
+              disabled={ocupado || lista.length === 0}
               className={botao("primario")}
             >
               <Radar size={15} />
-              {rodando
+              {ocupado
                 ? "Analisando..."
                 : analise
                   ? "Refazer análise"
@@ -291,7 +320,7 @@ export function MarketBoard({
       </>
       )}
 
-      {rodando && (
+      {ocupado && (
         <p className="mb-6 text-sm text-slate-500 dark:text-slate-400">
           {autoRodando &&
             `Analisando sozinho com os ${doRaioX.length} sites que a IA cita no seu mercado (${doRaioX.join(", ")}). `}

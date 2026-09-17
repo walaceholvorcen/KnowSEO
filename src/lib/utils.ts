@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { formatarData } from "./datas.ts";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -39,15 +40,9 @@ export function htmlParaTexto(html: string): string {
     .trim();
 }
 
-// UTC explícito: sem fuso, o servidor (UTC) e o navegador (BRT) formatavam
-// dias diferentes perto da meia-noite e a hidratação acusava divergência.
-// ponytail: fuso fixo em UTC; o fuso do leitor viria por cookie definido no
-// cliente e lido aqui, se algum dia o dia "errado" incomodar.
-export function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("pt-BR", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    timeZone: "UTC",
-  });
+// Wrapper compatível para quem ainda não recebe o fuso (relatório): sem fuso,
+// mantém o UTC de antes. Código novo usa formatarData(instante, fuso, "longa")
+// de src/lib/datas.ts com o fuso do operador (lerFuso).
+export function formatDate(iso: string, fuso = "UTC"): string {
+  return formatarData(iso, fuso, "longa");
 }

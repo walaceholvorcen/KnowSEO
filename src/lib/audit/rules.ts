@@ -1,4 +1,4 @@
-import type { Finding, PageSnapshot, SiteSignals, Severity } from "./types";
+import type { Category, Finding, PageSnapshot, SiteSignals, Severity } from "./types";
 import { blocoJsonLd, fichaDoSite, nomeComparavel } from "./entidade.ts";
 
 // Regras de auditoria. Função pura: recebe sinais, devolve achados.
@@ -675,6 +675,50 @@ export function runRules(signals: SiteSignals): Finding[] {
 
   return findings;
 }
+
+// A régua auditável: tudo o que runRules confere, com o nome que o cliente lê.
+// Sem esta lista a tela só mostrava o que deu errado, e "88" não dizia quantas
+// coisas foram checadas nem quais passaram. A nota IA é a categoria "geo"
+// (mesma divisão de computeScores). Teste em audit.test.ts garante que todo
+// code de runRules está aqui - regra nova sem entrada aqui quebra o teste.
+export const CHECAGENS: {
+  code: string;
+  rotulo: string;
+  categoria: Category;
+  nota: "google" | "ia";
+}[] = [
+  { code: "NO_HTTPS", rotulo: "Site servido em HTTPS", categoria: "technical", nota: "google" },
+  { code: "ROBOTS_MISSING", rotulo: "robots.txt publicado", categoria: "crawlability", nota: "google" },
+  { code: "ROBOTS_BLOCKS_ALL", rotulo: "robots.txt não bloqueia o site", categoria: "crawlability", nota: "google" },
+  { code: "ROBOTS_NO_SITEMAP", rotulo: "robots.txt aponta o sitemap", categoria: "crawlability", nota: "google" },
+  { code: "URLS_QUEBRADAS", rotulo: "Páginas anunciadas respondem", categoria: "crawlability", nota: "google" },
+  { code: "URLS_REDIRECIONADAS", rotulo: "Sitemap sem endereços redirecionados", categoria: "crawlability", nota: "google" },
+  { code: "SITEMAP_MISSING", rotulo: "Sitemap encontrado", categoria: "crawlability", nota: "google" },
+  { code: "SOFT_404", rotulo: "Página inexistente responde 404", categoria: "indexation", nota: "google" },
+  { code: "NOINDEX_ON_PAGES", rotulo: "Nenhuma página com noindex", categoria: "indexation", nota: "google" },
+  { code: "CANONICAL_MISSING", rotulo: "Canonical em todas as páginas", categoria: "indexation", nota: "google" },
+  { code: "TITLE_MISSING", rotulo: "Título em todas as páginas", categoria: "onpage", nota: "google" },
+  { code: "TITLE_TOO_LONG", rotulo: "Títulos até 60 caracteres", categoria: "onpage", nota: "google" },
+  { code: "TITLE_TOO_SHORT", rotulo: "Títulos com ao menos 30 caracteres", categoria: "onpage", nota: "google" },
+  { code: "TITLE_DUPLICATE", rotulo: "Títulos sem repetição", categoria: "onpage", nota: "google" },
+  { code: "META_MISSING", rotulo: "Meta description em todas as páginas", categoria: "onpage", nota: "google" },
+  { code: "META_TOO_LONG", rotulo: "Meta descriptions até 160 caracteres", categoria: "onpage", nota: "google" },
+  { code: "META_DUPLICATE", rotulo: "Meta descriptions sem repetição", categoria: "onpage", nota: "google" },
+  { code: "H1_MISSING", rotulo: "H1 em todas as páginas", categoria: "onpage", nota: "google" },
+  { code: "H1_MULTIPLE", rotulo: "Um H1 por página", categoria: "onpage", nota: "google" },
+  { code: "IMAGES_NO_ALT", rotulo: "Imagens com texto alternativo", categoria: "onpage", nota: "google" },
+  { code: "THIN_CONTENT", rotulo: "Páginas com texto suficiente", categoria: "content", nota: "google" },
+  { code: "LOW_INTERNAL_LINKS", rotulo: "Links internos suficientes", categoria: "content", nota: "google" },
+  { code: "NO_LLMS_TXT", rotulo: "llms.txt publicado", categoria: "geo", nota: "ia" },
+  { code: "NO_SCHEMA", rotulo: "Dado estruturado nas páginas", categoria: "geo", nota: "ia" },
+  { code: "SCHEMA_INVALID", rotulo: "Dado estruturado válido", categoria: "geo", nota: "ia" },
+  { code: "SEM_ENTIDADE", rotulo: "Ficha da empresa (Organization)", categoria: "geo", nota: "ia" },
+  { code: "ENTIDADE_SEM_SAMEAS", rotulo: "Empresa ligada aos perfis (sameAs)", categoria: "geo", nota: "ia" },
+  { code: "ENTIDADE_INCOMPLETA", rotulo: "Ficha da empresa completa", categoria: "geo", nota: "ia" },
+  { code: "ENTIDADE_NOME_INCONSISTENTE", rotulo: "Um nome só para a empresa", categoria: "geo", nota: "ia" },
+  { code: "TEXTO_GENERICO", rotulo: "Texto com fatos, não folheto", categoria: "geo", nota: "ia" },
+  { code: "NO_HEADING_STRUCTURE", rotulo: "Textos longos com subtítulos", categoria: "geo", nota: "ia" },
+];
 
 // ---------------------------------------------------------------------------
 // Notas

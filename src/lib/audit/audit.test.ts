@@ -1,7 +1,8 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
 import { parsePage } from "./parse.ts";
-import { runRules, computeScores, robotsBloqueiaTudo, pareceHome } from "./rules.ts";
+import { runRules, computeScores, robotsBloqueiaTudo, pareceHome, CHECAGENS } from "./rules.ts";
+import { readFileSync } from "node:fs";
 import type { PageSnapshot, SiteSignals } from "./types.ts";
 
 const ORIGIN = "https://cliente.es";
@@ -487,5 +488,20 @@ describe("runRules - URLs quebradas e redirecionadas", () => {
       comErro.google < limpo.google,
       `esperava nota menor com URL quebrada, veio ${comErro.google}`,
     );
+  });
+});
+
+describe("régua auditável", () => {
+  // Lê o próprio rules.ts: todo `code: "X"` que runRules pode emitir precisa
+  // de rótulo em CHECAGENS, senão a seção "O que a nota mede" esconde a regra.
+  test("todo code de runRules está em CHECAGENS, uma vez só", () => {
+    const fonte = readFileSync(new URL("./rules.ts", import.meta.url), "utf8");
+    const corpo = fonte.slice(fonte.indexOf("export function runRules"), fonte.indexOf("export const CHECAGENS"));
+    const emitidos = new Set([...corpo.matchAll(/code: "([A-Z_0-9]+)"/g)].map((m) => m[1]));
+    const listados = CHECAGENS.map((c) => c.code);
+    assert.ok(emitidos.size > 20);
+    assert.deepEqual([...emitidos].filter((c) => !listados.includes(c)), []);
+    assert.equal(new Set(listados).size, listados.length);
+    for (const c of CHECAGENS) assert.equal(c.nota, c.categoria === "geo" ? "ia" : "google");
   });
 });

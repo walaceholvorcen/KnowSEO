@@ -14,7 +14,7 @@ import {
   placarPorMotor,
 } from "@/lib/ai-visibility/resumo";
 import { fontesDaResposta, lerFontes } from "@/lib/ai-visibility/fontes";
-import { dataCurta } from "@/lib/audit/jornada";
+import { formatarData } from "@/lib/datas";
 import { markdownParaHtml } from "@/lib/markdown";
 import { FontesDoMercado, ROTULO_TIPO } from "./fontes-do-mercado";
 import type { AiQuery, AiVisibilityCheck } from "@/types";
@@ -55,7 +55,7 @@ function chaveDaRodada(c: AiVisibilityCheck): string {
   return c.run_id ?? c.checked_at.slice(0, 10);
 }
 
-function buildTimeline(checks: AiVisibilityCheck[]) {
+function buildTimeline(checks: AiVisibilityCheck[], fuso: string) {
   const porRodada = new Map<
     string,
     { total: number; cited: number; quando: string }
@@ -77,13 +77,15 @@ function buildTimeline(checks: AiVisibilityCheck[]) {
   return [...porRodada.entries()]
     .map(([chave, v]) => ({
       chave,
-      day: v.quando.slice(0, 10),
-      // Rótulo DD/MM pelo helper único de data: MM-DD cru (slice do ISO) lia
-      // "09-15" como setembro/15 para quem pensa em dia/mês.
-      rotulo: dataCurta(v.quando),
+      quando: v.quando,
+      // Rótulo DD/MM pelo helper único de data, no fuso de quem opera: MM-DD
+      // cru (slice do ISO) lia "09-15" como setembro/15, e em UTC a rodada
+      // das 22h aparecia no dia seguinte.
+      rotulo: formatarData(v.quando, fuso, "curta"),
       score: Math.round((v.cited / v.total) * 100),
     }))
-    .sort((a, b) => a.day.localeCompare(b.day))
+    // ISO completo ordena por instante; o dia UTC empatava rodadas do mesmo dia.
+    .sort((a, b) => a.quando.localeCompare(b.quando))
     .slice(-12);
 }
 
@@ -99,12 +101,15 @@ export function VisibilityBoard({
   checks,
   rodada,
   motores,
+  fuso,
 }: {
   blogId: string;
   queries: AiQuery[];
   checks: AiVisibilityCheck[];
   rodada: RodadaResumo | null;
   motores: string[];
+  /** Fuso de quem opera o painel, lido do cookie no servidor. */
+  fuso: string;
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState<"questions" | "run" | null>(null);
@@ -176,7 +181,7 @@ export function VisibilityBoard({
   const score = latest.length
     ? Math.round((latest.filter((c) => c.cited).length / latest.length) * 100)
     : null;
-  const timeline = buildTimeline(checks);
+  const timeline = buildTimeline(checks, fuso);
   const previous =
     timeline.length > 1 ? timeline[timeline.length - 2].score : null;
   const delta = score !== null && previous !== null ? score - previous : null;

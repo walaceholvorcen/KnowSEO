@@ -6,6 +6,7 @@ import {
 } from "@/lib/workspace";
 import { Sidebar } from "@/components/sidebar";
 import { urlPublicaDoBlog } from "@/lib/blog-endereco";
+import { DetectarFuso } from "@/components/detectar-fuso";
 
 export default async function DashboardLayout({
   children,
@@ -26,6 +27,7 @@ export default async function DashboardLayout({
     // (barra lateral fixa). O fundo do conteúdo é um tom mais claro que o da
     // barra: são duas camadas de neutro, e a barra lê como moldura.
     <div className="flex h-screen flex-col overflow-hidden bg-slate-50 dark:bg-background lg:flex-row">
+      <DetectarFuso />
       <Sidebar
         blogAtivoId={blog.id}
         blogs={blogs.map((b) => ({

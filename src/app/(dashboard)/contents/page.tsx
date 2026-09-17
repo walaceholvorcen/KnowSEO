@@ -3,7 +3,8 @@ import { botao } from "@/components/ui";
 import Link from "next/link";
 import Image from "next/image";
 import { requireUserAndWorkspace, getBlogAtivo } from "@/lib/workspace";
-import { formatDate, htmlParaTexto } from "@/lib/utils";
+import { htmlParaTexto } from "@/lib/utils";
+import { formatarData, lerFuso } from "@/lib/datas";
 import {
   detectarIdioma,
   idiomaDoBlog,
@@ -42,6 +43,7 @@ export default async function ContentsPage() {
     .order("created_at", { ascending: false });
 
   const lista = (articles as Article[]) ?? [];
+  const fuso = await lerFuso();
   const publicados = lista.filter((a) => a.status === "published").length;
   const rascunhos = lista.length - publicados;
 
@@ -172,7 +174,7 @@ export default async function ContentsPage() {
                     {STATUS_LABEL[article.status]}
                   </span>
                   {" · "}
-                  {formatDate(article.published_at ?? article.created_at)}
+                  {formatarData(article.published_at ?? article.created_at, fuso, "longa")}
                 </p>
               </div>
             </Link>

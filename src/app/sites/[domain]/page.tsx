@@ -6,7 +6,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { resolveBlogByHost, tenantOrigin } from "@/lib/tenant";
 import { textoSobre } from "@/lib/contrast";
 import { urlPublicaDoBlog, versaoDaIdentidade } from "@/lib/blog-endereco";
-import { formatDate } from "@/lib/utils";
+import { formatarData, fusoDoPais } from "@/lib/datas";
+import { paisDoBlog } from "@/lib/keywords/metricas";
 import type { Article } from "@/types";
 
 // Sem isto o blog do cliente herdaria o título do app ("Know SEO"), o que
@@ -60,6 +61,12 @@ export default async function TenantBlogHome({
   // Link relativo "/slug" em /b/<slug> caía na raiz do app (404): a base
   // precisa do caminho do tenant, e do host em que o visitante está.
   const base = await tenantOrigin(domain);
+  // Quem lê o blog é o mercado do cliente, não quem opera o painel: a data
+  // sai no fuso do país do domínio (dataknow.es → Madri). Sem domínio de
+  // país, UTC - o cookie do operador nem chega a este visitante.
+  const fuso = fusoDoPais(
+    paisDoBlog({ dominio: blog.custom_domain, idioma: blog.language }),
+  );
 
   return (
     <div className="min-h-screen bg-white dark:bg-slate-900">
@@ -122,7 +129,7 @@ export default async function TenantBlogHome({
                 )}
                 {article.published_at && (
                   <p className="mt-2 text-xs text-slate-400 dark:text-slate-500">
-                    {formatDate(article.published_at)}
+                    {formatarData(article.published_at!, fuso, "longa")}
                   </p>
                 )}
               </Link>

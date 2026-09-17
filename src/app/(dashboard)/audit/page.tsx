@@ -3,6 +3,8 @@ import { requireUserAndWorkspace, getBlogAtivo } from "@/lib/workspace";
 import { compararAuditorias, type AchadoResumo } from "@/lib/audit/comparar";
 import { AuditBoard } from "./audit-board";
 import { lerJornada } from "./jornada-dados";
+import { ultimaExecucaoDoCron } from "@/app/api/cron/semanal/execucoes";
+import { lerFuso } from "@/lib/datas";
 
 export interface AuditRow {
   id: string;
@@ -70,14 +72,21 @@ export default async function AuditPage() {
   ]);
 
   const lista = (findings as FindingRow[]) ?? [];
-  // Só promete reauditoria automática quando o agendamento consegue de
-  // fato rodar: sem o segredo, a rota semanal recusa todo disparo.
-  const acompanhamentoAtivo = Boolean(process.env.CRON_SECRET);
+  const [fuso, cron] = await Promise.all([lerFuso(), ultimaExecucaoDoCron()]);
+  // Só promete reauditoria automática quando há prova de que ela roda: o
+  // segredo configurado (sem ele a rota recusa todo disparo) E um disparo
+  // registrado nos últimos 8 dias. Só o segredo não bastava - a promessa
+  // "toda segunda" ficou semanas no ar com o cron parado.
+  const acompanhamentoAtivo =
+    Boolean(process.env.CRON_SECRET) &&
+    cron !== null &&
+    Date.now() - new Date(cron.iniciada_em).getTime() < 8 * 86_400_000;
   const jornada = await lerJornada(supabase, {
     concluidas,
     latest,
     achados: lista,
     acompanhamentoAtivo,
+    fuso,
   });
 
   return (
@@ -94,6 +103,8 @@ export default async function AuditPage() {
       }
       acompanhamentoAtivo={acompanhamentoAtivo}
       jornada={jornada}
+      fuso={fuso}
+      cron={cron}
     />
   );
 }

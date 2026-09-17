@@ -4,6 +4,7 @@ import { encontrarGargalo } from "@/lib/gargalo";
 import { urlPublicaDoBlog } from "@/lib/blog-endereco";
 import { carregarInicio } from "./dados";
 import { InicioBoard } from "./inicio-board";
+import { lerFuso } from "@/lib/datas";
 
 export default async function DashboardHomePage() {
   const { supabase, workspace } = await requireUserAndWorkspace();
@@ -31,6 +32,7 @@ export default async function DashboardHomePage() {
       feitos={workspace.onboarding_steps}
       gargalo={gargalo}
       dados={dados}
+      fuso={await lerFuso()}
     />
   );
 }

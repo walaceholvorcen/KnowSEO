@@ -3,6 +3,7 @@ import { requireUserAndWorkspace, getBlogAtivo } from "@/lib/workspace";
 import { getProviders, MAX_PERGUNTAS } from "@/lib/ai-visibility/runner";
 import type { AiQuery, AiVisibilityCheck } from "@/types";
 import { VisibilityBoard, type RodadaResumo } from "./visibility-board";
+import { lerFuso } from "@/lib/datas";
 
 export default async function VisibilityPage() {
   const { supabase, workspace } = await requireUserAndWorkspace();
@@ -69,6 +70,7 @@ export default async function VisibilityPage() {
       checks={(checks as AiVisibilityCheck[]) ?? []}
       rodada={resumo}
       motores={getProviders().map((p) => p.name)}
+      fuso={await lerFuso()}
     />
   );
 }

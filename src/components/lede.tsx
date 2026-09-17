@@ -115,14 +115,18 @@ export function NotaCard({
         : "bg-nota-critico";
 
   return (
-    <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
+    // h-full: em grade ou em flex, os cards irmãos terminam na mesma linha.
+    <div className="h-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
       <p className="text-sm text-slate-500 dark:text-slate-400">{label}</p>
+      {/* "de 100" nunca quebra: sozinho na linha de baixo, lia como outro
+          número. Entre 640 e 1024px são três cards estreitos, e o número
+          desce um passo para os dois caberem lado a lado. */}
       <p className="mt-2 flex items-baseline gap-1.5 font-display text-slate-900 dark:text-slate-100">
-        <span className="tabular text-5xl leading-none tracking-tight">
+        <span className="tabular text-5xl leading-none tracking-tight sm:text-4xl lg:text-5xl">
           {score === null ? "—" : score}
         </span>
         {score !== null && (
-          <span className="text-base text-slate-500 dark:text-slate-400">
+          <span className="whitespace-nowrap text-base text-slate-500 dark:text-slate-400">
             de 100
           </span>
         )}

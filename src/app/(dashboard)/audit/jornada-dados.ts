@@ -14,11 +14,13 @@ export async function lerJornada(
     latest,
     achados,
     acompanhamentoAtivo,
+    fuso,
   }: {
     concluidas: AuditRow[];
     latest: AuditRow | null;
     achados: FindingRow[];
     acompanhamentoAtivo: boolean;
+    fuso: string;
   },
 ): Promise<Jornada | null> {
   if (!latest) return null;
@@ -53,5 +55,6 @@ export async function lerJornada(
       .length,
     agora: new Date(),
     acompanhamentoAtivo,
+    fuso,
   });
 }

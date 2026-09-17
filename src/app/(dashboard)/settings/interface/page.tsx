@@ -1,9 +1,13 @@
+import { cookies } from "next/headers";
 import { pagina } from "@/components/ui";
 import { SettingsNav } from "../settings-nav";
 import { ThemeSelector } from "./theme-selector";
+import { FusoSelector } from "./fuso-selector";
 import { Lede } from "@/components/lede";
+import { lerFuso } from "@/lib/datas";
 
-export default function InterfaceSettingsPage() {
+export default async function InterfaceSettingsPage() {
+  const [fuso, jar] = await Promise.all([lerFuso(), cookies()]);
   return (
     <div className={pagina("estreita")}>
       <SettingsNav />
@@ -12,6 +16,11 @@ export default function InterfaceSettingsPage() {
         sistema.
       </Lede>
       <ThemeSelector />
+      <FusoSelector
+        atual={fuso}
+        fusos={Intl.supportedValuesOf("timeZone")}
+        manual={jar.get("fuso_manual")?.value === "1"}
+      />
     </div>
   );
 }

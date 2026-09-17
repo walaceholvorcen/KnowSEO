@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { Check } from "lucide-react";
 import { botao, pagina } from "@/components/ui";
-import { cn, formatDate } from "@/lib/utils";
+import { cn } from "@/lib/utils";
+import { formatarData } from "@/lib/datas";
 import { semEsquema } from "@/lib/blog-endereco";
 import { Lede, Linha, Secao, Regua } from "@/components/lede";
 import { scoreBand } from "@/lib/audit/rules";
@@ -172,6 +173,7 @@ export function InicioBoard({
   feitos,
   gargalo,
   dados,
+  fuso,
 }: {
   blogNome: string;
   /** URL pública do blog, com esquema (urlPublicaDoBlog). */
@@ -180,7 +182,10 @@ export function InicioBoard({
   feitos: OnboardingSteps;
   gargalo: Gargalo;
   dados: DadosInicio;
+  /** Fuso de quem opera o painel, lido do cookie na página. */
+  fuso: string;
 }) {
+  const formatDate = (iso: string) => formatarData(iso, fuso, "longa");
   const faltando = STEPS.filter((s) => !feitos[s.key]);
   const configurando = faltando.length > 0;
 

@@ -3,6 +3,7 @@ import { requireUserAndWorkspace, getBlogAtivo } from "@/lib/workspace";
 import { assinarRelatorio, lerPeriodo } from "@/lib/relatorio";
 import { carregarRelatorio } from "./dados";
 import { Relatorio } from "./relatorio";
+import { lerFuso } from "@/lib/datas";
 
 export default async function ReportsPage({
   searchParams,
@@ -26,6 +27,6 @@ export default async function ReportsPage({
     : null;
 
   return (
-    <Relatorio blog={blog} periodo={periodo} eventos={eventos} artigos={artigos} token={token} />
+    <Relatorio blog={blog} periodo={periodo} eventos={eventos} artigos={artigos} token={token} fuso={await lerFuso()} />
   );
 }

@@ -17,6 +17,7 @@ import {
   type Variacao,
 } from "@/lib/relatorio";
 import { formatDate, cn } from "@/lib/utils";
+import { formatarData } from "@/lib/datas";
 import type { Blog } from "@/types";
 import { AcoesDoRelatorio } from "./acoes";
 import type { ArtigoDoRelatorio } from "./dados";
@@ -48,6 +49,7 @@ export function Relatorio({
   artigos,
   publico = false,
   token = null,
+  fuso = "America/Sao_Paulo",
 }: {
   blog: Blog;
   periodo: Periodo;
@@ -56,6 +58,8 @@ export function Relatorio({
   publico?: boolean;
   /** Token do link público; null quando RELATORIO_SECRET não existe. */
   token?: string | null;
+  /** Fuso de quem lê: o do operador no painel; no link público, o padrão. */
+  fuso?: string;
 }) {
   const atual = resumoDoPeriodo(eventos, periodo.inicio, periodo.fim);
   const anterior = resumoDoPeriodo(eventos, periodo.anteriorInicio, periodo.inicio);
@@ -84,9 +88,11 @@ export function Relatorio({
     periodo.texto,
   );
 
-  // fuso: trocar por formatarData quando src/lib/datas.ts existir
+  // "de" e "até" são dias de calendário, sem hora: em UTC saem como foram
+  // escolhidos. A emissão é um instante e vai no fuso de quem lê - senão um
+  // PDF gerado às 22h em São Paulo sairia datado do dia seguinte.
   const intervalo = `De ${formatDate(periodo.de)} a ${formatDate(periodo.ate)}`;
-  const emitido = formatDate(new Date().toISOString());
+  const emitido = formatarData(new Date(), fuso, "longa");
 
   const metricas = [
     { rotulo: "Visitas", valor: String(atual.visitas), v: cmp.visitas, unidade: ["visita", "visitas"] as [string, string] },

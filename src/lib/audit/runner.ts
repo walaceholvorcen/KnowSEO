@@ -52,7 +52,9 @@ type Leitura =
 // Uma URL pode terminar de três formas, e as três importam: virou página
 // legível, respondeu erro (ou não respondeu), ou não é HTML e sai da conta.
 // Antes as três viravam `null` e só a primeira sobrevivia.
-async function lerUrl(url: string, origin: string): Promise<Leitura> {
+// Exportada para a conferência pontual da home (/api/audit/conferir), que lê
+// uma página só sem rodar a auditoria inteira.
+export async function lerUrl(url: string, origin: string): Promise<Leitura> {
   // Uma tentativa a mais antes de acusar "não respondeu": com seis leituras
   // em paralelo, um tempo esgotado isolado virava achado de gravidade alta em
   // página que responde em 1s (isocialweb.agency/ecommerce, set/2026).

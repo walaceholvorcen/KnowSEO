@@ -42,8 +42,11 @@ export function ArticleEditor({
   linksConhecidos = [],
   keywordsPublicadas = [],
   versaoMarca,
+  fuso,
 }: {
   article: Article;
+  /** Fuso de quem opera o painel, para a hora de "Salvo". */
+  fuso?: string;
   /** Endereço do artigo no blog do cliente, mostrado acima da prévia. */
   enderecoPublico: string;
   /** Domínio próprio cadastrado mas sem DNS confirmado: o artigo está no subdomínio. */
@@ -226,7 +229,9 @@ export function ArticleEditor({
 
     setSlug(slugFinal);
     setStatus(finalStatus);
-    setSavedAt(new Date().toLocaleTimeString("pt-BR"));
+    // Fuso explícito: com um fuso escolhido à mão em Configurações, a hora
+    // do navegador contradiria as datas do resto do painel.
+    setSavedAt(new Date().toLocaleTimeString("pt-BR", { timeZone: fuso }));
 
     if (finalStatus === "published") {
       await fetch("/api/onboarding/complete-step", {

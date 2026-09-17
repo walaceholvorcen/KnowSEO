@@ -71,6 +71,25 @@ export async function POST(request: Request) {
     if (!origens.includes(origem)) origens.push(origem);
   }
 
+  // Dedupe: análise deste blog já rodando há menos de 2 minutos (clique
+  // duplo, duas abas) não abre outra - a tela espera pela que existe. Mais
+  // velha que isso passou do maxDuration e morreu sem fechar; não pode
+  // bloquear uma análise nova.
+  const { data: emAndamento } = await supabase
+    .from("market_analyses")
+    .select("id")
+    .eq("blog_id", blogId)
+    .eq("status", "running")
+    .gte("created_at", new Date(Date.now() - 2 * 60_000).toISOString())
+    .limit(1)
+    .maybeSingle();
+  if (emAndamento) {
+    return NextResponse.json(
+      { analysisId: (emAndamento as { id: string }).id, emAndamento: true },
+      { status: 202 },
+    );
+  }
+
   const conexao = blog.gsc_property
     ? await buscarConexao(workspace.id).catch(() => null)
     : null;

@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { montarJornada, dataCurta, type AuditoriaDoSite } from "./jornada.ts";
+import { montarJornada, type AuditoriaDoSite } from "./jornada.ts";
+import { formatarData } from "../datas.ts";
 
 const aud = (
   created_at: string,
@@ -34,6 +35,7 @@ test("histórico real: correção feita, efeito em andamento, confirmar em 7 dia
     abertosPrioridade: 0,
     agora: new Date("2026-09-11T12:00:00Z"),
     acompanhamentoAtivo: false,
+    fuso: "UTC",
   })!;
   assert.equal(etapa(j, "correcao").estado, "feita");
   assert.match(etapa(j, "correcao").detalhe, /09\/09/);
@@ -41,7 +43,7 @@ test("histórico real: correção feita, efeito em andamento, confirmar em 7 dia
   // 09/09 + 14 dias = 23/09; + 56 dias = 04/11.
   assert.match(etapa(j, "efeito").detalhe, /23\/09 e 04\/11/);
   assert.equal(j.proxima.resumo, "Confirmar a correção");
-  assert.equal(dataCurta(j.proxima.quando!), "17/09");
+  assert.equal(formatarData(j.proxima.quando!, "UTC", "curta"), "17/09");
   assert.equal(j.ganhoGoogle, 41);
   assert.equal(j.evolucao.length, 6);
 });
@@ -52,6 +54,7 @@ test("prioridade aberta: agir agora, efeito ainda não começa", () => {
     abertosPrioridade: 4,
     agora: new Date("2026-09-11T12:00:00Z"),
     acompanhamentoAtivo: true,
+    fuso: "UTC",
   })!;
   assert.equal(j.atual, "correcao");
   assert.match(etapa(j, "correcao").detalhe, /4 itens/);
@@ -71,6 +74,7 @@ test("prioridade que reapareceu: a correção conta da recuperação", () => {
     abertosPrioridade: 0,
     agora: new Date("2026-07-11T00:00:00Z"),
     acompanhamentoAtivo: false,
+    fuso: "UTC",
   })!;
   assert.match(etapa(j, "correcao").detalhe, /10\/07/);
 });
@@ -81,6 +85,7 @@ test("depois de 8 semanas vira manutenção; revisão mensal atrasada", () => {
     abertosPrioridade: 0,
     agora: new Date("2026-09-11T00:00:00Z"),
     acompanhamentoAtivo: false,
+    fuso: "UTC",
   })!;
   assert.equal(etapa(j, "efeito").estado, "feita");
   assert.equal(j.atual, "manutencao");
@@ -97,6 +102,7 @@ test("acompanhamento ativo agenda para a próxima segunda às 7h UTC", () => {
     abertosPrioridade: 0,
     agora: new Date("2026-09-11T12:00:00Z"),
     acompanhamentoAtivo: true,
+    fuso: "UTC",
   })!;
   assert.equal(j.proxima.quando, "2026-09-14T07:00:00.000Z");
   assert.equal(j.proxima.automatica, true);
@@ -110,6 +116,7 @@ test("sem histórico não há jornada", () => {
       abertosPrioridade: 0,
       agora: new Date(),
       acompanhamentoAtivo: false,
+      fuso: "UTC",
     }),
     null,
   );
