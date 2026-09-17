@@ -126,7 +126,17 @@ export function ArticleEditor({
 
     const ajustar = () =>
       setEscala(
-        Math.min(1, moldura.clientWidth / LARGURA[aparelho]),
+        // clientWidth inclui o preenchimento lateral da moldura (px-5) e a
+        // prévia tem 1px de borda de cada lado: medir sem descontar deixava a
+        // borda direita 5px além da coluna, cortada pelo overflow-hidden.
+        Math.min(
+          1,
+          (moldura.clientWidth -
+            parseFloat(getComputedStyle(moldura).paddingLeft) -
+            parseFloat(getComputedStyle(moldura).paddingRight) -
+            2) /
+            LARGURA[aparelho],
+        ),
       );
 
     ajustar();

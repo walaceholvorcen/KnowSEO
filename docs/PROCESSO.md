@@ -1723,3 +1723,42 @@ identidade (nome, cores, logo) — sem isso, trocar a marca serviria a imagem
 velha; e o detector de imprensa casava por pedaço de palavra
 ("express**press**", "com**post**ela"), o que roubava domínios legítimos da
 lista de concorrentes.
+
+## 40. Brief de correção de 16/09 — o blog que não abria
+
+Segunda auditoria externa, 16 tarefas. As que mudaram a arquitetura:
+
+- **O endereço do blog nunca existiu.** `cliente.knowseo.vercel.app` é
+  subdomínio de segundo nível: o certificado `*.vercel.app` cobre um nível só
+  e a conexão cai no TLS, antes do HTTP. Nenhuma configuração conserta. A
+  fonte de verdade virou o caminho `https://<app>/b/<slug>`, que sempre
+  abre; o domínio próprio é alias, e só entra no link quando é subdomínio
+  seguro **e** verificado. `/b/` e não `/<slug>`: um cliente chamado
+  `login` sequestraria rota do app. Um script (`npm run test:blog`) faz GET
+  real no endereço publicado — o bug durou semanas porque nada abria a URL
+  que o app publicava.
+- **Domínio raiz em quatro camadas.** Digitação, envio, rota de servidor e
+  constraint no banco; e o tenant se recusa a servir host inseguro. A lista
+  fixa de terminações (`com.br`, `co.uk`…) deixava passar `cliente.gob.es`:
+  virou Public Suffix List (`tldts`). A revisão achou que o RLS deixava o
+  navegador gravar `domain_status='active'` direto; a 0012 tira UPDATE e
+  INSERT dessas colunas do usuário — só as rotas de servidor gravam.
+- **Slug renomeável com 301** (`slugs_anteriores`, migração 0012). Slug
+  antigo presente em mais de um blog não redireciona: mandar os links de um
+  cliente para outro é pior que 404.
+- **Fuso de quem opera, não UTC.** Cookie `fuso` detectado no navegador,
+  editável em Interface; `src/lib/datas.ts` formata no servidor com fuso
+  explícito (sem #418). No blog público, o fuso é o do país do domínio.
+- **"Analisar" não dava sinal** porque a auditoria real leva 2–5s e o botão
+  voltava ao normal no mesmo instante em que chamava `router.refresh()`, que
+  não é aguardado — a tela ficava igual. Estado ocupado dura até o refresh
+  terminar, trava por ref contra duplo clique e dedupe no servidor.
+- **Acervo fora do idioma** marcado na leitura (`detectarIdioma`), com
+  "Descartar todas" — nada apagado em silêncio.
+- **Cron com registro** (`cron_execucoes`, migração 0013) e `?forcar=1`; a
+  tela só promete reauditoria quando há execução registrada.
+- **Relatórios** com período, comparação, PDF por `window.print()` e link
+  somente leitura assinado por HMAC (`RELATORIO_SECRET`), sem migração.
+- **Régua auditável:** `CHECAGENS` lista as 31 regras; a auditoria mostra o
+  que passou e o que falhou, e um teste garante que nenhuma regra emite
+  código fora da lista.
