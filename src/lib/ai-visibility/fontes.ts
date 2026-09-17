@@ -58,6 +58,29 @@ function tipoDaFonte(dominio: string): Fonte["tipo"] {
   return "site";
 }
 
+// Os domínios que UMA resposta citou, já classificados. É a lista "por que
+// ele e não você nesta pergunta" dentro da linha da pergunta, e a mesma base
+// da contagem do mercado inteiro - duas leituras, uma classificação.
+export function fontesDaResposta(
+  c: Pick<CheckFonte, "competitors" | "directories">,
+): { dominio: string; tipo: Fonte["tipo"] }[] {
+  // O mesmo domínio duas vezes na mesma resposta é uma fonte, não duas.
+  const daResposta = new Map<string, Fonte["tipo"]>();
+  for (const bruto of c.competitors ?? []) {
+    const d = extractDomain(bruto) ?? bruto;
+    // Checagens antigas têm diretório misturado em `competitors` - a
+    // separação de coluna é posterior. Classificado na leitura.
+    daResposta.set(d, tipoDaFonte(d));
+  }
+  for (const bruto of c.directories ?? []) {
+    const d = extractDomain(bruto) ?? bruto;
+    // Imprensa gravada em `directories` (a lista de mídia vive junto da
+    // de diretórios no detector) volta a ser imprensa aqui.
+    daResposta.set(d, isImprensa(d) ? "imprensa" : "plataforma");
+  }
+  return [...daResposta].map(([dominio, tipo]) => ({ dominio, tipo }));
+}
+
 export function lerFontes(checks: CheckFonte[], limite = 6): LeituraFontes {
   const porDominio = new Map<
     string,
@@ -66,22 +89,7 @@ export function lerFontes(checks: CheckFonte[], limite = 6): LeituraFontes {
   let citacoes = 0;
 
   for (const c of checks) {
-    // O mesmo domínio duas vezes na mesma resposta é uma fonte, não duas.
-    const daResposta = new Map<string, Fonte["tipo"]>();
-    for (const bruto of c.competitors ?? []) {
-      const d = extractDomain(bruto) ?? bruto;
-      // Checagens antigas têm diretório misturado em `competitors` - a
-      // separação de coluna é posterior. Classificado na leitura.
-      daResposta.set(d, tipoDaFonte(d));
-    }
-    for (const bruto of c.directories ?? []) {
-      const d = extractDomain(bruto) ?? bruto;
-      // Imprensa gravada em `directories` (a lista de mídia vive junto da
-      // de diretórios no detector) volta a ser imprensa aqui.
-      daResposta.set(d, isImprensa(d) ? "imprensa" : "plataforma");
-    }
-
-    for (const [dominio, tipo] of daResposta) {
+    for (const { dominio, tipo } of fontesDaResposta(c)) {
       citacoes++;
       const atual = porDominio.get(dominio) ?? {
         tipo,

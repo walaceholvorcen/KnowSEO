@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { lerFontes, type CheckFonte } from "./fontes.ts";
+import { fontesDaResposta, lerFontes, type CheckFonte } from "./fontes.ts";
 
 const check = (
   query_id: string,
@@ -69,4 +69,17 @@ test("concentração só aparece com dado suficiente", () => {
   );
   // 12 citações: a.es leva 9, e as 5 maiores fontes levam 9+1+1+1 = 12.
   assert.deepEqual(lerFontes(muitos).concentracao, { fontes: 4, pct: 100 });
+});
+
+test("fontesDaResposta: uma resposta, sem repetir domínio, com tipo", () => {
+  const lista = fontesDaResposta({
+    competitors: ["https://rival.es/a", "rival.es", "sortlist.com"],
+    directories: ["clutch.co"],
+  });
+  assert.deepEqual(lista, [
+    { dominio: "rival.es", tipo: "site" },
+    { dominio: "sortlist.com", tipo: "plataforma" },
+    { dominio: "clutch.co", tipo: "plataforma" },
+  ]);
+  assert.deepEqual(fontesDaResposta({ competitors: null, directories: null }), []);
 });

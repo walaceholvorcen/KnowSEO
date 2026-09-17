@@ -9,6 +9,7 @@ import {
   MAX_PERGUNTAS,
 } from "@/lib/ai-visibility/runner";
 import type { AiQuery, Blog } from "@/types";
+import { abrirExecucao, fecharExecucao } from "./execucoes";
 
 // O acompanhamento semanal: reaudita o site e refaz o Raio X - GEO de cada
 // blog, sem ninguém clicar.
@@ -22,6 +23,14 @@ import type { AiQuery, Blog } from "@/types";
 // Disparado pelo agendamento da Vercel (vercel.json). A Vercel manda
 // `Authorization: Bearer <CRON_SECRET>` quando a variável existe; sem ela a
 // rota recusa tudo, para que ninguém de fora dispare auditoria em massa.
+//
+// Disparo manual verificável: `GET /api/cron/semanal?forcar=1` com o mesmo
+// `Authorization: Bearer <CRON_SECRET>` ignora o critério dos seis dias e
+// reaudita/refaz o Raio X na hora. Existe porque, sem ele, conferir se o
+// acompanhamento funciona exigia esperar a segunda-feira seguinte - e foi
+// assim que ele passou semanas quebrado sem ninguém ver. Atenção: forçar
+// também refaz o Raio X - GEO de cada blog com perguntas (custo de API).
+// Cada disparo fica em `cron_execucoes` (ver ./execucoes.ts).
 export const maxDuration = 300;
 
 const INTERVALO_MS = 6 * 24 * 60 * 60 * 1000; // "já rodou esta semana"
@@ -31,8 +40,8 @@ const INTERVALO_MS = 6 * 24 * 60 * 60 * 1000; // "já rodou esta semana"
 // dias", não "é segunda-feira".
 const MAX_BLOGS = 5;
 
-function venceu(quando: string | null | undefined): boolean {
-  return !quando || Date.now() - new Date(quando).getTime() > INTERVALO_MS;
+function venceu(quando: string | null | undefined, forcar = false): boolean {
+  return forcar || !quando || Date.now() - new Date(quando).getTime() > INTERVALO_MS;
 }
 
 export async function GET(request: Request) {
@@ -40,6 +49,9 @@ export async function GET(request: Request) {
   if (!segredo || request.headers.get("authorization") !== `Bearer ${segredo}`) {
     return NextResponse.json({ error: "não autorizado" }, { status: 401 });
   }
+
+  const forcar = new URL(request.url).searchParams.get("forcar") === "1";
+  const execucao = await abrirExecucao("/api/cron/semanal");
 
   const admin = createAdminClient();
   // Ordem fixa: sem ela o Postgres devolve em qualquer ordem e o mesmo blog
@@ -56,7 +68,7 @@ export async function GET(request: Request) {
   const feito: { blog: string; auditoria?: string; radar?: string }[] = [];
 
   const lote = ((blogs as Blog[]) ?? []).slice(0, MAX_BLOGS);
-  console.log(`[cron semanal] início, ${lote.length} blogs`);
+  console.log(`[cron semanal] início, ${lote.length} blogs${forcar ? " (forçado)" : ""}`);
 
   for (const bruto of lote) {
     const blog = bruto;
@@ -73,7 +85,7 @@ export async function GET(request: Request) {
       .maybeSingle();
 
     const auditoria = ultima as { site_url: string; created_at: string } | null;
-    if (auditoria && venceu(auditoria.created_at)) {
+    if (auditoria && venceu(auditoria.created_at, forcar)) {
       registro.auditoria = auditoria.site_url;
       tarefas.push({
         rotulo: `auditoria ${blog.name} (${auditoria.site_url})`,
@@ -107,7 +119,7 @@ export async function GET(request: Request) {
       const perguntas = (queries as AiQuery[]) ?? [];
       const inicio = (ultimaRodada as { started_at: string } | null)?.started_at;
 
-      if (perguntas.length && venceu(inicio) && !(await rodadaEmAndamento(blog.id))) {
+      if (perguntas.length && venceu(inicio, forcar) && !(await rodadaEmAndamento(blog.id))) {
         registro.radar = `${perguntas.length} perguntas`;
         tarefas.push({
           rotulo: `raio x ${blog.name}`,
@@ -134,6 +146,7 @@ export async function GET(request: Request) {
   // só os rejeitados respondia "falhas: 0" com tudo quebrado - foi assim que
   // a reauditoria de segunda passou semanas sem aparecer e sem rastro.
   let falhas = 0;
+  const erros: { tarefa: string; erro: string }[] = [];
   resultados.forEach((r, i) => {
     const detalhe =
       r.status === "rejected"
@@ -147,7 +160,14 @@ export async function GET(request: Request) {
           : null;
     if (detalhe === null) return;
     falhas++;
+    erros.push({ tarefa: tarefas[i].rotulo, erro: String(detalhe).slice(0, 300) });
     console.error(`[cron semanal] falhou: ${tarefas[i].rotulo}`, detalhe);
+  });
+
+  await fecharExecucao(execucao, {
+    tarefas: tarefas.length,
+    falhas,
+    detalhe: { forcar, blogs: feito, erros },
   });
 
   console.log(

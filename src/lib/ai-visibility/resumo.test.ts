@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   perguntasComCitacao,
   perguntasDaRodada,
+  pareceCortada,
   placarPorMotor,
 } from "./resumo.ts";
 
@@ -55,4 +56,16 @@ test("perguntas da rodada não duplicam por motor", () => {
     c("q2", "claude", false),
   ]);
   assert.equal(todas.size, 2);
+});
+
+test("pareceCortada: termina em palavra sem pontuação", () => {
+  assert.equal(pareceCortada("A melhor agência é a Clínica Madr"), true);
+  assert.equal(pareceCortada("Custa cerca de 300"), true);
+  assert.equal(pareceCortada("Frase completa.\n"), false);
+  assert.equal(pareceCortada("Quer saber mais?"), false);
+  assert.equal(pareceCortada("Veja (fonte)"), false);
+  assert.equal(pareceCortada("Termina em **negrito.**"), false);
+  assert.equal(pareceCortada("Diz «assim»"), false);
+  assert.equal(pareceCortada(""), false);
+  assert.equal(pareceCortada(null), false);
 });

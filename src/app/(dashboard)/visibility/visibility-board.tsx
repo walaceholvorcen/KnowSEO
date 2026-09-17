@@ -10,11 +10,13 @@ import {
   ROTULO_MOTOR,
   perguntasComCitacao,
   perguntasDaRodada,
+  pareceCortada,
   placarPorMotor,
 } from "@/lib/ai-visibility/resumo";
-import { lerFontes } from "@/lib/ai-visibility/fontes";
+import { fontesDaResposta, lerFontes } from "@/lib/ai-visibility/fontes";
+import { dataCurta } from "@/lib/audit/jornada";
 import { markdownParaHtml } from "@/lib/markdown";
-import { FontesDoMercado } from "./fontes-do-mercado";
+import { FontesDoMercado, ROTULO_TIPO } from "./fontes-do-mercado";
 import type { AiQuery, AiVisibilityCheck } from "@/types";
 
 const INTENT_LABEL: Record<string, string> = {
@@ -76,6 +78,9 @@ function buildTimeline(checks: AiVisibilityCheck[]) {
     .map(([chave, v]) => ({
       chave,
       day: v.quando.slice(0, 10),
+      // Rótulo DD/MM pelo helper único de data: MM-DD cru (slice do ISO) lia
+      // "09-15" como setembro/15 para quem pensa em dia/mês.
+      rotulo: dataCurta(v.quando),
       score: Math.round((v.cited / v.total) * 100),
     }))
     .sort((a, b) => a.day.localeCompare(b.day))
@@ -410,7 +415,7 @@ export function VisibilityBoard({
                     key={t.chave}
                     className="tabular text-sm text-slate-400 dark:text-slate-500"
                   >
-                    {t.day.slice(5)}
+                    {t.rotulo}
                   </span>
                 ))}
               </div>
@@ -440,7 +445,7 @@ export function VisibilityBoard({
                     />
                   </div>
                   <span className="tabular text-sm text-slate-400 dark:text-slate-500">
-                    {t.day.slice(5)}
+                    {t.rotulo}
                   </span>
                 </div>
               ))}
@@ -557,6 +562,15 @@ export function VisibilityBoard({
                                   __html: markdownParaHtml(r.answer_excerpt!),
                                 }}
                               />
+                              {/* Sem isto a resposta cortada pelo limite de
+                                  tokens terminava em silêncio no meio da
+                                  frase, e parecia ser tudo o que a IA disse. */}
+                              {pareceCortada(r.answer_excerpt) && (
+                                <p className="mt-1 text-sm italic text-slate-500 dark:text-slate-400">
+                                  Resposta interrompida pelo assistente
+                                </p>
+                              )}
+                              <FontesDaResposta check={r} />
                             </div>
                           ))}
                       </div>
@@ -566,6 +580,47 @@ export function VisibilityBoard({
               </Linha>
             );
           })}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+// Os domínios que ESTA resposta citou. O placar diz "não citou"; esta lista
+// diz em quem a IA confiou no lugar - é o que transforma a derrota numa
+// pergunta em lugares concretos onde estar (ou páginas para superar).
+function FontesDaResposta({ check }: { check: AiVisibilityCheck }) {
+  const fontes = fontesDaResposta(check);
+  if (!fontes.length && !check.found_in_search) return null;
+  return (
+    <div className="mt-2">
+      <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
+        {check.cited ? "Fontes citadas nesta resposta" : "Por que ele e não você nesta pergunta"}
+      </p>
+      {!check.cited && check.found_in_search && (
+        // O diagnóstico mais acionável do módulo (seção 20): a busca achou o
+        // site, o problema é o conteúdo da página, não ser encontrado.
+        <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
+          {fontes.length
+            ? "A busca encontrou o seu site, e a resposta preferiu estas fontes."
+            : "A busca encontrou o seu site, e a resposta não o citou."}
+        </p>
+      )}
+      {fontes.length > 0 && (
+        <ul className="mt-1 space-y-0.5 text-sm">
+          {fontes.map((f) => (
+            <li key={f.dominio} className="flex min-w-0 flex-wrap items-baseline gap-x-2">
+              <a
+                href={`https://${f.dominio}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="min-w-0 break-all text-slate-800 hover:text-cobalto-600 hover:underline dark:text-slate-200 dark:hover:text-cobalto-400"
+              >
+                {f.dominio}
+              </a>
+              <span className="text-slate-500 dark:text-slate-400">{ROTULO_TIPO[f.tipo]}</span>
+            </li>
+          ))}
         </ul>
       )}
     </div>

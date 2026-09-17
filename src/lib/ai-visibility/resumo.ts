@@ -59,3 +59,18 @@ export function perguntasComCitacao(checks: CheckMin[]): Set<string> {
 export function perguntasDaRodada(checks: CheckMin[]): Set<string> {
   return new Set(checks.map((c) => c.query_id));
 }
+
+// A resposta parece ter sido interrompida pelo assistente (limite de tokens)?
+//
+// Não há coluna para o `stop_reason` - e as respostas antigas nem o têm -,
+// então a tela deduz pelo texto: termina numa letra ou número, sem pontuação
+// final. Sem este aviso a resposta cortada aparecia em silêncio, e o cliente
+// lia a frase pela metade como se fosse tudo o que a IA disse.
+// ponytail: heurística - item de lista final sem ponto também casa; trocar
+// por coluna `truncada` quando valer uma migração.
+export function pareceCortada(texto: string | null | undefined): boolean {
+  // Marcas de markdown no fim (**negrito**, `código`) não são o fim da frase.
+  const limpo = (texto ?? "").trimEnd().replace(/[*_`~]+$/, "");
+  if (!limpo) return false;
+  return /[\p{L}\p{N}]$/u.test(limpo);
+}

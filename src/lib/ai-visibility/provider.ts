@@ -22,6 +22,10 @@ export interface AiAnswer {
    *  busca e não ser citado significa que a IA encontrou o cliente e
    *  escolheu outro - diagnóstico muito mais acionável que "não citado". */
   searchResultUrls: string[];
+  /** O motor parou por limite de tokens: a resposta saiu cortada. Só o
+   *  Claude informa hoje (`stop_reason`); nos outros fica indefinido. Não é
+   *  gravado (sem coluna) - a tela usa `pareceCortada()` sobre o texto. */
+  truncada?: boolean;
 }
 
 export interface AiProvider {

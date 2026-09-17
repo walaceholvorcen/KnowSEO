@@ -176,6 +176,11 @@ export async function executarRodada(params: {
     await mapWithConcurrency(tarefas, CONCORRENCIA, async ({ query, provider }) => {
       try {
         const answer = await provider.ask(query.question);
+        // Sem coluna para isto: fica no log, para dar para medir se 8000
+        // tokens bastam antes de pensar em migração.
+        if (answer.truncada) {
+          console.warn("[ai-visibility] resposta cortada por limite", provider.name, query.id);
+        }
 
         const result = detectCitation({
           answerText: answer.answerText,

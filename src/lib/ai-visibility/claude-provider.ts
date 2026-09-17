@@ -28,7 +28,10 @@ export class ClaudeProvider implements AiProvider {
 
     const response = await client.messages.create({
       model: MODEL,
-      max_tokens: 4000,
+      // 8000, não 4000: com busca, os resultados lidos e o texto dividem a
+      // mesma saída, e 4000 cortava a resposta no meio da recomendação -
+      // justo a frase que a tela mostra como prova.
+      max_tokens: 8000,
       output_config: { effort: "low" },
       tools: [
         {
@@ -81,6 +84,7 @@ export class ClaudeProvider implements AiProvider {
       answerText: answerText.join("\n"),
       citationUrls: [...new Set(citationUrls)],
       searchResultUrls: [...new Set(searchResultUrls)],
+      truncada: response.stop_reason === "max_tokens",
     };
   }
 }

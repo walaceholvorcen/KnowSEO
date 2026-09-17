@@ -5,7 +5,7 @@ import { ROTULO_MOTOR } from "@/lib/ai-visibility/resumo";
 import type { LeituraFontes } from "@/lib/ai-visibility/fontes";
 
 // "Site citado" é neutro de propósito: a lista não sabe se é concorrente.
-const ROTULO_TIPO: Record<LeituraFontes["fontes"][number]["tipo"], string> = {
+export const ROTULO_TIPO: Record<LeituraFontes["fontes"][number]["tipo"], string> = {
   plataforma: "Plataforma",
   imprensa: "Imprensa",
   site: "Site citado",
