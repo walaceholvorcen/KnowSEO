@@ -32,12 +32,15 @@ export function tituloDoCaminho(url: string): string | null {
 
 /**
  * @param tituloDaHome <title> lido na home; null quando a página É a home.
+ * @returns `suspeita` quando tudo repetia a home e o título veio do caminho:
+ *   o endereço pode estar servindo a própria home (SPA ou soft 404), e
+ *   quem grava precisa poder dizer isso em vez de fingir um título lido.
  */
 export function tituloDaPagina(
   html: string,
   url: string,
   tituloDaHome: string | null,
-): string | null {
+): { titulo: string | null; suspeita: boolean } {
   const candidatos = [
     texto(html, /<title[^>]*>([\s\S]*?)<\/title>/i),
     texto(html, /<meta[^>]*property=["']og:title["'][^>]*content=["']([^"']*)["']/i),
@@ -47,7 +50,36 @@ export function tituloDaPagina(
     tituloDaHome !== null && t.toLowerCase() === tituloDaHome.toLowerCase();
 
   const proprio = candidatos.find((c) => c && !repeteHome(c));
-  if (proprio) return proprio;
+  if (proprio) return { titulo: proprio, suspeita: false };
   // Só chega aqui página interna cujo título é o da home (ou sem título).
-  return tituloDaHome === null ? null : tituloDoCaminho(url);
+  if (tituloDaHome === null) return { titulo: null, suspeita: false };
+  return { titulo: tituloDoCaminho(url), suspeita: true };
+}
+
+// Na tela de linkagem interna, a partir do que está gravado (sem coluna
+// nova): página cujo título é idêntico ao de outra página mapeada é
+// suspeita - os registros de crawl antigo gravaram o título da home em
+// todas. A home em si (caminho "/") não é suspeita de repetir a si mesma.
+export function titulosSuspeitos(
+  paginas: { id: string; url: string; title: string | null }[],
+): Set<string> {
+  const porTitulo = new Map<string, typeof paginas>();
+  for (const p of paginas) {
+    const chave = p.title?.trim().toLowerCase();
+    if (!chave) continue;
+    porTitulo.set(chave, [...(porTitulo.get(chave) ?? []), p]);
+  }
+  const ehHome = (url: string) => {
+    try {
+      return new URL(url).pathname.replace(/\/+$/, "") === "";
+    } catch {
+      return false;
+    }
+  };
+  const suspeitos = new Set<string>();
+  for (const grupo of porTitulo.values()) {
+    if (grupo.length < 2) continue;
+    for (const p of grupo) if (!ehHome(p.url)) suspeitos.add(p.id);
+  }
+  return suspeitos;
 }

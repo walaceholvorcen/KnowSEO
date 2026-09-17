@@ -49,6 +49,8 @@ export async function POST(request: Request) {
   }
 
   // upsert para poder recrawlear sem duplicar (unique em blog_id + url).
+  // Sobrescreve o title: é assim que "Analisar site" de novo corrige os
+  // registros do crawl antigo que gravou o título da home em toda página.
   const { data: inserted, error } = await supabase
     .from("internal_links")
     .upsert(
@@ -68,5 +70,11 @@ export async function POST(request: Request) {
 
   await completeOnboardingStep(supabase, workspace, "site_analyzed");
 
-  return NextResponse.json({ links: inserted, count: inserted?.length ?? 0 });
+  return NextResponse.json({
+    links: inserted,
+    count: inserted?.length ?? 0,
+    // Páginas que só responderam o título da home: o título gravado veio do
+    // endereço. A tela diz isso em vez de apresentar como título lido.
+    suspeitas: pages.filter((p) => p.suspeita).length,
+  });
 }

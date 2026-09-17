@@ -1,12 +1,13 @@
 "use client";
 
 import { botao, campo, pagina } from "@/components/ui";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChevronDown, ChevronRight, Plus, Radar, X } from "lucide-react";
 import { Lede, Linha, Secao } from "@/components/lede";
 import { cn } from "@/lib/utils";
+import { deveAnalisarSozinho } from "@/lib/mercado/temas";
 import type {
   MarketAnalysisRow,
   MarketChanceRow,
@@ -41,14 +42,27 @@ export function MarketBoard({
   // viu citados no lugar da marca: é o melhor palpite que o produto tem, e
   // uma caixa vazia só adiava a primeira análise.
   const doRaioX = sugeridos.slice(0, MAX_CONCORRENTES);
+  // Decidido uma vez, na montagem: o refresh depois da análise traz props
+  // novas mas não remonta, então não redispara.
+  const [autoInicial] = useState(() =>
+    deveAnalisarSozinho({ analise, temas: temas.length, sugeridos: doRaioX }),
+  );
   const [lista, setLista] = useState<string[]>(
-    analise?.competitor_domains?.length ? analise.competitor_domains : doRaioX,
+    !autoInicial && analise?.competitor_domains?.length
+      ? analise.competitor_domains
+      : doRaioX,
   );
   const [rascunho, setRascunho] = useState("");
   const [rodando, setRodando] = useState(false);
   const [gerando, setGerando] = useState<number | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [aberto, setAberto] = useState<Set<number>>(new Set());
+  // Análise disparada sozinha: quantos sites do Raio X foram usados (para o
+  // aviso) e se o formulário de concorrentes fica recolhido até "Trocar".
+  const [autoUsados, setAutoUsados] = useState<number | null>(null);
+  const [autoRodando, setAutoRodando] = useState(autoInicial);
+  const [formAberto, setFormAberto] = useState(!autoInicial);
+  const disparou = useRef(false);
 
   function adicionar(dominio: string) {
     const limpo = dominio
@@ -64,25 +78,42 @@ export function MarketBoard({
     setRascunho("");
   }
 
-  async function analisar() {
-    if (!lista.length) return;
+  async function analisar(concorrentes: string[] = lista): Promise<boolean> {
+    if (!concorrentes.length) return false;
     setRodando(true);
     setErro(null);
 
     const res = await fetch("/api/market/run", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ blogId, concorrentes: lista }),
+      body: JSON.stringify({ blogId, concorrentes }),
     });
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
     setRodando(false);
 
     if (!res.ok) {
       setErro(data.error ?? "Não foi possível analisar agora.");
-      return;
+      return false;
     }
     router.refresh();
+    return true;
   }
+
+  // Uma vez por carga (o ref segura o efeito duplo do modo estrito e o
+  // refresh depois da análise). Depois que roda, a última análise passa a
+  // ter exatamente estes domínios e deveAnalisarSozinho devolve false: não
+  // há laço mesmo se o resultado vier vazio de novo.
+  useEffect(() => {
+    if (disparou.current || !autoInicial) return;
+    disparou.current = true;
+    analisar(doRaioX).then((ok) => {
+      setAutoRodando(false);
+      if (ok) setAutoUsados(doRaioX.length);
+      // Falhou: o erro aparece e o formulário volta, para o cliente agir.
+      else setFormAberto(true);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function gerarPauta(temaId: number) {
     setGerando(temaId);
@@ -165,7 +196,7 @@ export function MarketBoard({
               </button>
             )}
             <button
-              onClick={analisar}
+              onClick={() => analisar()}
               disabled={rodando || lista.length === 0}
               className={botao("primario")}
             >
@@ -182,7 +213,21 @@ export function MarketBoard({
         {veredito}
       </Lede>
 
+      {autoUsados !== null && !formAberto && (
+        <p className="mb-6 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-slate-600 dark:text-slate-400">
+          Usamos os {autoUsados} sites que a IA cita no seu mercado.
+          <button
+            onClick={() => setFormAberto(true)}
+            className={botao("fantasma", "sm")}
+          >
+            Trocar
+          </button>
+        </p>
+      )}
+
       {/* Seleção de concorrentes ---------------------------------------- */}
+      {formAberto && (
+      <>
       <div className="mb-2 flex flex-wrap items-center gap-2">
         {lista.map((dominio) => (
           <span
@@ -243,9 +288,13 @@ export function MarketBoard({
               ))}
           </p>
         )}
+      </>
+      )}
 
       {rodando && (
         <p className="mb-6 text-sm text-slate-500 dark:text-slate-400">
+          {autoRodando &&
+            `Analisando sozinho com os ${doRaioX.length} sites que a IA cita no seu mercado (${doRaioX.join(", ")}). `}
           Lendo o sitemap de cada concorrente. Costuma levar de 20 a 40
           segundos.
         </p>

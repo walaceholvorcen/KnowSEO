@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
+  deveAnalisarSozinho,
   analisarMercado,
   acharChances,
   bigramas,
@@ -257,4 +258,45 @@ test("chances saem ordenadas pela impressão", () => {
     chances.map((c) => c.query),
     ["maior", "menor"],
   );
+});
+
+test("deveAnalisarSozinho: sem análise ou sem temas, com Raio X diferente", () => {
+  const sugeridos = ["a.es", "b.es"];
+  assert.equal(deveAnalisarSozinho({ analise: null, temas: 0, sugeridos }), true);
+  assert.equal(
+    deveAnalisarSozinho({
+      analise: { status: "done", competitor_domains: ["x.com.br"] },
+      temas: 0,
+      sugeridos,
+    }),
+    true,
+  );
+});
+
+test("deveAnalisarSozinho: não repete o que já rodou nem mexe em resultado bom", () => {
+  const sugeridos = ["a.es", "b.es"];
+  // Mesmos domínios em outra ordem: já rodou, daria o mesmo vazio (laço).
+  assert.equal(
+    deveAnalisarSozinho({
+      analise: { status: "done", competitor_domains: ["b.es", "a.es"] },
+      temas: 0,
+      sugeridos,
+    }),
+    false,
+  );
+  assert.equal(
+    deveAnalisarSozinho({
+      analise: { status: "done", competitor_domains: ["x.es"] },
+      temas: 5,
+      sugeridos,
+    }),
+    false,
+  );
+  for (const status of ["running", "error"]) {
+    assert.equal(
+      deveAnalisarSozinho({ analise: { status, competitor_domains: [] }, temas: 0, sugeridos }),
+      false,
+    );
+  }
+  assert.equal(deveAnalisarSozinho({ analise: null, temas: 0, sugeridos: [] }), false);
 });

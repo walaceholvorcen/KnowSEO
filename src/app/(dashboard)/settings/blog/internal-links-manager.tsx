@@ -3,8 +3,10 @@
 import { botao, campo } from "@/components/ui";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Trash2, Radar } from "lucide-react";
+import { titulosSuspeitos } from "@/lib/titulo";
 import { createClient } from "@/lib/supabase/client";
 import type { InternalLink } from "@/types";
 
@@ -52,7 +54,12 @@ export function InternalLinksManager({
     }
 
     setLinks(data.links as InternalLink[]);
-    setCrawlResult(`${data.count} páginas detectadas e salvas.`);
+    setCrawlResult(
+      `${data.count} páginas detectadas e salvas.` +
+        (data.suspeitas
+          ? ` ${data.suspeitas} ${data.suspeitas === 1 ? "respondeu" : "responderam"} com o título da página inicial; o título salvo veio do endereço.`
+          : ""),
+    );
     router.refresh();
   }
 
@@ -80,6 +87,8 @@ export function InternalLinksManager({
     setLinks((prev) => prev.filter((l) => l.id !== id));
     await supabase.from("internal_links").delete().eq("id", id);
   }
+
+  const suspeitos = titulosSuspeitos(links);
 
   return (
     <div className="space-y-8">
@@ -177,6 +186,15 @@ export function InternalLinksManager({
                     {link.title && (
                       <p className="truncate text-xs text-slate-400 dark:text-slate-500">
                         {link.url}
+                      </p>
+                    )}
+                    {suspeitos.has(link.id) && (
+                      <p className="text-xs text-nota-atencao">
+                        Título igual ao da página inicial — o site pode estar
+                        respondendo a home neste endereço.{" "}
+                        <Link href="/audit" className="font-medium underline">
+                          Ver na auditoria
+                        </Link>
                       </p>
                     )}
                   </div>

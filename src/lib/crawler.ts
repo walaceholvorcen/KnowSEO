@@ -16,6 +16,10 @@ export interface CrawledPage {
   url: string;
   title: string | null;
   description: string | null;
+  /** Título derivado do caminho porque tudo repetia a home (titulo.ts). Não
+   *  é gravado - não há coluna; a tela de linkagem recalcula pela
+   *  comparação de títulos. Vai só na resposta do crawl. */
+  suspeita?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -218,10 +222,12 @@ async function fetchPageMeta(
     /<meta[^>]+name=["']description["'][^>]+content=["']([^"']*)["']/i,
   );
 
+  const { titulo, suspeita } = tituloDaPagina(html, url, tituloDaHome);
   return {
     url,
-    title: tituloDaPagina(html, url, tituloDaHome)?.slice(0, 200) ?? null,
+    title: titulo?.slice(0, 200) ?? null,
     description: descMatch ? decodeEntities(descMatch[1]).slice(0, 300) : null,
+    suspeita,
   };
 }
 
@@ -270,8 +276,12 @@ export async function crawlSite(siteUrl: string): Promise<CrawledPage[]> {
     (url) => fetchPageMeta(url, home.title),
   );
 
+  // A home volta com a URL como o sitemap escreveu ("…/" ou sem barra): o
+  // upsert casa por blog_id + url, e trocar a grafia criaria uma segunda
+  // linha da home em vez de atualizar a existente.
+  const homeNoSitemap = withMeta.find((u) => semBarra(u) === origin);
   return [
-    ...(withMeta.some((u) => semBarra(u) === origin) ? [home] : []),
+    ...(homeNoSitemap ? [{ ...home, url: homeNoSitemap }] : []),
     ...crawled,
     ...withoutMeta.map((url) => ({ url, title: null, description: null })),
   ];

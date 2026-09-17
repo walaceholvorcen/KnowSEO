@@ -1,6 +1,8 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
-import { tituloDaPagina, tituloDoCaminho } from "./titulo.ts";
+import { tituloDaPagina as ler, tituloDoCaminho, titulosSuspeitos } from "./titulo.ts";
+
+const tituloDaPagina = (...a: Parameters<typeof ler>) => ler(...a).titulo;
 
 const HOME = "DataKnow | Agencia de Performance Digital";
 const spa = (extra = "") =>
@@ -45,6 +47,38 @@ describe("tituloDaPagina", () => {
 
   test("home sem <title> nenhum devolve null", () => {
     assert.equal(tituloDaPagina("<html></html>", "https://dataknow.es/", null), null);
+  });
+});
+
+describe("suspeita", () => {
+  test("fallback pelo caminho marca suspeita; título próprio não", () => {
+    assert.deepEqual(ler(spa(), "https://dataknow.es/metodologia", HOME), {
+      titulo: "Metodologia",
+      suspeita: true,
+    });
+    assert.equal(ler(spa(), "https://dataknow.es/", null).suspeita, false);
+    const proprio = `<html><head><title>Contacto</title></head></html>`;
+    assert.equal(ler(proprio, "https://dataknow.es/contacto", HOME).suspeita, false);
+  });
+
+  test("titulosSuspeitos: título repetido marca as internas, não a home", () => {
+    const s = titulosSuspeitos([
+      { id: "h", url: "https://dataknow.es/", title: HOME },
+      { id: "a", url: "https://dataknow.es/metodologia", title: HOME },
+      { id: "b", url: "https://dataknow.es/contacto", title: ` ${HOME.toUpperCase()}` },
+      { id: "c", url: "https://dataknow.es/sobre", title: "Sobre nosotros" },
+      { id: "d", url: "https://dataknow.es/x", title: null },
+      { id: "e", url: "https://dataknow.es/y", title: null },
+    ]);
+    assert.deepEqual([...s].sort(), ["a", "b"]);
+  });
+
+  test("titulosSuspeitos: repetidas sem a home no mapa também contam", () => {
+    const s = titulosSuspeitos([
+      { id: "a", url: "https://x.es/a", title: "Igual" },
+      { id: "b", url: "https://x.es/b", title: "Igual" },
+    ]);
+    assert.equal(s.size, 2);
   });
 });
 

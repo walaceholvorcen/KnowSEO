@@ -316,3 +316,20 @@ export function acharChances(linhas: LinhaBusca[]): Chance[] {
 
   return chances.sort((a, b) => b.impressoes - a.impressoes);
 }
+
+// A tela de Mercado roda a análise sozinha quando não há resultado útil
+// (nenhuma análise, ou a última não achou tema) e o Raio X já sabe quem a IA
+// cita no mercado. Antes ficava esperando um clique com a resposta pronta ao
+// lado. A trava contra laço é a comparação de domínios: se a última análise
+// já usou exatamente esses sites, rodar de novo daria o mesmo vazio.
+export function deveAnalisarSozinho(params: {
+  analise: { status: string; competitor_domains: string[] } | null;
+  temas: number;
+  sugeridos: string[];
+}): boolean {
+  const { analise, temas, sugeridos } = params;
+  if (!sugeridos.length) return false;
+  if (analise && !(analise.status === "done" && temas === 0)) return false;
+  const usados = [...(analise?.competitor_domains ?? [])].sort().join(",");
+  return usados !== [...sugeridos].sort().join(",");
+}

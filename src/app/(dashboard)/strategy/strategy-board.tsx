@@ -42,6 +42,8 @@ export function StrategyBoard({
   initialKeywords,
   pais,
   idioma,
+  foraDoIdioma = [],
+  nomeIdiomaFora = "outro idioma",
 }: {
   blogId: string;
   initialKeywords: Keyword[];
@@ -49,6 +51,10 @@ export function StrategyBoard({
   /** Idioma em que as pautas saem, deduzido do domínio. Fica na abertura
    *  para o cliente ver a dedução antes de gerar, não pelo artigo pronto. */
   idioma: string;
+  /** Pautas sugeridas cujo texto está em outro idioma (acervo antigo). */
+  foraDoIdioma?: string[];
+  /** "português" quando todas as de fora são do mesmo idioma. */
+  nomeIdiomaFora?: string;
 }) {
   const router = useRouter();
   const supabase = createClient();
@@ -56,8 +62,31 @@ export function StrategyBoard({
   const [loadingIdeas, setLoadingIdeas] = useState(false);
   const [generatingId, setGeneratingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [descartando, setDescartando] = useState(false);
 
   const suggested = keywords.filter((k) => k.status === "suggested");
+  const fora = new Set(foraDoIdioma);
+  const qtdFora = suggested.filter((k) => fora.has(k.id)).length;
+
+  // O servidor recalcula quais estão fora e devolve os ids que descartou;
+  // a tela só marca como descartado o que o banco de fato mudou.
+  async function handleDescartarForaDoIdioma() {
+    setDescartando(true);
+    setError(null);
+    const res = await fetch("/api/keywords/descartar-fora-do-idioma", {
+      method: "POST",
+    });
+    const data = await res.json().catch(() => ({}));
+    setDescartando(false);
+    if (!res.ok) {
+      setError(data.error ?? "Não foi possível descartar as pautas agora.");
+      return;
+    }
+    const ids = new Set<string>(data.ids ?? []);
+    setKeywords((prev) =>
+      prev.map((k) => (ids.has(k.id) ? { ...k, status: "rejected" } : k)),
+    );
+  }
 
   async function handleFindIdeas() {
     setLoadingIdeas(true);
@@ -128,12 +157,34 @@ export function StrategyBoard({
 
       {error && <p className="mb-6 text-nota-critico">{error}</p>}
 
+      {qtdFora > 0 && (
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 border-l-2 border-l-nota-atencao px-4 py-3 text-sm text-slate-700 dark:border-slate-800 dark:border-l-nota-atencao dark:text-slate-300">
+          <p>
+            {qtdFora}{" "}
+            {qtdFora === 1 ? "pauta foi gerada" : "pautas foram geradas"} em{" "}
+            {nomeIdiomaFora} antes da configuração atual.
+          </p>
+          <button
+            onClick={handleDescartarForaDoIdioma}
+            disabled={descartando}
+            className={botao("secundario", "sm")}
+          >
+            {descartando ? "Descartando..." : "Descartar todas"}
+          </button>
+        </div>
+      )}
+
       {suggested.length > 0 && (
         <ul>
           {suggested.map((kw) => (
             <Linha key={kw.id}>
               <h3 className="font-medium text-slate-900 dark:text-slate-100">
                 {kw.suggested_title || kw.keyword}
+                {fora.has(kw.id) && (
+                  <span className="ml-2 whitespace-nowrap rounded-full bg-slate-100 px-2 py-0.5 align-middle text-xs font-medium text-nota-atencao dark:bg-slate-800">
+                    fora do idioma
+                  </span>
+                )}
               </h3>
               <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
                 {kw.keyword}
