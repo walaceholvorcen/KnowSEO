@@ -71,7 +71,14 @@ export function ArticleView({
           dangerouslySetInnerHTML={{ __html: article.content_html ?? "" }}
         />
 
-        <CtaBanner blog={blog} articleId={article.id} preview={preview} />
+        {/* Só o que o banner usa: prop de componente client vai inteira para o
+            payload RSC do HTML público, e o objeto blog carrega workspace_id,
+            slugs antigos, domínios da marca e domínio ainda não verificado. */}
+        <CtaBanner
+          blog={{ id: blog.id, cta_config: blog.cta_config, theme: blog.theme }}
+          articleId={article.id}
+          preview={preview}
+        />
       </main>
     </div>
   );

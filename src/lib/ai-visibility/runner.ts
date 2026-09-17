@@ -47,6 +47,9 @@ export interface RunSummary {
   cited: number;
   failed: number;
   runId: string;
+  /** Mensagem da primeira falha: o cron registra para dizer POR QUE falhou
+   *  (ex.: 401 de chave inválida), não só quantas. */
+  primeiroErro?: string;
 }
 
 // Domínios que representam a marca, com o blog hospedado incluído.
@@ -211,6 +214,7 @@ export async function executarRodada(params: {
         if (error) throw new Error(error.message);
       } catch (err) {
         summary.failed++;
+        summary.primeiroErro ??= `${provider.name}: ${err instanceof Error ? err.message : String(err)}`;
         console.error(
           "[ai-visibility] falha",
           provider.name,

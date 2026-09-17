@@ -8,7 +8,9 @@ export function CtaBanner({
   articleId,
   preview = false,
 }: {
-  blog: Blog;
+  // Só os campos usados: tudo o que chega aqui vai para o HTML público
+  // (payload RSC). Quem chama deve montar o objeto, não repassar o blog.
+  blog: Pick<Blog, "id" | "cta_config" | "theme">;
   articleId: string;
   /** Dentro do editor: o clique não pode virar conversa no relatório. */
   preview?: boolean;

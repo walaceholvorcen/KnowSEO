@@ -9,6 +9,7 @@ import {
   MAX_PERGUNTAS,
 } from "@/lib/ai-visibility/runner";
 import type { AiQuery, Blog } from "@/types";
+import { resultadoDaTarefa } from "@/lib/cron/resultado";
 import { abrirExecucao, fecharExecucao } from "./execucoes";
 
 // O acompanhamento semanal: reaudita o site e refaz o Raio X - GEO de cada
@@ -122,7 +123,7 @@ export async function GET(request: Request) {
       if (perguntas.length && venceu(inicio, forcar) && !(await rodadaEmAndamento(blog.id))) {
         registro.radar = `${perguntas.length} perguntas`;
         tarefas.push({
-          rotulo: `raio x ${blog.name}`,
+          rotulo: `Raio X ${blog.name}`,
           promessa: iniciarRodada({
             blogId: blog.id,
             providers,
@@ -142,26 +143,16 @@ export async function GET(request: Request) {
   // estourariam o limite de cinco minutos da função.
   const resultados = await Promise.allSettled(tarefas.map((t) => t.promessa));
 
-  // registrarAuditoria não lança: devolve `{ ok: false }` resolvido. Contar
-  // só os rejeitados respondia "falhas: 0" com tudo quebrado - foi assim que
-  // a reauditoria de segunda passou semanas sem aparecer e sem rastro.
+  // As duas etapas resolvem mesmo quando falham (ver resultadoDaTarefa):
+  // contar só os rejeitados respondia "falhas: 0" com tudo quebrado.
   let falhas = 0;
   const erros: { tarefa: string; erro: string }[] = [];
   resultados.forEach((r, i) => {
-    const detalhe =
-      r.status === "rejected"
-        ? r.reason
-        : r.value && typeof r.value === "object" && "ok" in r.value && r.value.ok === false
-          ? // Sem erro nem mensagem o log saía "falhou: X undefined", que não
-            // diz se faltou o campo ou se a falha não tem detalhe.
-            ((r.value as { erro?: string; mensagem?: string }).erro ??
-            (r.value as { mensagem?: string }).mensagem ??
-            "sem detalhe")
-          : null;
-    if (detalhe === null) return;
+    const erro = resultadoDaTarefa(tarefas[i].rotulo, r);
+    if (erro === null) return;
     falhas++;
-    erros.push({ tarefa: tarefas[i].rotulo, erro: String(detalhe).slice(0, 300) });
-    console.error(`[cron semanal] falhou: ${tarefas[i].rotulo}`, detalhe);
+    erros.push({ tarefa: tarefas[i].rotulo, erro });
+    console.error(`[cron semanal] falhou: ${tarefas[i].rotulo}`, erro);
   });
 
   await fecharExecucao(execucao, {
