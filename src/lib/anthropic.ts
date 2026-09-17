@@ -82,22 +82,32 @@ export function getAnthropicClient() {
 // ----------------------------------------------------------------------------
 // IDEACIÓN DE KEYWORDS ("Estrategia" - equivalente al agente Martin)
 // ----------------------------------------------------------------------------
-const KeywordIdeaSchema = z.object({
-  ideas: z.array(
-    z.object({
-      keyword: z.string().describe("La keyword principal, en minúsculas"),
-      suggested_title: z.string(),
-      funnel_stage: z.enum(["top", "middle", "bottom"]),
-      difficulty: z
-        .enum(["baja", "media", "alta"])
-        .describe("Estimación cualitativa de dificultad de ranking"),
-      opportunity_score: z.enum(["buena", "muy_buena", "excelente"]),
-      rationale: z
-        .string()
-        .describe("Por qué esta keyword es una buena oportunidad, en una frase"),
-    }),
-  ),
+const IdeaSchema = z.object({
+  keyword: z.string().describe("La keyword principal, en minúsculas"),
+  suggested_title: z.string(),
+  funnel_stage: z.enum(["top", "middle", "bottom"]),
+  difficulty: z
+    .enum(["baja", "media", "alta"])
+    .describe("Estimación cualitativa de dificultad de ranking"),
+  opportunity_score: z.enum(["buena", "muy_buena", "excelente"]),
+  rationale: z
+    .string()
+    .describe("Por qué esta keyword es una buena oportunidad, en una frase"),
 });
+
+const KeywordIdeaSchema = z.object({ ideas: z.array(IdeaSchema) });
+
+// O plano de conteúdo: um artigo amplo e vários específicos, todos do mesmo
+// tema. É o formato que ranqueia - artigo solto compete sozinho contra o
+// mercado inteiro, enquanto seis artigos ligados entre si dizem ao Google
+// que aquele site cobre o assunto.
+const ClusterSchema = z.object({
+  tema: z.string().describe("El tema del plan, en 2-4 palabras"),
+  pilar: IdeaSchema,
+  apoios: z.array(IdeaSchema),
+});
+
+export type PlanoDeConteudo = z.infer<typeof ClusterSchema>;
 
 export type KeywordIdea = z.infer<typeof KeywordIdeaSchema>["ideas"][number];
 
@@ -186,6 +196,70 @@ Prioriza keywords donde un artículo bien escrito pueda razonablemente competir 
   return response.parsed_output?.ideas ?? [];
 }
 
+// Plano de conteúdo em silo: um pilar e N apoios sobre o mesmo assunto.
+// A diferença para generateKeywordIdeas não é o número de pautas, é a
+// relação entre elas - o prompt exige que cada apoio responda uma pergunta
+// distinta, porque dois apoios sobre a mesma busca canibalizam um ao outro
+// e o site fica pior nas duas.
+export async function generateContentCluster(params: {
+  blog: Blog;
+  dna: BrandDna | null;
+  assunto: string;
+  /** Títulos que os concorrentes já publicaram, quando o plano nasce de um
+   *  tema da Análise de Mercado. */
+  exemplos?: string[];
+  existingKeywords: string[];
+  apoios?: number;
+}): Promise<PlanoDeConteudo | null> {
+  const client = getAnthropicClient();
+  const { blog, dna, assunto, exemplos = [], existingKeywords, apoios = 5 } = params;
+
+  const response = await client.messages.parse({
+    model: MODEL,
+    max_tokens: 16000,
+    system: [
+      {
+        type: "text",
+        text: buildBrandSystemPrompt(blog, dna),
+        cache_control: { type: "ephemeral" },
+      },
+    ],
+    output_config: {
+      effort: "medium",
+      format: zodOutputFormat(ClusterSchema),
+    },
+    messages: [
+      {
+        role: "user",
+        content: `${lineaDeHoy()}
+
+Diseña un plan de contenido en silo sobre: "${assunto}".
+
+Devuelve:
+- 1 artículo PILAR: la keyword amplia del tema, la que resume todo. Es el artículo al que todos los demás enlazarán.
+- ${apoios} artículos de APOYO: cada uno responde UNA pregunta específica y distinta dentro del mismo tema (criterios de elección, precios, comparativas, errores comunes, casos, pasos). Ninguno puede competir por la misma búsqueda que otro: si dos se responderían con el mismo artículo, cambia uno.
+
+Reglas:
+- Todas las keywords deben pertenecer al tema. No abras temas nuevos.
+- El pilar es más amplio que cualquier apoyo, pero no un término ultra-genérico dominado por marcas globales.
+- Prioriza ángulos concretos y verificables. Un modelo de IA no cita folletos.
+
+Ya existen (o fueron descartadas) estas keywords - NO las repitas:
+${existingKeywords.length ? existingKeywords.map((k) => `- ${k}`).join("\n") : "(ninguna todavía)"}
+${
+  exemplos.length
+    ? `
+Títulos que los competidores ya publicaron sobre el tema (no los copies - encuentra los ángulos que faltan):
+${exemplos.map((e) => `- ${e}`).join("\n")}`
+    : ""
+}`,
+      },
+    ],
+  });
+
+  return response.parsed_output ?? null;
+}
+
 // ----------------------------------------------------------------------------
 // GENERACIÓN DE ARTÍCULO COMPLETO
 // ----------------------------------------------------------------------------
@@ -212,9 +286,34 @@ export async function generateArticle(params: {
   keyword: string;
   suggestedTitle?: string | null;
   internalLinks: InternalLink[];
+  /** Artigos ja publicados do mesmo plano de conteudo. O link entre eles e
+   *  o que faz o silo existir para o Google - sem isso sao varios artigos
+   *  soltos sobre o mesmo assunto, que e a definicao de canibalizacao. */
+  clusterLinks?: { url: string; titulo: string; papel: string }[];
+  /** O tema do plano, para o texto saber de que conjunto faz parte. */
+  clusterTema?: string | null;
 }): Promise<GeneratedArticle | null> {
   const client = getAnthropicClient();
-  const { blog, dna, keyword, suggestedTitle, internalLinks } = params;
+  const {
+    blog,
+    dna,
+    keyword,
+    suggestedTitle,
+    internalLinks,
+    clusterLinks = [],
+    clusterTema = null,
+  } = params;
+
+  const clusterBlock = clusterLinks.length
+    ? `
+Este artículo forma parte de un plan de contenido${clusterTema ? ` sobre "${clusterTema}"` : ""}. Enlaza OBLIGATORIAMENTE a estos artículos del plan, con texto ancla descriptivo y dentro del cuerpo (nunca en una lista al final):
+${clusterLinks
+  .map(
+    (l) =>
+      `- ${l.url} (${l.papel === "pilar" ? "artículo pilar" : "artículo de apoyo"}: ${l.titulo})`,
+  )
+  .join("\n")}`
+    : "";
 
   const linksBlock = internalLinks.length
     ? internalLinks
@@ -252,7 +351,7 @@ ${
   linksBlock
     ? `Cuando sea natural, enlaza 2-4 de estas páginas del propio sitio dentro del contenido usando <a href="...">texto ancla</a> (no fuerces enlaces si no encajan):\n${linksBlock}`
     : "No hay páginas internas mapeadas todavía - no inventes enlaces internos."
-}`,
+}${clusterBlock}`,
       },
     ],
   });

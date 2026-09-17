@@ -5,6 +5,7 @@ import { generateArticle } from "@/lib/anthropic";
 import { slugify } from "@/lib/utils";
 import { isAiConfigured, AI_NOT_CONFIGURED_MESSAGE } from "@/lib/ai-config";
 import { avaliarArtigo } from "@/lib/artigo/qualidade";
+import { urlDoArtigo } from "@/lib/blog-endereco";
 import type { Blog, BrandDna, InternalLink, Keyword } from "@/types";
 
 export async function POST(request: Request) {
@@ -45,6 +46,35 @@ export async function POST(request: Request) {
     .select("*")
     .eq("blog_id", blog.id);
 
+  // Links do plano de conteúdo: só artigos do mesmo cluster que já estão
+  // publicados. Rascunho não está no ar - linkar para ele seria mandar o
+  // leitor (e o Google) para um 404. É este link que faz o silo existir;
+  // sem ele são vários artigos soltos sobre o mesmo assunto.
+  const clusterId = (keyword as Keyword).cluster_id;
+  let clusterLinks: { url: string; titulo: string; papel: string }[] = [];
+
+  if (clusterId) {
+    const { data: irmas } = await supabase
+      .from("keywords")
+      .select("cluster_papel, articles(slug, title, status)")
+      .eq("cluster_id", clusterId)
+      .neq("id", keyword.id);
+
+    clusterLinks = ((irmas as IrmaDoPlano[]) ?? [])
+      .flatMap((irma) =>
+        (irma.articles ?? [])
+          .filter((a) => a.status === "published")
+          .map((a) => ({
+            url: urlDoArtigo(blog, a.slug),
+            titulo: a.title,
+            papel: irma.cluster_papel ?? "apoio",
+          })),
+      )
+      // O pilar primeiro: é o link que todo apoio deve ter.
+      .sort((a, b) => Number(b.papel === "pilar") - Number(a.papel === "pilar"))
+      .slice(0, 6);
+  }
+
   // Cria o artigo em estado "generating" já para o usuário poder navegar
   // até ele e ver o spinner, em vez de esperar a resposta da IA na tela
   // de listagem.
@@ -82,6 +112,8 @@ export async function POST(request: Request) {
       keyword: keyword.keyword,
       suggestedTitle: (keyword as Keyword).suggested_title,
       internalLinks: (internalLinks as InternalLink[]) ?? [],
+      clusterLinks,
+      clusterTema: (keyword as Keyword).cluster_tema,
     };
     const paginas = ((internalLinks as InternalLink[]) ?? []).map((l) => l.url);
 
@@ -161,6 +193,11 @@ export async function POST(request: Request) {
     );
   }
 }
+
+type IrmaDoPlano = {
+  cluster_papel: string | null;
+  articles: { slug: string; title: string; status: string }[] | null;
+};
 
 // O slug é único por blog. Sem isto, uma geração que falhou deixa o
 // rascunho gravado e a mesma keyword nunca mais pode ser gerada - o

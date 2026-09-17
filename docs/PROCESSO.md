@@ -1762,3 +1762,54 @@ Segunda auditoria externa, 16 tarefas. As que mudaram a arquitetura:
 - **Régua auditável:** `CHECAGENS` lista as 31 regras; a auditoria mostra o
   que passou e o que falhou, e um teste garante que nenhuma regra emite
   código fora da lista.
+
+## 41. Plano de conteúdo: a Estratégia deixa de entregar pauta solta
+
+Pergunta do dono: "o que essa estratégia me entrega hoje para eu fazer esses
+blogs e estar ranqueando?". A resposta honesta era: uma lista de pautas boas,
+não um plano. Oito keywords sem relação entre si, cada artigo competindo
+sozinho contra o mercado inteiro - e, no pior caso, competindo entre si.
+
+O que ranqueia é cobertura de tema: um artigo amplo (pilar) e vários
+específicos (apoio), ligados entre si. É o silo que a agência do Daniel
+Sócrates vende (seção 24) e o que faltava aqui.
+
+### O que entrou
+
+- **`generateContentCluster`** devolve `{tema, pilar, apoios[]}` em vez de
+  uma lista plana. O prompt não pede "mais pautas": pede que cada apoio
+  responda **uma pergunta distinta** dentro do tema, porque dois apoios que
+  se responderiam com o mesmo artigo canibalizam um ao outro e o site fica
+  pior nas duas buscas.
+- **Migração 0014**: `cluster_id`, `cluster_tema` e `cluster_papel` na
+  própria tabela de keywords. Tabela nova obrigaria join em toda leitura da
+  Estratégia para exibir a mesma coisa. `cluster_id` nulo é o que sempre
+  existiu - pauta solta continua valendo (pergunta perdida no Raio X não
+  vira plano de seis artigos). O id é gerado na rota: as seis pautas entram
+  num insert só e precisam compartilhar o valor.
+- **Duas portas**: "Montar plano" na Estratégia (o assunto é digitado) e
+  "Plano do tema" no Mercado (o assunto é a lacuna medida, e os títulos
+  reais dos concorrentes vão junto no prompt). No Mercado, "Gerar pauta"
+  virou "Uma pauta" e perdeu o destaque - plano é o caminho recomendado.
+- **O link entre os artigos é aplicado na geração**, não sugerido na tela:
+  ao escrever uma pauta do plano, a rota busca os irmãos **já publicados**
+  e manda a lista como link obrigatório, pilar primeiro. Rascunho não entra:
+  linkar para artigo não publicado é mandar o leitor para um 404. Sem esse
+  passo o cluster seria etiqueta na interface, não silo para o Google.
+- **`agruparEmPlanos`** (função pura, 5 testes) monta a leitura da tela.
+  Duas regras que valem: pauta descartada sai do plano **e do total**, senão
+  "2 de 6" nunca chega a "6 de 6"; e plano sem pilar continua sendo plano,
+  porque o cliente pode descartar o pilar e os apoios seguem do mesmo tema.
+
+### Compatibilidade deliberada
+
+As colunas do plano só entram no insert quando há plano. Assim a pauta
+solta continua funcionando mesmo com o deploy na frente da migração - o
+contrário quebraria a Estratégia inteira por uma coluna que ainda não
+existe.
+
+### O que isto não resolve
+
+Volume de busca continua vindo da leitura do modelo enquanto o acesso
+Básico da Google Ads API não for pedido (seção 28). O plano diz **em que
+ordem escrever**; ele não prova a demanda de cada apoio.

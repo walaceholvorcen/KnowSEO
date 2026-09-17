@@ -100,6 +100,10 @@ export interface Keyword {
   opportunity_score: OpportunityScore | null;
   status: KeywordStatus;
   source: KeywordSource;
+  /** Plano de conteúdo a que a pauta pertence. Nulo = pauta solta. */
+  cluster_id: string | null;
+  cluster_tema: string | null;
+  cluster_papel: "pilar" | "apoio" | null;
   created_at: string;
 }
 

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireUserAndWorkspace } from "@/lib/workspace";
-import { generateKeywordIdeas } from "@/lib/anthropic";
+import { generateContentCluster, generateKeywordIdeas, type KeywordIdea } from "@/lib/anthropic";
 import {
   fetchRealKeywordMetrics,
   isDataForSeoConfigured,
@@ -13,10 +13,14 @@ import type { Blog, BrandDna, Keyword } from "@/types";
 
 export async function POST(request: Request) {
   const { supabase, workspace } = await requireUserAndWorkspace();
-  const { blogId, temaId, pergunta } = (await request.json()) as {
+  const { blogId, temaId, pergunta, plano, assunto } = (await request.json()) as {
     blogId: string;
     temaId?: number;
     pergunta?: string;
+    /** true = plano de conteúdo (pilar + apoios) em vez de pautas soltas. */
+    plano?: boolean;
+    /** Assunto do plano quando ele não nasce de um tema do Mercado. */
+    assunto?: string;
   };
 
   if (!isAiConfigured()) {
@@ -70,15 +74,51 @@ export async function POST(request: Request) {
   // ali, com o gerador de artigo na tela ao lado.
   const perguntaPerdida = pergunta?.trim() || null;
 
-  let ideas;
+  // O plano de conteúdo é o mesmo fluxo com outra forma: as pautas saem
+  // ligadas entre si (um pilar, vários apoios) e compartilham um cluster_id
+  // gerado aqui - o insert é um só, então o banco não teria como gerá-lo.
+  const assuntoDoPlano = plano ? (tema?.termo ?? assunto?.trim() ?? "") : "";
+  if (plano && !assuntoDoPlano) {
+    return NextResponse.json(
+      { error: "Diga sobre qual assunto é o plano." },
+      { status: 400 },
+    );
+  }
+
+  let ideas: (KeywordIdea & { papel?: "pilar" | "apoio" })[];
+  let clusterId: string | null = null;
+  let clusterTema: string | null = null;
+
   try {
-    ideas = await generateKeywordIdeas({
-      blog: blog as Blog,
-      dna: dna as BrandDna | null,
-      existingKeywords,
-      tema,
-      perguntaPerdida,
-    });
+    if (plano) {
+      const resultado = await generateContentCluster({
+        blog: blog as Blog,
+        dna: dna as BrandDna | null,
+        assunto: assuntoDoPlano,
+        exemplos: tema?.exemplos ?? [],
+        existingKeywords,
+      });
+      if (!resultado) {
+        return NextResponse.json(
+          { error: "A IA não devolveu o plano. Tente de novo." },
+          { status: 502 },
+        );
+      }
+      clusterId = crypto.randomUUID();
+      clusterTema = resultado.tema || assuntoDoPlano;
+      ideas = [
+        { ...resultado.pilar, papel: "pilar" as const },
+        ...resultado.apoios.map((a) => ({ ...a, papel: "apoio" as const })),
+      ];
+    } else {
+      ideas = await generateKeywordIdeas({
+        blog: blog as Blog,
+        dna: dna as BrandDna | null,
+        existingKeywords,
+        tema,
+        perguntaPerdida,
+      });
+    }
   } catch (err) {
     console.error("[keywords/suggest] falha na IA", err);
     return NextResponse.json(
@@ -158,6 +198,15 @@ export async function POST(request: Request) {
         medido?.competition_index ?? antigo?.competition_index ?? null,
       source: medido?.source ?? (antigo ? "dataforseo" : "ai"),
       status: "suggested" as const,
+      // As colunas do plano só entram quando há plano: assim a pauta solta
+      // continua funcionando mesmo antes de a 0014 ser aplicada no banco.
+      ...(clusterId
+        ? {
+            cluster_id: clusterId,
+            cluster_tema: clusterTema,
+            cluster_papel: idea.papel ?? null,
+          }
+        : {}),
     };
   });
 

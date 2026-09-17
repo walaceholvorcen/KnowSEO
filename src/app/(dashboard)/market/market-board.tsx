@@ -4,7 +4,7 @@ import { botao, campo, pagina } from "@/components/ui";
 import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronDown, ChevronRight, Plus, Radar, X } from "lucide-react";
+import { ChevronDown, ChevronRight, Layers, Plus, Radar, X } from "lucide-react";
 import { Lede, Linha, Secao } from "@/components/lede";
 import { cn } from "@/lib/utils";
 import { deveAnalisarSozinho } from "@/lib/mercado/temas";
@@ -144,14 +144,17 @@ export function MarketBoard({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function gerarPauta(temaId: number) {
+  // `plano` muda a forma do que volta: 6 pautas ligadas entre si (1 pilar,
+  // 5 apoios) em vez de 8 soltas. O tema medido e os títulos reais dos
+  // concorrentes vão junto nos dois casos.
+  async function gerarPauta(temaId: number, plano = false) {
     setGerando(temaId);
     setErro(null);
 
     const res = await fetch("/api/keywords/suggest", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ blogId, temaId }),
+      body: JSON.stringify({ blogId, temaId, plano }),
     });
     const data = await res.json();
     setGerando(null);
@@ -471,9 +474,17 @@ export function MarketBoard({
                     <button
                       onClick={() => gerarPauta(t.id)}
                       disabled={gerando !== null}
-                      className={cn(botao("primario", "sm"), "ml-auto")}
+                      className={cn(botao("secundario", "sm"), "ml-auto")}
                     >
-                      {gerando === t.id ? "Gerando..." : "Gerar pauta"}
+                      {gerando === t.id ? "Gerando..." : "Uma pauta"}
+                    </button>
+                    <button
+                      onClick={() => gerarPauta(t.id, true)}
+                      disabled={gerando !== null}
+                      className={botao("primario", "sm")}
+                    >
+                      <Layers size={14} aria-hidden />
+                      Plano do tema
                     </button>
                   </div>
 
