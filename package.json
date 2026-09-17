@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --experimental-strip-types --test src/**/*.test.ts"
+    "test": "node --experimental-strip-types --test src/**/*.test.ts",
+    "test:blog": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/verificar-blog-publico.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.123.0",

@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { slugify } from "@/lib/utils";
+import { erroNoSlug, slugDoNome } from "@/lib/blog-endereco";
 
 export function CreateBlogForm({ workspaceId }: { workspaceId: string }) {
   const router = useRouter();
@@ -16,15 +16,24 @@ export function CreateBlogForm({ workspaceId }: { workspaceId: string }) {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const rootDomain =
-    process.env.NEXT_PUBLIC_ROOT_DOMAIN || "localhost:3000";
+  // O blog abre em <app>/b/<slug>: subdomínio em .vercel.app morria no TLS.
+  const prefixo = `${process.env.NEXT_PUBLIC_APP_DOMAIN || "localhost:3000"}/b/`;
+  // Enquanto o slug não foi mexido à mão, ele acompanha o nome do cliente.
+  const [slugEditado, setSlugEditado] = useState(false);
+  const slugErro = subdomain ? erroNoSlug(subdomain) : null;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError(null);
 
-    const finalSubdomain = slugify(subdomain || name);
+    const finalSubdomain = subdomain || slugDoNome(name);
+    const erro = erroNoSlug(finalSubdomain);
+    if (erro) {
+      setError(erro);
+      setLoading(false);
+      return;
+    }
 
     const { data: blog, error: insertError } = await supabase
       .from("blogs")
@@ -48,7 +57,7 @@ export function CreateBlogForm({ workspaceId }: { workspaceId: string }) {
     if (insertError || !blog) {
       setError(
         insertError?.message.includes("duplicate")
-          ? "Esse subdomínio já está em uso, tente outro."
+          ? "Esse endereço já está em uso, tente outro."
           : (insertError?.message ?? "Erro ao criar o blog"),
       );
       setLoading(false);
@@ -74,7 +83,7 @@ export function CreateBlogForm({ workspaceId }: { workspaceId: string }) {
           value={name}
           onChange={(e) => {
             setName(e.target.value);
-            if (!subdomain) setSubdomain(slugify(e.target.value));
+            if (!slugEditado) setSubdomain(slugDoNome(e.target.value));
           }}
           className={cn(campo(), "w-full")}
           placeholder="Blog da minha empresa"
@@ -86,18 +95,25 @@ export function CreateBlogForm({ workspaceId }: { workspaceId: string }) {
           Endereço
         </label>
         <div className="flex items-center rounded-lg border border-slate-300 dark:border-slate-700 focus-within:border-cobalto-500 dark:focus-within:border-cobalto-400 focus-within:ring-3 focus-within:ring-cobalto-500/15 dark:focus-within:ring-cobalto-400/20">
+          <span className="whitespace-nowrap rounded-l-lg bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm text-slate-500 dark:text-slate-400">
+            {prefixo}
+          </span>
           <input
             type="text"
             required
             value={subdomain}
-            onChange={(e) => setSubdomain(slugify(e.target.value))}
-            className="w-full min-w-0 rounded-l-lg px-3 py-2 text-sm outline-none"
+            onChange={(e) => {
+              setSlugEditado(true);
+              setSubdomain(e.target.value.toLowerCase().trim());
+            }}
+            aria-invalid={!!slugErro}
+            className="w-full min-w-0 rounded-r-lg px-3 py-2 text-sm outline-none"
             placeholder="minha-empresa"
           />
-          <span className="whitespace-nowrap rounded-r-lg bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm text-slate-500 dark:text-slate-400">
-            .{rootDomain}
-          </span>
         </div>
+        {slugErro && (
+          <p className="mt-1 text-xs text-nota-critico">{slugErro}</p>
+        )}
       </div>
 
       <div>
@@ -123,7 +139,7 @@ export function CreateBlogForm({ workspaceId }: { workspaceId: string }) {
 
       <button
         type="submit"
-        disabled={loading}
+        disabled={loading || !!slugErro}
         className={cn(botao("primario"), "w-full")}
       >
         {loading ? "Criando..." : "Criar blog"}

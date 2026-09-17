@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireUserAndWorkspace, getBlogAtivo } from "@/lib/workspace";
 import { fetchComStatus } from "@/lib/crawler";
+import { isSafeCustomDomain } from "@/lib/dominio";
 
 // Confere, batendo no domínio, se o blog já responde lá - em vez de deixar
 // `domain_status` dizer "aguardando DNS" para sempre, como dizia (a coluna
@@ -15,6 +16,11 @@ export async function POST() {
 
   if (!blog?.custom_domain) {
     return NextResponse.json({ error: "sem domínio próprio" }, { status: 400 });
+  }
+  // Apex, www ou .vercel.app gravado antes da guarda do servidor nunca vira
+  // 'active' - mesmo respondendo o blog, seria o site do cliente substituído.
+  if (!isSafeCustomDomain(blog.custom_domain)) {
+    return NextResponse.json({ error: "domínio não permitido" }, { status: 400 });
   }
 
   const resposta = await fetchComStatus(`https://${blog.custom_domain}/`);

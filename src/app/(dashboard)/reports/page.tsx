@@ -3,7 +3,7 @@ import { botao, pagina } from "@/components/ui";
 import Link from "next/link";
 import { requireUserAndWorkspace, getBlogAtivo } from "@/lib/workspace";
 import { Lede, Linha, Secao } from "@/components/lede";
-import { enderecoDoBlog } from "@/lib/blog-endereco";
+import { urlDoArtigo } from "@/lib/blog-endereco";
 import { DIAS_JANELA } from "../dashboard/dados";
 import type { AnalyticsEvent } from "@/types";
 
@@ -21,8 +21,6 @@ export default async function ReportsPage() {
   // Mesma janela do Início, para os dois painéis não discordarem.
   const desde = new Date();
   desde.setDate(desde.getDate() - (DIAS_JANELA - 1));
-  const host = enderecoDoBlog(blog);
-  const origemPublica = `${host.includes("localhost") ? "http" : "https"}://${host}`;
 
   const [{ data: events }, { data: artigos }] = await Promise.all([
     supabase
@@ -166,7 +164,7 @@ export default async function ReportsPage() {
                     {a.pauta ? `Pauta: ${a.pauta}` : "Sem pauta vinculada"}
                     {" · "}
                     <a
-                      href={`${origemPublica}/${a.slug}`}
+                      href={urlDoArtigo(blog, a.slug)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-cobalto-700 hover:underline dark:text-cobalto-300"

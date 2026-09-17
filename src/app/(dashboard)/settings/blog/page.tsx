@@ -7,6 +7,7 @@ import { BlogSettingsForm } from "./blog-settings-form";
 import { InternalLinksManager } from "./internal-links-manager";
 import { PublicarNoDominio } from "./publicar-no-dominio";
 import { Lede, Secao } from "@/components/lede";
+import { semEsquema, urlPublicaDoBlog } from "@/lib/blog-endereco";
 
 export default async function BlogSettingsPage() {
   const { supabase, workspace } = await requireUserAndWorkspace();
@@ -19,34 +20,57 @@ export default async function BlogSettingsPage() {
     .eq("blog_id", blog.id)
     .order("created_at", { ascending: false });
 
-  const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || "localhost:3000";
-  const enderecoGratuito = `${blog.subdomain}.${rootDomain}`;
+  // Mesma precedência do resto do painel: o endereço que de fato abre.
+  const publica = urlPublicaDoBlog(blog);
+  const noAr = semEsquema(publica.url);
 
   const veredito = !blog.custom_domain
-    ? `O blog está no ar em ${enderecoGratuito}.`
-    : blog.domain_status === "active"
-      ? `O blog responde em ${blog.custom_domain}.`
+    ? `O blog está no ar em ${noAr}.`
+    : publica.verified
+      ? `O blog responde em ${noAr}.`
       : blog.domain_status === "error"
         ? `${blog.custom_domain} está cadastrado, mas o DNS não foi validado.`
         : `${blog.custom_domain} está cadastrado e aguardando o DNS propagar.`;
+  // Enquanto o domínio próprio não é confirmado, o blog segue no caminho da
+  // plataforma - e a tela precisa dizer onde.
+  const apoioPendente = blog.custom_domain && !publica.verified && (
+    <>
+      Domínio próprio ainda não confirmado. O blog está no ar em{" "}
+      <a
+        href={publica.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-cobalto-700 hover:underline dark:text-cobalto-300"
+      >
+        {noAr}
+      </a>
+      .
+    </>
+  );
 
   return (
     <div className={pagina("estreita")}>
       <SettingsNav />
       <Lede
         apoio={
-          !blog.custom_domain && (
+          apoioPendente ||
+          (!blog.custom_domain && (
             <>
               Você pode continuar usando este endereço, ou conectar um
               domínio próprio abaixo.
             </>
-          )
+          ))
         }
       >
         {veredito}
       </Lede>
 
-      <BlogSettingsForm blog={blog} />
+      <BlogSettingsForm
+        blog={blog}
+        prefixoDoEndereco={semEsquema(
+          urlPublicaDoBlog({ ...blog, custom_domain: null }).url,
+        ).slice(0, -blog.subdomain.length)}
+      />
 
       <Secao>Publicar no domínio do cliente</Secao>
       <div className="mt-4">

@@ -5,7 +5,7 @@ import {
   getBlogAtivo,
 } from "@/lib/workspace";
 import { Sidebar } from "@/components/sidebar";
-import { enderecoDoBlog } from "@/lib/blog-endereco";
+import { urlPublicaDoBlog } from "@/lib/blog-endereco";
 
 export default async function DashboardLayout({
   children,
@@ -31,7 +31,8 @@ export default async function DashboardLayout({
         blogs={blogs.map((b) => ({
           id: b.id,
           nome: b.name,
-          endereco: enderecoDoBlog(b),
+          endereco: urlPublicaDoBlog(b).url,
+          dominioPendente: !!b.custom_domain && !urlPublicaDoBlog(b).verified,
         }))}
       />
       <main className="min-h-0 flex-1 overflow-y-auto [scrollbar-gutter:stable]">

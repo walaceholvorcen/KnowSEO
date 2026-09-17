@@ -3,9 +3,9 @@ import Link from "next/link";
 import Image from "next/image";
 import type { Metadata } from "next";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { resolveBlogByHost, tenantBaseUrl } from "@/lib/tenant";
+import { resolveBlogByHost, tenantOrigin } from "@/lib/tenant";
 import { textoSobre } from "@/lib/contrast";
-import { versaoDaIdentidade } from "@/lib/blog-endereco";
+import { urlPublicaDoBlog, versaoDaIdentidade } from "@/lib/blog-endereco";
 import { formatDate } from "@/lib/utils";
 import type { Article } from "@/types";
 
@@ -20,8 +20,12 @@ export async function generateMetadata({
   const blog = await resolveBlogByHost(domain);
   if (!blog) return {};
 
+  // Canonical pela mesma precedência do painel: o blog aberto por um host
+  // não confirmado aponta para o endereço que de fato está no ar.
+  const publica = urlPublicaDoBlog(blog).url;
   return {
-    metadataBase: await tenantBaseUrl(domain),
+    metadataBase: new URL(publica),
+    alternates: { canonical: publica },
     // Marca de fábrica, e é ela que a checagem de domínio procura para saber
     // se quem responde naquele endereço é o blog ou a página antiga do site.
     generator: "Know SEO",
@@ -53,6 +57,9 @@ export default async function TenantBlogHome({
     .order("published_at", { ascending: false });
 
   const list = (articles as Article[]) ?? [];
+  // Link relativo "/slug" em /b/<slug> caía na raiz do app (404): a base
+  // precisa do caminho do tenant, e do host em que o visitante está.
+  const base = await tenantOrigin(domain);
 
   return (
     <div className="min-h-screen bg-white dark:bg-slate-900">
@@ -92,7 +99,7 @@ export default async function TenantBlogHome({
             {list.map((article) => (
               <Link
                 key={article.id}
-                href={`/${article.slug}`}
+                href={`${base}/${article.slug}`}
                 className="block border-b border-slate-100 dark:border-slate-800 pb-8"
               >
                 {/* unoptimized: a capa já sai pronta da nossa rota /api/og, o

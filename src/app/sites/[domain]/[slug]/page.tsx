@@ -3,12 +3,15 @@ import type { Metadata } from "next";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   resolveBlogByHost,
-  tenantBaseUrl,
   tenantOrigin,
   tenantAssetOrigin,
 } from "@/lib/tenant";
 import { ArticleView } from "@/components/article-view";
-import { versaoDaIdentidade } from "@/lib/blog-endereco";
+import {
+  urlDoArtigo,
+  urlPublicaDoBlog,
+  versaoDaIdentidade,
+} from "@/lib/blog-endereco";
 import { PageviewTracker } from "./pageview-tracker";
 
 export async function generateMetadata({
@@ -41,12 +44,13 @@ export async function generateMetadata({
     `${await tenantAssetOrigin(domain)}/api/og/${article.id}?v=${versaoDaIdentidade(blog)}`;
 
   return {
-    metadataBase: await tenantBaseUrl(domain),
+    metadataBase: new URL(urlPublicaDoBlog(blog).url),
     title,
     description,
     // Evita conteúdo duplicado quando o mesmo artigo é servido pelo
-    // subdomínio e pelo domínio próprio do cliente.
-    alternates: { canonical: `/${slug}` },
+    // caminho /b/ e pelo domínio próprio - e nunca aponta para um host não
+    // confirmado (mesma precedência do painel).
+    alternates: { canonical: urlDoArtigo(blog, slug) },
     openGraph: {
       title,
       description,
@@ -82,7 +86,7 @@ export default async function TenantArticlePage({
 
   if (!article) notFound();
 
-  const origin = await tenantOrigin(domain);
+  const origin = urlPublicaDoBlog(blog).url;
   const assetOrigin = await tenantAssetOrigin(domain);
   // Dado estruturado: habilita rich results no Google e dá à IA um
   // resumo inequívoco de autor, data e tema do artigo.
@@ -109,7 +113,7 @@ export default async function TenantArticlePage({
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <PageviewTracker blogId={blog.id} articleId={article.id} />
-      <ArticleView blog={blog} article={article} />
+      <ArticleView blog={blog} article={article} inicio={await tenantOrigin(domain)} />
     </div>
   );
 }

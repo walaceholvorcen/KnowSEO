@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
-import { TENANT_BASE_HEADER } from "@/lib/tenant";
+import { TENANT_BASE_HEADER, blogPorSlugAntigo } from "@/lib/tenant";
+import { urlPublicaDoBlog } from "@/lib/blog-endereco";
 
 // Host da aplicação principal (dashboard). Tudo que chegar em outro host
 // é tratado como o blog público de um tenant e é reescrito para
@@ -46,6 +47,19 @@ export async function proxy(request: NextRequest) {
   const previewMatch = pathname.match(/^\/b\/([^/]+)(\/.*)?$/);
   if (isAppHost && previewMatch) {
     const [, subdomain, rawRest = "/"] = previewMatch;
+
+    // Slug renomeado: /b/<antigo>[/artigo] responde 301 para o endereço
+    // novo, senão todo link já indexado e compartilhado vira 404. 301 aqui
+    // e não permanentRedirect() na página, porque aquele devolve 308 e o
+    // pedido é 301 - o código que buscador e encurtador conhecem há mais
+    // tempo. Blog que usa o slug hoje vence (ver blogPorSlugAntigo).
+    // ponytail: uma consulta indexada por visita ao blog; cache por slug se
+    // o tempo de resposta do blog público pesar.
+    const renomeado = await blogPorSlugAntigo(subdomain);
+    if (renomeado) {
+      const destino = `${urlPublicaDoBlog(renomeado, hostname).url}${rawRest === "/" ? "" : rawRest}${url.search}`;
+      return NextResponse.redirect(destino, 301);
+    }
     const rest = rawRest === "/sitemap.xml" ? "/sitemap" : rawRest;
 
     const previewUrl = new URL(

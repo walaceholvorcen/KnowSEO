@@ -5,6 +5,7 @@ import Link, { useLinkStatus } from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
+import { semEsquema } from "@/lib/blog-endereco";
 import { BLOG_COOKIE } from "@/lib/blog-cookie";
 import { Logotipo } from "@/components/marca";
 import {
@@ -81,7 +82,10 @@ const CONFIGURACOES: Item = {
 export interface BlogDaBarra {
   id: string;
   nome: string;
+  /** URL pública completa, com esquema (urlPublicaDoBlog). */
   endereco: string;
+  /** Domínio próprio cadastrado e ainda não confirmado pela checagem. */
+  dominioPendente: boolean;
 }
 
 export function Sidebar({
@@ -257,15 +261,20 @@ export function Sidebar({
             </p>
           )}
           <p className="truncate text-xs text-slate-500 dark:text-slate-400">
-            {blog.endereco}
+            {semEsquema(blog.endereco)}
           </p>
+          {blog.dominioPendente && (
+            <p className="truncate text-xs text-nota-atencao">
+              domínio próprio ainda não confirmado
+            </p>
+          )}
         </div>
 
         <div className="mx-3 mt-1.5 flex flex-wrap gap-x-4 gap-y-1 px-1 text-xs text-slate-500 dark:text-slate-400">
           {/* Único caminho do painel até o blog publicado: sem isto o cliente
               precisava digitar o endereço na mão. */}
           <a
-            href={`https://${blog.endereco}`}
+            href={blog.endereco}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-1.5 hover:text-cobalto-600 dark:hover:text-cobalto-400"

@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { resolveBlogByHost, tenantOrigin } from "@/lib/tenant";
+import { resolveBlogByHost } from "@/lib/tenant";
+import { urlPublicaDoBlog } from "@/lib/blog-endereco";
 
 // A pasta se chama "sitemap" (e não "sitemap.xml") de propósito: o Next
 // trata "sitemap.xml" como arquivo de metadata e normaliza a rota,
@@ -18,7 +19,10 @@ export async function GET(
   const blog = await resolveBlogByHost(domain);
   if (!blog) return new Response("Not found", { status: 404 });
 
-  const origin = await tenantOrigin(domain);
+  // Mesma precedência do painel: domínio próprio só se verificado, senão o
+  // caminho /b/<slug>. Servido por um host morto ou não confirmado, o
+  // índice não pode ensinar ao Google/IA um endereço que não abre.
+  const origin = urlPublicaDoBlog(blog).url;
   const admin = createAdminClient();
 
   const { data: articles } = await admin

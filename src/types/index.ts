@@ -57,6 +57,9 @@ export interface Blog {
   workspace_id: string;
   name: string;
   subdomain: string;
+  /** Slugs já usados, para o 301 depois de renomear. Opcional: a coluna só
+   *  existe depois da migração 0012. */
+  slugs_anteriores?: string[];
   /** Grafias da marca que uma IA poderia usar. Alimenta o detector de
    *  citação do Raio X - GEO; vazio faz cair no nome do blog. */
   brand_names: string[];

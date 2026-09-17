@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Check } from "lucide-react";
 import { botao, pagina } from "@/components/ui";
 import { cn, formatDate } from "@/lib/utils";
+import { semEsquema } from "@/lib/blog-endereco";
 import { Lede, Linha, Secao, Regua } from "@/components/lede";
 import { scoreBand } from "@/lib/audit/rules";
 import { ROTULO_MOTOR } from "@/lib/ai-visibility/resumo";
@@ -173,7 +174,7 @@ export function InicioBoard({
   dados,
 }: {
   blogNome: string;
-  /** Endereço público do blog, sem esquema. */
+  /** URL pública do blog, com esquema (urlPublicaDoBlog). */
   endereco: string;
   statusDominio: DomainStatus;
   feitos: OnboardingSteps;
@@ -202,12 +203,12 @@ export function InicioBoard({
             <>
               Blog {blogNome}, em{" "}
               <a
-                href={`https://${endereco}`}
+                href={endereco}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-cobalto-700 hover:underline dark:text-cobalto-300"
               >
-                {endereco}
+                {semEsquema(endereco)}
               </a>
               {statusDominio !== "active" && dados.publicados > 0 && (
                 <>

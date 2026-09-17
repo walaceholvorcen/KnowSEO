@@ -16,6 +16,7 @@ export function ArticleView({
   blog,
   article,
   preview = false,
+  inicio = "/",
 }: {
   blog: Blog;
   article: Pick<
@@ -24,6 +25,8 @@ export function ArticleView({
   >;
   /** Dentro do editor: nada de contar visita nem clique como se fosse real. */
   preview?: boolean;
+  /** Home do blog no host atual: em /b/<slug>, "/" levaria à raiz do app. */
+  inicio?: string;
 }) {
   const corTexto = textoSobre(blog.theme.primary_color);
 
@@ -34,7 +37,7 @@ export function ArticleView({
         style={{ backgroundColor: blog.theme.primary_color, color: corTexto }}
       >
         <div className="mx-auto max-w-2xl">
-          <Link href="/" className="text-sm opacity-80 hover:opacity-100">
+          <Link href={inicio} className="text-sm opacity-80 hover:opacity-100">
             ← {blog.name}
           </Link>
         </div>

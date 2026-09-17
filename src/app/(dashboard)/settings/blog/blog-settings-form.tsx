@@ -4,17 +4,24 @@ import { botao, campo } from "@/components/ui";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
 import { IdentidadeVisual } from "./identidade-visual";
 import { normalizarDominio, numeroWhatsAppNaUrl } from "@/lib/cta";
-import { ehDominioRaiz } from "@/lib/dominio";
+import { ehDominioRaiz, isSafeCustomDomain } from "@/lib/dominio";
+import { erroNoSlug } from "@/lib/blog-endereco";
 import type { Blog } from "@/types";
 
-export function BlogSettingsForm({ blog }: { blog: Blog }) {
+export function BlogSettingsForm({
+  blog,
+  prefixoDoEndereco,
+}: {
+  blog: Blog;
+  /** "know-seo.vercel.app/b/" - o que vem antes do slug no endereço. */
+  prefixoDoEndereco: string;
+}) {
   const router = useRouter();
-  const supabase = createClient();
 
   const [nome, setNome] = useState(blog.name);
+  const [slug, setSlug] = useState(blog.subdomain);
   const [customDomain, setCustomDomain] = useState(blog.custom_domain ?? "");
   const [primaryColor, setPrimaryColor] = useState(
     blog.theme.primary_color ?? "#15191c",
@@ -36,6 +43,7 @@ export function BlogSettingsForm({ blog }: { blog: Blog }) {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [aviso, setAviso] = useState<string | null>(null);
 
   const numeroNaUrl = ctaType === "link" ? numeroWhatsAppNaUrl(ctaUrl) : null;
 
@@ -46,14 +54,21 @@ export function BlogSettingsForm({ blog }: { blog: Blog }) {
   const dominioEhRaiz =
     !!dominioDigitado &&
     (ehDominioRaiz(dominioDigitado) || dominioDigitado.startsWith("www."));
+  // .vercel.app, IP e host sem ponto: o certificado *.vercel.app cobre um
+  // nível só e a Vercel não aceita esse host como domínio de projeto - o
+  // endereço morreria no TLS. Não há sugestão a oferecer, só o erro.
+  const dominioInvalido =
+    !!dominioDigitado && !dominioEhRaiz && !isSafeCustomDomain(dominioDigitado);
+  const slugErro = slug === blog.subdomain ? null : erroNoSlug(slug);
   const dominioSugerido = `blog.${dominioDigitado.replace(/^www\./, "")}`;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (dominioEhRaiz) return;
+    if (dominioEhRaiz || dominioInvalido || slugErro) return;
     setSaving(true);
     setSaved(false);
     setError(null);
+    setAviso(null);
 
     // O campo aceita o que o cliente colar da barra do navegador. Sem
     // normalizar, "https://cliente.com/" nunca casa com o host que chega
@@ -61,14 +76,18 @@ export function BlogSettingsForm({ blog }: { blog: Blog }) {
     const dominio = normalizarDominio(customDomain);
     if (dominio !== customDomain) setCustomDomain(dominio);
 
-    const { error: saveError } = await supabase
-      .from("blogs")
-      .update({
+    // Pelo servidor, não pelo client do Supabase: é lá que o domínio raiz e
+    // o slug são recusados de verdade - a validação acima é só conforto.
+    const res = await fetch("/api/blog/configuracoes", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
         // O nome do cliente vem do cadastro e não tinha onde ser corrigido:
         // um "testando dataknow" digitado no primeiro dia ficava no topo do
         // blog publicado e na barra lateral para sempre.
         name: nome.trim() || blog.name,
         custom_domain: dominio || null,
+        subdomain: slug,
         theme: {
           ...blog.theme,
           primary_color: primaryColor,
@@ -81,16 +100,18 @@ export function BlogSettingsForm({ blog }: { blog: Blog }) {
           button_url: ctaUrl || null,
           whatsapp_number: whatsapp || null,
         },
-      })
-      .eq("id", blog.id);
+      }),
+    });
+    const resposta = await res.json().catch(() => ({}));
 
     // Mesmo defeito que existia no DNA da Marca: sem checar o erro, a tela
     // dava o salvamento por feito e o blog continuava com a cor antiga.
-    if (saveError) {
+    if (!res.ok) {
       setSaving(false);
-      setError(saveError.message);
+      setError(resposta.error ?? "erro ao salvar");
       return;
     }
+    setAviso(resposta.aviso ?? null);
 
     if (dominio) {
       await fetch("/api/onboarding/complete-step", {
@@ -132,14 +153,51 @@ export function BlogSettingsForm({ blog }: { blog: Blog }) {
       </div>
 
       <div>
+        <label
+          htmlFor="slug-do-blog"
+          className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300"
+        >
+          Endereço do blog
+        </label>
+        <div className="flex items-center rounded-lg border border-slate-300 focus-within:border-cobalto-500 focus-within:ring-3 focus-within:ring-cobalto-500/15 dark:border-slate-700 dark:focus-within:border-cobalto-400 dark:focus-within:ring-cobalto-400/20">
+          <span className="whitespace-nowrap rounded-l-lg bg-slate-50 px-3 py-2 text-sm text-slate-500 dark:bg-slate-950 dark:text-slate-400">
+            {prefixoDoEndereco}
+          </span>
+          <input
+            id="slug-do-blog"
+            value={slug}
+            onChange={(e) => setSlug(e.target.value.toLowerCase().trim())}
+            aria-invalid={!!slugErro}
+            aria-describedby="slug-ajuda"
+            className="w-full min-w-0 rounded-r-lg bg-transparent px-3 py-2 text-sm outline-none"
+            placeholder="nome-do-cliente"
+          />
+        </div>
+        <p
+          id="slug-ajuda"
+          className={cn(
+            "mt-1 text-xs",
+            slugErro ? "text-nota-critico" : "text-slate-400 dark:text-slate-500",
+          )}
+        >
+          {slugErro ??
+            (slug !== blog.subdomain
+              ? "Os links do endereço atual continuam funcionando: redirecionam para o novo."
+              : "Letras minúsculas sem acento, números e hífen.")}
+        </p>
+      </div>
+
+      <div>
         <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
           Domínio próprio (opcional)
         </label>
         <input
           value={customDomain}
           onChange={(e) => setCustomDomain(e.target.value)}
-          aria-invalid={dominioEhRaiz}
-          aria-describedby={dominioEhRaiz ? "dominio-raiz-erro" : undefined}
+          aria-invalid={dominioEhRaiz || dominioInvalido}
+          aria-describedby={
+            dominioEhRaiz || dominioInvalido ? "dominio-raiz-erro" : undefined
+          }
           className={cn(campo(), "w-full")}
           placeholder="blog.suempresa.com"
         />
@@ -160,6 +218,11 @@ export function BlogSettingsForm({ blog }: { blog: Blog }) {
               Usar {dominioSugerido}
             </button>
           </div>
+        ) : dominioInvalido ? (
+          <p id="dominio-raiz-erro" className="mt-1 text-xs text-nota-critico">
+            Esse endereço não pode receber o blog. Use um subdomínio do site do
+            cliente, como blog.suaempresa.com.
+          </p>
         ) : (
           <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
             Use um subdomínio, como blog.suaempresa.com. O passo a passo para
@@ -265,14 +328,16 @@ export function BlogSettingsForm({ blog }: { blog: Blog }) {
 
       <button
         type="submit"
-        disabled={saving || dominioEhRaiz}
+        disabled={saving || dominioEhRaiz || dominioInvalido || !!slugErro}
         className={botao("primario")}
       >
         {saving ? "Salvando..." : saved ? "Salvo" : "Salvar"}
       </button>
 
+      {aviso && <p className="text-sm text-nota-atencao">{aviso}</p>}
+
       {error && (
-        <p className="text-sm text-nota-critico">No se pudo guardar: {error}</p>
+        <p className="text-sm text-nota-critico">Não foi possível salvar: {error}</p>
       )}
     </form>
   );

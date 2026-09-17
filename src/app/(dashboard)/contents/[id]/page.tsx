@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { requireUserAndWorkspace } from "@/lib/workspace";
-import { enderecoDoBlog, versaoDaIdentidade } from "@/lib/blog-endereco";
+import { urlDoArtigo, versaoDaIdentidade } from "@/lib/blog-endereco";
 import type { Article, Blog } from "@/types";
 import { ArticleEditor } from "./article-editor";
 
@@ -44,13 +44,10 @@ export default async function ArticleEditorPage({
         .neq("id", article.id),
     ]);
 
-  const host = enderecoDoBlog(blog);
-  const protocolo = host.includes("localhost") ? "http" : "https";
-
   return (
     <ArticleEditor
       article={article as Article}
-      enderecoPublico={`${protocolo}://${host}/${article.slug}`}
+      enderecoPublico={urlDoArtigo(blog, article.slug)}
       dominioPendente={!!blog.custom_domain && blog.domain_status !== "active"}
       versaoMarca={versaoDaIdentidade(blog)}
       pauta={(pauta as { keyword: string } | null)?.keyword ?? null}

@@ -1,39 +1,119 @@
 import type { DomainStatus } from "@/types";
+import { isSafeCustomDomain } from "./dominio.ts";
+import { slugify } from "./utils.ts";
+
+type BlogEndereco = {
+  subdomain: string;
+  custom_domain: string | null;
+  domain_status: DomainStatus;
+};
+
+export type UrlPublica = {
+  /** Com esquema e sem barra final. */
+  url: string;
+  kind: "custom" | "path";
+  verified: boolean;
+};
 
 /**
- * O host onde o blog está de fato no ar. O domínio próprio só conta depois
- * do DNS confirmado: antes disso o site do cliente responde 200 na home para
- * qualquer caminho, e um link montado com ele "funciona" abrindo a página
- * errada, calado.
+ * Onde o blog está de fato no ar - a mesma regra para painel, canonical,
+ * sitemap, script de regressão e redirecionamento de slug antigo.
+ *
+ * 1. Domínio próprio, só se for subdomínio seguro E verificado ('active',
+ *    que só a checagem /api/blog/verificar-dominio escreve). Antes disso o
+ *    site do cliente responde 200 para qualquer caminho, e um link montado
+ *    com ele "funciona" abrindo a página errada, calado.
+ * 2. Caminho na plataforma: https://<app>/b/<slug>. Sempre funciona. O
+ *    subdomínio "<slug>.knowseo.vercel.app" morria no TLS - o certificado
+ *    *.vercel.app cobre um nível só - e /b/ (não /<slug>) não colide com
+ *    rotas do app.
  */
-export function enderecoDoBlog(
-  blog: {
-    subdomain: string;
-    custom_domain: string | null;
-    domain_status: DomainStatus;
-  },
-  rootDomain = raizPadrao(),
-): string {
-  if (blog.custom_domain && blog.domain_status === "active") {
-    return blog.custom_domain;
+export function urlPublicaDoBlog(
+  blog: BlogEndereco,
+  appDomain = dominioDoApp(),
+): UrlPublica {
+  if (
+    blog.custom_domain &&
+    blog.domain_status === "active" &&
+    isSafeCustomDomain(blog.custom_domain)
+  ) {
+    return { url: `https://${blog.custom_domain}`, kind: "custom", verified: true };
   }
-  return `${blog.subdomain}.${rootDomain}`;
+  const esquema = appDomain.includes("localhost") ? "http" : "https";
+  return {
+    url: `${esquema}://${appDomain}/b/${blog.subdomain}`,
+    kind: "path",
+    verified: false,
+  };
+}
+
+export function urlDoArtigo(
+  blog: BlogEndereco,
+  slug: string,
+  appDomain = dominioDoApp(),
+): string {
+  return `${urlPublicaDoBlog(blog, appDomain).url}/${slug}`;
+}
+
+/** A URL para mostrar em texto: sem o "https://". */
+export function semEsquema(url: string): string {
+  return url.replace(/^https?:\/\//, "");
 }
 
 /**
- * Sem a raiz configurada o endereço vira "x.localhost:3000" - e a tela de
- * Relatórios entrega esse link ao cliente como se fosse o blog no ar. Em
- * produção isso é um erro de configuração, não um padrão aceitável.
+ * Sem o domínio do app configurado o endereço vira "localhost:3000/b/x" - e
+ * a tela de Relatórios entrega esse link ao cliente como se fosse o blog no
+ * ar. Na Vercel, VERCEL_PROJECT_PRODUCTION_URL é o domínio de produção do
+ * projeto e cobre a variável esquecida; fora dela, em produção, é erro.
  */
-function raizPadrao(): string {
-  const raiz = process.env.NEXT_PUBLIC_ROOT_DOMAIN;
-  if (raiz) return raiz;
+function dominioDoApp(): string {
+  const dominio =
+    process.env.NEXT_PUBLIC_APP_DOMAIN || process.env.VERCEL_PROJECT_PRODUCTION_URL;
+  if (dominio) return dominio;
   if (process.env.NODE_ENV === "production") {
     throw new Error(
-      "NEXT_PUBLIC_ROOT_DOMAIN não configurada: o endereço público do blog sairia como localhost.",
+      "NEXT_PUBLIC_APP_DOMAIN não configurada: o endereço público do blog sairia como localhost.",
     );
   }
   return "localhost:3000";
+}
+
+// Primeiro segmento de caminhos e hosts que já têm dono: "/b/app" ou um
+// blog chamado "api" confundiriam quem lê o endereço e o proxy.
+export const SLUGS_RESERVADOS = [
+  "www", "app", "api", "admin", "b", "blog", "login", "dashboard",
+];
+
+/** Mensagem do problema com o slug, ou null se ele serve. Colisão com
+ *  outro blog depende do banco e é conferida na rota de servidor. */
+export function erroNoSlug(slug: string): string | null {
+  if (!/^[a-z0-9-]{3,40}$/.test(slug)) {
+    return "Use de 3 a 40 caracteres: letras minúsculas sem acento, números e hífen.";
+  }
+  if (slug.startsWith("-") || slug.endsWith("-")) {
+    return "O endereço não pode começar nem terminar com hífen.";
+  }
+  if (SLUGS_RESERVADOS.includes(slug)) {
+    return "Esse endereço é reservado pela plataforma. Escolha outro.";
+  }
+  return null;
+}
+
+/** Slug inicial a partir do nome do cliente - editável no cadastro. */
+export function slugDoNome(nome: string): string {
+  return slugify(nome).slice(0, 40).replace(/-+$/, "");
+}
+
+/**
+ * Lista de slugs antigos depois de renomear: o antigo entra (para o 301) e o
+ * novo sai - voltar a um nome já usado não pode redirecionar para si mesmo.
+ */
+export function slugsAposRenomear(
+  anteriores: string[],
+  antigo: string,
+  novo: string,
+): string[] {
+  return [...new Set([...anteriores, antigo])].filter((s) => s !== novo);
 }
 
 /**

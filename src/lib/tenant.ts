@@ -1,5 +1,6 @@
 import { headers } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { isSafeCustomDomain } from "@/lib/dominio";
 import type { Blog } from "@/types";
 
 // Header injetado pelo proxy na rota de preview (/b/<subdominio>) com a
@@ -69,7 +70,10 @@ export async function resolveBlogByHost(host: string): Promise<Blog | null> {
     if (blog) return blog;
   }
 
-  // Caso 3: domínio próprio do cliente já conectado
+  // Caso 3: domínio próprio do cliente já conectado. Apex, www ou
+  // .vercel.app gravados por engano (antes da guarda no servidor) nunca são
+  // servidos: responder ali seria substituir o site do cliente pelo blog.
+  if (!isSafeCustomDomain(hostname)) return null;
   const { data } = await admin
     .from("blogs")
     .select("*")
@@ -77,4 +81,28 @@ export async function resolveBlogByHost(host: string): Promise<Blog | null> {
     .maybeSingle();
 
   return (data as Blog) ?? null;
+}
+
+/**
+ * Blog que usava este slug antes de ser renomeado - para o 301 de
+ * /b/<antigo>. Qualquer erro (inclusive a coluna slugs_anteriores ainda não
+ * existir, antes da migração 0012) vale como "sem redirecionamento": o
+ * visitante recebe o 404 de sempre, nunca um 500. Se algum blog usa esse
+ * slug HOJE, ele vence: o cadastro não enxerga slugs antigos de outras
+ * agências (RLS), e redirecionar o dono atual seria sequestrar o blog dele.
+ */
+export async function blogPorSlugAntigo(
+  slug: string,
+): Promise<Pick<Blog, "subdomain" | "custom_domain" | "domain_status"> | null> {
+  // O slug vem da URL e entra no filtro: só o formato válido chega lá.
+  if (!/^[a-z0-9-]+$/.test(slug)) return null;
+  const { data, error } = await createAdminClient()
+    .from("blogs")
+    .select("subdomain, custom_domain, domain_status")
+    .or(`subdomain.eq.${slug},slugs_anteriores.cs.{${slug}}`)
+    .limit(2);
+  if (error || !data?.length || data.some((b) => b.subdomain === slug)) {
+    return null;
+  }
+  return data[0] as Pick<Blog, "subdomain" | "custom_domain" | "domain_status">;
 }
