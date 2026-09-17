@@ -36,7 +36,15 @@ export default async function RelatorioPublico({
   params: Promise<{ token: string }>;
 }) {
   const { token } = await params;
-  const dados = lerRelatorio(decodeURIComponent(token), process.env.RELATORIO_SECRET ?? "");
+  // Token malformado ("%E0%A4%A") faz decodeURIComponent lançar URIError,
+  // que virava 500. Link quebrado é só link inválido.
+  let tokenDecodificado: string;
+  try {
+    tokenDecodificado = decodeURIComponent(token);
+  } catch {
+    return <LinkInvalido />;
+  }
+  const dados = lerRelatorio(tokenDecodificado, process.env.RELATORIO_SECRET ?? "");
   const periodo = dados && periodoEntre(dados.de, dados.ate);
   if (!dados || !periodo) return <LinkInvalido />;
 

@@ -32,7 +32,11 @@ export async function POST() {
     const { error } = await supabase
       .from("keywords")
       .update({ status: "rejected" })
-      .in("id", ids);
+      .in("id", ids)
+      // Reforço na própria gravação: só pauta ainda sugerida e deste blog,
+      // mesmo que a lista de ids mude entre a leitura e o update.
+      .eq("status", "suggested")
+      .eq("blog_id", blog.id);
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }

@@ -7,6 +7,14 @@ describe("domínio raiz", () => {
     assert.equal(ehDominioRaiz("dataknow.es"), true);
     assert.equal(ehDominioRaiz("cliente.com.br"), true);
     assert.equal(ehDominioRaiz("cliente.co.uk"), true);
+    assert.equal(ehDominioRaiz("com.br"), true); // sufixo público puro
+  });
+
+  test("terminações fora da antiga lista fixa também são raiz", () => {
+    for (const d of ["cliente.gob.es", "cliente.edu.es", "cliente.art.br", "cliente.com.pe", "cliente.co.nz"]) {
+      assert.equal(ehDominioRaiz(d), true, d);
+      assert.equal(isSafeCustomDomain(d), false, d);
+    }
   });
 
   test("subdomínio não é raiz", () => {
@@ -26,7 +34,10 @@ describe("domínio próprio seguro", () => {
   });
 
   test("aceita subdomínio de 3º nível ou mais", () => {
-    for (const d of ["blog.dataknow.es", "blog.cliente.com.br", "Blog.Dataknow.es."]) {
+    for (const d of [
+      "blog.dataknow.es", "blog.cliente.com.br", "Blog.Dataknow.es.",
+      "blog.cliente.gob.es", "blog.cliente.com.pe",
+    ]) {
       assert.equal(isSafeCustomDomain(d), true, d);
     }
   });

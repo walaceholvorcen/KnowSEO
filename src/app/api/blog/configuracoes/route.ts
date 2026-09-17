@@ -24,6 +24,11 @@ export async function PATCH(req: Request) {
   } | null;
   if (!corpo) return NextResponse.json({ error: "corpo inválido" }, { status: 400 });
 
+  // Daqui em diante o blog já é comprovadamente do workspace de quem está
+  // logado (getBlogAtivo lê com RLS). A gravação sai pelo client de serviço
+  // porque custom_domain, domain_status, subdomain e slugs_anteriores não
+  // têm mais UPDATE para o navegador (migração 0012) - só esta rota grava.
+  const admin = createAdminClient();
   const update: Record<string, unknown> = {};
   let aviso: string | null = null;
 
@@ -53,9 +58,12 @@ export async function PATCH(req: Request) {
       if (dominio) {
         // Se o endereço já mostra outro site, grava mesmo assim (o cliente
         // pode estar migrando), mas avisa: ao criar o CNAME, aquilo sai do ar.
-        const resposta = await fetchComStatus(`https://${dominio}/`);
+        // redirect "manual": não segue salto. Um 3xx já é "responde, mas não
+        // é o blog" - e seguir mandaria a sondagem para host que ninguém digitou.
+        const resposta = await fetchComStatus(`https://${dominio}/`, "manual");
+        const salto = !!resposta && resposta.status >= 300 && resposta.status < 400;
         const html = resposta?.res.ok ? await resposta.res.text() : "";
-        if (resposta?.res.ok && !html.includes('name="generator" content="Know SEO"')) {
+        if (salto || (resposta?.res.ok && !html.includes('name="generator" content="Know SEO"'))) {
           aviso = `${dominio} já responde com outro site. Ao apontar o CNAME, o que está lá hoje deixa de aparecer nesse endereço.`;
         }
       }
@@ -69,7 +77,6 @@ export async function PATCH(req: Request) {
 
     // Leitura com o client de serviço: o RLS esconde os blogs de outras
     // agências, e é justamente com eles que o slug não pode colidir.
-    const admin = createAdminClient();
     const { data: atual, error: erroColuna } = await admin
       .from("blogs")
       .select("slugs_anteriores")
@@ -107,7 +114,7 @@ export async function PATCH(req: Request) {
     );
   }
 
-  const { error } = await supabase.from("blogs").update(update).eq("id", blog.id);
+  const { error } = await admin.from("blogs").update(update).eq("id", blog.id);
   if (error) {
     return NextResponse.json(
       {

@@ -19,7 +19,19 @@ export function DetectarFuso() {
     );
     if (cookies.fuso_manual === "1") return;
     const detectado = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    if (!detectado || decodeURIComponent(cookies.fuso ?? "") === detectado) return;
+    // Cookie adulterado ("%E0") faz decodeURIComponent lançar: vale como
+    // "sem fuso" e é regravado.
+    let atual = "";
+    try {
+      atual = decodeURIComponent(cookies.fuso ?? "");
+    } catch {}
+    if (!detectado || atual === detectado) return;
+    // Com cookie bloqueado a gravação não pega, o valor nunca bate e cada
+    // carga refrescaria de novo. Uma tentativa por sessão basta.
+    try {
+      if (sessionStorage.getItem("fuso_tentado") === detectado) return;
+      sessionStorage.setItem("fuso_tentado", detectado);
+    } catch {}
     document.cookie = `fuso=${encodeURIComponent(detectado)}; path=/; max-age=${UM_ANO}; samesite=lax`;
     router.refresh();
   }, [router]);

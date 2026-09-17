@@ -4,12 +4,10 @@ import { botao, campo } from "@/components/ui";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
 import { erroNoSlug, slugDoNome } from "@/lib/blog-endereco";
 
-export function CreateBlogForm({ workspaceId }: { workspaceId: string }) {
+export function CreateBlogForm() {
   const router = useRouter();
-  const supabase = createClient();
   const [name, setName] = useState("");
   const [subdomain, setSubdomain] = useState("");
   const [language, setLanguage] = useState<"es" | "pt" | "en">("es");
@@ -35,31 +33,16 @@ export function CreateBlogForm({ workspaceId }: { workspaceId: string }) {
       return;
     }
 
-    const { data: blog, error: insertError } = await supabase
-      .from("blogs")
-      .insert({
-        workspace_id: workspaceId,
-        name,
-        subdomain: finalSubdomain,
-        language,
-        // Cor definida aqui (e não pelo default do banco) para novos blogs
-        // já nascerem no azul marinho da marca. O cliente pode trocar
-        // depois em Configurações > Blog e Domínio.
-        theme: {
-          primary_color: "#15191c",
-          logo_url: null,
-          tagline: null,
-        },
-      })
-      .select()
-      .single();
-
-    if (insertError || !blog) {
-      setError(
-        insertError?.message.includes("duplicate")
-          ? "Esse endereço já está em uso, tente outro."
-          : (insertError?.message ?? "Erro ao criar o blog"),
-      );
+    // Pelo servidor: só lá dá para conferir o slug contra os endereços
+    // antigos de outros blogs, que o RLS esconde do navegador.
+    const res = await fetch("/api/blog/criar", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, subdomain: finalSubdomain, language }),
+    });
+    if (!res.ok) {
+      const corpo = (await res.json().catch(() => null)) as { error?: string } | null;
+      setError(corpo?.error ?? "Erro ao criar o blog");
       setLoading(false);
       return;
     }

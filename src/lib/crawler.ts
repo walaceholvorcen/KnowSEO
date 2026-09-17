@@ -91,11 +91,14 @@ export interface RespostaCrawler {
 // a amostra que sobrava para avaliar.
 export async function fetchComStatus(
   url: string,
+  // "manual" para sondar um host específico: seguir o salto levaria a
+  // checagem (e a requisição) para outro endereço que não o digitado.
+  redirect: RequestRedirect = "follow",
 ): Promise<RespostaCrawler | null> {
   if (!isPublicHttpUrl(url)) return null;
   try {
     const res = await fetch(url, {
-      redirect: "follow",
+      redirect,
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
       headers: { "User-Agent": USER_AGENT },
     });

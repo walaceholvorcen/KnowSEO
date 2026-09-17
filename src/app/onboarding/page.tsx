@@ -32,7 +32,7 @@ export default async function OnboardingPage({
               : "Em segundos você tem um endereço no ar para começar a publicar."}
           </p>
         </div>
-        <CreateBlogForm workspaceId={workspace.id} />
+        <CreateBlogForm />
       </div>
     </div>
   );

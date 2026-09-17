@@ -104,5 +104,12 @@ export async function blogPorSlugAntigo(
   if (error || !data?.length || data.some((b) => b.subdomain === slug)) {
     return null;
   }
+  // Mesmo slug antigo em mais de um blog (renomeações cruzadas, ou gravação
+  // anterior à checagem de colisão): qualquer escolha seria arbitrária e o
+  // 301 poderia entregar o visitante a outro cliente. Sem redirecionamento.
+  if (data.length > 1) {
+    console.warn(`[slug antigo] "${slug}" consta em mais de um blog; 301 suspenso.`);
+    return null;
+  }
   return data[0] as Pick<Blog, "subdomain" | "custom_domain" | "domain_status">;
 }

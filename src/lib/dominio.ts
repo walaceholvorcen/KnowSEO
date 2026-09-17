@@ -1,16 +1,24 @@
-// Terminações de dois níveis: em "cliente.com.br" o domínio comprado tem
-// três partes, e sem esta lista "cliente.com.br" seria lido como subdomínio
-// de "com.br" - o passo a passo mandaria criar um registro que não existe.
-const DUAS_PARTES = new Set([
-  "com.br", "net.br", "org.br", "com.ar", "com.mx", "com.co", "co.uk",
-  "org.uk", "com.au", "co.jp", "com.pt", "com.es",
-]);
+import { getDomain, getPublicSuffix } from "tldts";
 
-/** O domínio comprado, sem subdomínio - onde mora a zona de DNS. */
+/**
+ * O domínio comprado, sem subdomínio - onde mora a zona de DNS.
+ *
+ * Usa a Public Suffix List (tldts) em vez de uma lista fixa de terminações:
+ * a lista antiga tinha 12 entradas e deixava "cliente.gob.es", "cliente.com.pe"
+ * ou "cliente.co.nz" passarem como subdomínio - e aí o domínio raiz do cliente
+ * podia virar endereço do blog. Só sufixos ICANN contam (o padrão do tldts):
+ * sufixos privados como vercel.app são tratados à parte em isSafeCustomDomain.
+ * Host que nem vira URL conta como raiz: na dúvida, recusar.
+ */
 export function ehDominioRaiz(dominio: string): boolean {
-  const partes = dominio.toLowerCase().split(".");
-  if (partes.length <= 2) return true;
-  return partes.length === 3 && DUAS_PARTES.has(partes.slice(-2).join("."));
+  let host: string;
+  try {
+    // new URL baixa a caixa, tira a porta e converte IDN para punycode.
+    host = new URL(`http://${dominio.trim()}`).hostname.replace(/\.$/, "");
+  } catch {
+    return true;
+  }
+  return host === getDomain(host) || host === getPublicSuffix(host);
 }
 
 /**

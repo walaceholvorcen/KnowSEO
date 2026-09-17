@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireUserAndWorkspace, getBlogAtivo } from "@/lib/workspace";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { fetchComStatus } from "@/lib/crawler";
 import { isSafeCustomDomain } from "@/lib/dominio";
 
@@ -23,12 +24,16 @@ export async function POST() {
     return NextResponse.json({ error: "domínio não permitido" }, { status: 400 });
   }
 
-  const resposta = await fetchComStatus(`https://${blog.custom_domain}/`);
+  // "manual": domínio que só redireciona para outro endereço não serve o
+  // blog por conta própria e não pode virar "active" por tabela.
+  const resposta = await fetchComStatus(`https://${blog.custom_domain}/`, "manual");
   const html = resposta?.res.ok ? await resposta.res.text() : "";
   const nosso = html.includes('name="generator" content="Know SEO"');
 
   const status = nosso ? "active" : resposta ? "error" : "pending";
-  await supabase.from("blogs").update({ domain_status: status }).eq("id", blog.id);
+  // Client de serviço: domain_status não tem UPDATE para o navegador
+  // (migração 0012). O blog já veio de getBlogAtivo, filtrado pelo workspace.
+  await createAdminClient().from("blogs").update({ domain_status: status }).eq("id", blog.id);
 
   return NextResponse.json({ status, http: resposta?.status ?? null });
 }
