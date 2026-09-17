@@ -1,6 +1,7 @@
 "use client";
 
 import { botao, campo } from "@/components/ui";
+import { BotaoSalvar } from "@/components/botao-salvar";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -164,20 +165,13 @@ export function IdentidadeForm({
         onChange={setDominios}
       />
 
-      <div className="flex items-center gap-3">
-        <button
-          onClick={salvar}
-          disabled={salvando}
-          className={botao("primario")}
-        >
-          {salvando ? "Salvando..." : salvo ? "Salvo" : "Salvar"}
-        </button>
-        {salvo && (
+      <BotaoSalvar salvando={salvando} salvo={salvo} onClick={salvar}>
+        {salvo && !salvando && (
           <span className="text-sm text-slate-500 dark:text-slate-400">
             Vale a partir da próxima análise do Raio X - GEO.
           </span>
         )}
-      </div>
+      </BotaoSalvar>
 
       {erro && <p className="text-sm text-nota-critico">{erro}</p>}
     </div>

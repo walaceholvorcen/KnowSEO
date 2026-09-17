@@ -1,6 +1,7 @@
 "use client";
 
 import { botao, campo } from "@/components/ui";
+import { BotaoSalvar } from "@/components/botao-salvar";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -326,13 +327,11 @@ export function BlogSettingsForm({
         </div>
       )}
 
-      <button
-        type="submit"
-        disabled={saving || dominioEhRaiz || dominioInvalido || !!slugErro}
-        className={botao("primario")}
-      >
-        {saving ? "Salvando..." : saved ? "Salvo" : "Salvar"}
-      </button>
+      <BotaoSalvar
+        salvando={saving}
+        salvo={saved}
+        disabled={dominioEhRaiz || dominioInvalido || !!slugErro}
+      />
 
       {aviso && <p className="text-sm text-nota-atencao">{aviso}</p>}
 

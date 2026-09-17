@@ -1,6 +1,7 @@
 "use client";
 
-import { botao, campo } from "@/components/ui";
+import { campo } from "@/components/ui";
+import { BotaoSalvar } from "@/components/botao-salvar";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -160,13 +161,7 @@ export function BrandDnaForm({
         />
       </div>
 
-      <button
-        type="submit"
-        disabled={saving}
-        className={botao("primario")}
-      >
-        {saving ? "Salvando..." : saved ? "Salvo" : "Salvar"}
-      </button>
+      <BotaoSalvar salvando={saving} salvo={saved} />
 
       {error && (
         <p className="text-sm text-red-600 dark:text-red-400">

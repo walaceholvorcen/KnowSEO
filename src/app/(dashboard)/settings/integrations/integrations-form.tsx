@@ -1,6 +1,7 @@
 "use client";
 
 import { botao, campo } from "@/components/ui";
+import { BotaoSalvar } from "@/components/botao-salvar";
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -70,6 +71,7 @@ export function IntegrationsForm({
 
   async function salvar() {
     setSalvando(true);
+    setSalvo(false);
     setErro(null);
 
     const { error } = await supabase
@@ -158,14 +160,7 @@ export function IntegrationsForm({
         )}
       </div>
 
-      <div className="flex items-center gap-3">
-        <button
-          onClick={salvar}
-          disabled={salvando}
-          className={botao("primario")}
-        >
-          {salvando ? "Salvando..." : salvo ? "Salvo" : "Salvar"}
-        </button>
+      <BotaoSalvar salvando={salvando} salvo={salvo} onClick={salvar}>
         <button
           type="button"
           onClick={desconectar}
@@ -174,7 +169,7 @@ export function IntegrationsForm({
         >
           {desconectando ? "Desconectando..." : "Desconectar conta"}
         </button>
-      </div>
+      </BotaoSalvar>
 
       {erro && <p className="text-nota-critico">{erro}</p>}
     </div>
