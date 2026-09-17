@@ -30,10 +30,18 @@ import type { ArtigoDoRelatorio } from "./dados";
 // no layout, fora deste relatório. Sem esta regra o PDF sairia com o menu e
 // cortado na altura de uma tela. `print-color-adjust` mantém o fundo escuro
 // de quem imprime no modo escuro - sem ele, texto claro sobre papel branco.
-const FOLHA_DE_IMPRESSAO = `@media print {
+const FOLHA_DE_IMPRESSAO = `@page { size: A4 portrait; margin: 14mm 12mm; }
+@media print {
   aside, header:has(~ aside) { display: none !important; }
   div:has(> main), main { height: auto !important; overflow: visible !important; }
-  body { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  /* O modo escuro sai do papel em acoes.tsx; aqui o fundo vira branco de
+     verdade, porque o cinza do painel viraria tinta em toda folha. */
+  body { background: #fff !important; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  /* Linha partida na virada da folha era o "cortado" mais visível: metade
+     do artigo numa página, as visitas dele na seguinte. */
+  li { break-inside: avoid; }
+  /* Rótulo de seção não fica sozinho no pé da página. */
+  h1, h2, h3 { break-after: avoid; }
 }`;
 
 function curta(v: Variacao, semBase: boolean) {
@@ -228,11 +236,13 @@ export function Relatorio({
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
                   <span className="min-w-0">
                     {publico ? (
-                      <span className="block text-slate-900 dark:text-slate-100 sm:truncate">{a.title}</span>
+                      <span className="block text-slate-900 dark:text-slate-100 sm:truncate print:overflow-visible print:whitespace-normal print:text-clip">
+                        {a.title}
+                      </span>
                     ) : (
                       <Link
                         href={`/contents/${a.id}`}
-                        className="block text-slate-900 hover:text-cobalto-600 dark:text-slate-100 dark:hover:text-cobalto-400 sm:truncate"
+                        className="block text-slate-900 hover:text-cobalto-600 dark:text-slate-100 dark:hover:text-cobalto-400 sm:truncate print:overflow-visible print:whitespace-normal print:text-clip"
                       >
                         {a.title}
                       </Link>
