@@ -127,12 +127,12 @@ export default function SignupPage() {
             id="password"
             type="password"
             required
-            minLength={6}
+            minLength={10}
             autoComplete="new-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className={cn(campo(), "w-full")}
-            placeholder="Mínimo de 6 caracteres"
+            placeholder="10+ caracteres, com maiúscula e número"
           />
         </div>
 

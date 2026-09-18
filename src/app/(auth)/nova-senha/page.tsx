@@ -79,12 +79,12 @@ export default function NovaSenhaPage() {
             id="senha"
             type="password"
             required
-            minLength={6}
+            minLength={10}
             autoComplete="new-password"
             value={senha}
             onChange={(e) => setSenha(e.target.value)}
             className={cn(campo(), "w-full")}
-            placeholder="Mínimo de 6 caracteres"
+            placeholder="10+ caracteres, com maiúscula e número"
           />
         </div>
 

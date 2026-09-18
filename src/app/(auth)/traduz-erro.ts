@@ -13,8 +13,17 @@ export function traduzErroAuth(mensagem: string): string {
   if (m.includes("already registered")) {
     return "Já existe uma conta com este email. Entre em vez de criar outra.";
   }
+  // O mínimo e a regra de composição moram no Supabase (Authentication →
+  // Email): 10 caracteres, com minúscula, maiúscula e número. Mudou lá,
+  // muda aqui e no placeholder do cadastro e da nova senha.
   if (m.includes("password should be at least")) {
-    return "A senha precisa ter pelo menos 6 caracteres.";
+    return "A senha precisa ter pelo menos 10 caracteres.";
+  }
+  if (m.includes("password should contain")) {
+    return "A senha precisa ter letra minúscula, letra maiúscula e número.";
+  }
+  if (m.includes("weak") || m.includes("pwned") || m.includes("leaked")) {
+    return "Esta senha já apareceu em vazamentos na internet. Escolha outra.";
   }
   if (m.includes("rate limit") || m.includes("too many")) {
     return "Muitas tentativas seguidas. Espere um minuto e tente de novo.";
