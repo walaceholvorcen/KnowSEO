@@ -1,7 +1,8 @@
 import Link from "next/link";
 import Image from "next/image";
 import { textoSobre } from "@/lib/contrast";
-import { versaoDaIdentidade } from "@/lib/blog-endereco";
+import { origemDoApp, versaoDaIdentidade } from "@/lib/blog-endereco";
+import { LinkDoSite, RodapeDoBlog } from "@/components/blog-publico";
 import { htmlSeguro } from "@/lib/html-seguro";
 import { CtaBanner } from "@/app/sites/[domain]/[slug]/cta-banner";
 import type { Article, Blog } from "@/types";
@@ -37,10 +38,11 @@ export function ArticleView({
         className="px-6 py-10"
         style={{ backgroundColor: blog.theme.primary_color, color: corTexto }}
       >
-        <div className="mx-auto max-w-2xl">
+        <div className="mx-auto flex max-w-2xl flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
           <Link href={inicio} className="text-sm opacity-80 hover:opacity-100">
             ← {blog.name}
           </Link>
+          <LinkDoSite blog={blog} />
         </div>
       </header>
 
@@ -58,7 +60,7 @@ export function ArticleView({
                     quando a identidade muda), deixando o card sem imagem. */}
                 <Image
                   unoptimized
-          src={article.cover_image_url || `/api/og/${article.id}?v=${versaoDaIdentidade(blog)}`}
+          src={article.cover_image_url || `${origemDoApp()}/api/og/${article.id}?v=${versaoDaIdentidade(blog)}`}
           alt={article.title}
           width={1200}
           height={630}
@@ -80,9 +82,12 @@ export function ArticleView({
         <CtaBanner
           blog={{ id: blog.id, cta_config: blog.cta_config, theme: blog.theme }}
           articleId={article.id}
+          rastreio={`${origemDoApp()}/api/track`}
           preview={preview}
         />
       </main>
+
+      <RodapeDoBlog blog={blog} largura="max-w-2xl" />
     </div>
   );
 }

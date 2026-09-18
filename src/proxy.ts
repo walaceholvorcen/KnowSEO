@@ -1,7 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
-import { TENANT_BASE_HEADER, blogPorSlugAntigo } from "@/lib/tenant";
-import { urlPublicaDoBlog } from "@/lib/blog-endereco";
+import { TENANT_BASE_HEADER, blogPorPasta, blogPorSlugAntigo } from "@/lib/tenant";
+import { origemDoApp, urlPublicaDoBlog } from "@/lib/blog-endereco";
+import { CABECALHO_PASTA, ROTA_DA_PASTA } from "@/lib/pasta";
 import { CABECALHO_CSP, novoNonce, politicaDeSeguranca } from "@/lib/csp";
 
 // Host da aplicação principal (dashboard). Tudo que chegar em outro host
@@ -42,7 +43,11 @@ export async function proxy(request: NextRequest) {
   // scripts) e na resposta (o navegador aplica). Vale para os três caminhos
   // abaixo: painel, blog por /b/ e blog em domínio do cliente.
   const nonce = novoNonce();
-  const csp = politicaDeSeguranca(nonce, process.env.NODE_ENV === "development");
+  const csp = politicaDeSeguranca(
+    nonce,
+    process.env.NODE_ENV === "development",
+    origemDoApp(),
+  );
   const comCsp = (headers: Headers) => {
     headers.set(CABECALHO_CSP, csp);
     headers.set("x-nonce", nonce);
@@ -52,6 +57,30 @@ export async function proxy(request: NextRequest) {
     r.headers.set(CABECALHO_CSP, csp);
     return r;
   };
+
+  // Blog numa pasta do site do cliente (cliente.com/blog). Quem chega aqui é
+  // o Worker do Cloudflare dele (src/lib/pasta.ts), dizendo de qual pasta
+  // veio. Sem cabeçalho, ou com um endereço que não é de nenhum blog, é 404
+  // - a rota não existe para quem digita o endereço do app direto.
+  const pastaMatch = pathname.match(new RegExp(`^${ROTA_DA_PASTA}(/.*)?$`));
+  if (isAppHost && pastaMatch) {
+    const blog = await blogPorPasta(request.headers.get(CABECALHO_PASTA));
+    if (!blog) return new NextResponse("Not Found", { status: 404 });
+
+    const [, rawRest = "/"] = pastaMatch;
+    const rest = rawRest === "/sitemap.xml" ? "/sitemap" : rawRest;
+    const destino = new URL(`/sites/${blog.subdomain}${rest === "/" ? "" : rest}`, request.url);
+    destino.search = url.search;
+
+    // A base dos links é a pasta: o visitante está em cliente.com/blog e
+    // continua lá ao clicar num artigo. Seguro porque blogPorPasta só
+    // devolve blog quando o endereço é exatamente o cadastrado.
+    const requestHeaders = comCsp(new Headers(request.headers));
+    requestHeaders.set(TENANT_BASE_HEADER, blog.pasta_url);
+    return responder(
+      NextResponse.rewrite(destino, { request: { headers: requestHeaders } }),
+    );
+  }
 
   // Pré-visualização por caminho: /b/<subdominio>/<resto>
   //

@@ -2,6 +2,8 @@ import { test, describe } from "node:test";
 import assert from "node:assert/strict";
 import {
   erroNoSlug,
+  origemDoApp,
+  siteDoCliente,
   slugDoNome,
   slugsAposRenomear,
   urlDoArtigo,
@@ -91,5 +93,69 @@ describe("versão da identidade para a URL da capa", () => {
     // Secundária e proporção entram no carrossel e na capa como as outras.
     assert.notEqual(v, versaoDaIdentidade({ ...base, theme: { ...base.theme, secondary_color: "#f0b429" } }));
     assert.notEqual(v, versaoDaIdentidade({ ...base, theme: { ...base.theme, logo_ratio: 2.5 } }));
+  });
+});
+
+describe("blog numa pasta do site do cliente", () => {
+  const app = "know-seo.vercel.app";
+  const base = {
+    subdomain: "dataknow",
+    custom_domain: "blog.dataknow.es",
+    domain_status: "active" as const,
+  };
+
+  test("pasta confirmada vence o subdomínio: é a que mais soma ao SEO", () => {
+    assert.deepEqual(
+      urlPublicaDoBlog({ ...base, pasta_url: "https://dataknow.es/blog", pasta_status: "active" }, app),
+      { url: "https://dataknow.es/blog", kind: "pasta", verified: true },
+    );
+  });
+
+  test("pasta ainda não confirmada não muda o endereço", () => {
+    assert.equal(
+      urlPublicaDoBlog({ ...base, pasta_url: "https://dataknow.es/blog", pasta_status: "pending" }, app).kind,
+      "custom",
+    );
+  });
+
+  test("pasta gravada fora do formato é ignorada, nunca vira a raiz do site", () => {
+    assert.equal(
+      urlPublicaDoBlog({ ...base, pasta_url: "https://dataknow.es/", pasta_status: "active" }, app).kind,
+      "custom",
+    );
+  });
+
+  test("artigo na pasta", () => {
+    assert.equal(
+      urlDoArtigo({ ...base, pasta_url: "https://dataknow.es/blog", pasta_status: "active" }, "meu-artigo", app),
+      "https://dataknow.es/blog/meu-artigo",
+    );
+  });
+});
+
+describe("origem do app e site do cliente", () => {
+  test("origem com esquema, http só em localhost", () => {
+    assert.equal(origemDoApp("know-seo.vercel.app"), "https://know-seo.vercel.app");
+    assert.equal(origemDoApp("localhost:3000"), "http://localhost:3000");
+  });
+
+  test("site vem da pasta, depois do subdomínio, depois da marca", () => {
+    assert.equal(
+      siteDoCliente({ pasta_url: "https://www.dataknow.es/blog", custom_domain: "blog.outro.com", brand_domains: [] }),
+      "https://www.dataknow.es",
+    );
+    assert.equal(
+      siteDoCliente({ custom_domain: "blog.cliente.com.br", brand_domains: ["x.com"] }),
+      "https://cliente.com.br",
+    );
+    assert.equal(
+      siteDoCliente({ custom_domain: null, brand_domains: ["", "https://www.dataknow.es/"] }),
+      "https://www.dataknow.es",
+    );
+  });
+
+  test("sem nada cadastrado, sem link", () => {
+    assert.equal(siteDoCliente({ custom_domain: null, brand_domains: [] }), null);
+    assert.equal(siteDoCliente({ custom_domain: null, brand_domains: ["não é domínio"] }), null);
   });
 });

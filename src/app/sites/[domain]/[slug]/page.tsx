@@ -2,13 +2,10 @@ import { notFound } from "next/navigation";
 import { jsonParaScript } from "@/lib/html-seguro";
 import type { Metadata } from "next";
 import { createAdminClient } from "@/lib/supabase/admin";
-import {
-  resolveBlogByHost,
-  tenantOrigin,
-  tenantAssetOrigin,
-} from "@/lib/tenant";
+import { resolveBlogByHost, tenantOrigin } from "@/lib/tenant";
 import { ArticleView } from "@/components/article-view";
 import {
+  origemDoApp,
   urlDoArtigo,
   urlPublicaDoBlog,
   versaoDaIdentidade,
@@ -38,11 +35,11 @@ export async function generateMetadata({
   const title = article.seo_title || article.title;
   const description = article.seo_description || article.excerpt || undefined;
   // Capa própria se o cliente subiu uma; senão a gerada com a cor da marca.
-  // Absoluta e a partir da raiz do app: a capa não vive sob o caminho
-  // do tenant.
+  // Absoluta e no app: a capa não vive sob o caminho do tenant, nem no
+  // servidor do cliente quando o blog está numa pasta do site dele.
   const image =
     article.cover_image_url ||
-    `${await tenantAssetOrigin(domain)}/api/og/${article.id}?v=${versaoDaIdentidade(blog)}`;
+    `${origemDoApp()}/api/og/${article.id}?v=${versaoDaIdentidade(blog)}`;
 
   return {
     metadataBase: new URL(urlPublicaDoBlog(blog).url),
@@ -88,7 +85,7 @@ export default async function TenantArticlePage({
   if (!article) notFound();
 
   const origin = urlPublicaDoBlog(blog).url;
-  const assetOrigin = await tenantAssetOrigin(domain);
+  const app = origemDoApp();
   // Dado estruturado: habilita rich results no Google e dá à IA um
   // resumo inequívoco de autor, data e tema do artigo.
   const jsonLd = {
@@ -96,7 +93,7 @@ export default async function TenantArticlePage({
     "@type": "Article",
     headline: article.title,
     description: article.seo_description || article.excerpt || undefined,
-    image: article.cover_image_url || `${assetOrigin}/api/og/${article.id}?v=${versaoDaIdentidade(blog)}`,
+    image: article.cover_image_url || `${app}/api/og/${article.id}?v=${versaoDaIdentidade(blog)}`,
     datePublished: article.published_at,
     dateModified: article.updated_at || article.published_at,
     mainEntityOfPage: `${origin}/${article.slug}`,
@@ -113,7 +110,7 @@ export default async function TenantArticlePage({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonParaScript(jsonLd) }}
       />
-      <PageviewTracker blogId={blog.id} articleId={article.id} />
+      <PageviewTracker blogId={blog.id} articleId={article.id} rastreio={`${app}/api/track`} />
       <ArticleView blog={blog} article={article} inicio={await tenantOrigin(domain)} />
     </div>
   );

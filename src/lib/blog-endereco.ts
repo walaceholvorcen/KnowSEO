@@ -1,17 +1,22 @@
+import { getDomain } from "tldts";
 import type { DomainStatus } from "@/types";
 import { isSafeCustomDomain } from "./dominio.ts";
+import { normalizarPasta } from "./pasta.ts";
 import { slugify } from "./utils.ts";
 
 type BlogEndereco = {
   subdomain: string;
   custom_domain: string | null;
   domain_status: DomainStatus;
+  /** Opcionais: as colunas só existem depois da migração 0017. */
+  pasta_url?: string | null;
+  pasta_status?: DomainStatus | null;
 };
 
 export type UrlPublica = {
   /** Com esquema e sem barra final. */
   url: string;
-  kind: "custom" | "path";
+  kind: "pasta" | "custom" | "path";
   verified: boolean;
 };
 
@@ -19,11 +24,14 @@ export type UrlPublica = {
  * Onde o blog está de fato no ar - a mesma regra para painel, canonical,
  * sitemap, script de regressão e redirecionamento de slug antigo.
  *
- * 1. Domínio próprio, só se for subdomínio seguro E verificado ('active',
+ * 1. Pasta no site do cliente (cliente.com/blog), só depois de a checagem
+ *    confirmar que o Worker responde com o blog ('active'). É o endereço
+ *    que mais soma ao SEO do cliente, então vence o subdomínio.
+ * 2. Domínio próprio, só se for subdomínio seguro E verificado ('active',
  *    que só a checagem /api/blog/verificar-dominio escreve). Antes disso o
  *    site do cliente responde 200 para qualquer caminho, e um link montado
  *    com ele "funciona" abrindo a página errada, calado.
- * 2. Caminho na plataforma: https://<app>/b/<slug>. Sempre funciona. O
+ * 3. Caminho na plataforma: https://<app>/b/<slug>. Sempre funciona. O
  *    subdomínio "<slug>.knowseo.vercel.app" morria no TLS - o certificado
  *    *.vercel.app cobre um nível só - e /b/ (não /<slug>) não colide com
  *    rotas do app.
@@ -32,6 +40,10 @@ export function urlPublicaDoBlog(
   blog: BlogEndereco,
   appDomain = dominioDoApp(),
 ): UrlPublica {
+  if (blog.pasta_url && blog.pasta_status === "active") {
+    const pasta = normalizarPasta(blog.pasta_url);
+    if (!("erro" in pasta)) return { url: pasta.url, kind: "pasta", verified: true };
+  }
   if (
     blog.custom_domain &&
     blog.domain_status === "active" &&
@@ -53,6 +65,45 @@ export function urlDoArtigo(
   appDomain = dominioDoApp(),
 ): string {
   return `${urlPublicaDoBlog(blog, appDomain).url}/${slug}`;
+}
+
+/**
+ * Onde o app mora, com esquema. Tudo o que o blog carrega do app - capa
+ * gerada, contador de visitas - usa este endereço completo: com o blog
+ * servido de dentro do site do cliente (cliente.com/blog), um "/api/og"
+ * relativo iria parar no servidor dele.
+ */
+export function origemDoApp(appDomain = dominioDoApp()): string {
+  return `${appDomain.includes("localhost") ? "http" : "https"}://${appDomain}`;
+}
+
+/**
+ * O site principal do cliente, para o link "voltar ao site" do blog. Na
+ * ordem do que é mais certo: o site onde a pasta do blog mora; o domínio
+ * comprado do subdomínio do blog (blog.cliente.com → cliente.com); o
+ * primeiro domínio da marca cadastrado em Configurações → Marca. Sem
+ * nenhum deles, não há link - inventar um seria pior.
+ */
+export function siteDoCliente(blog: {
+  custom_domain: string | null;
+  brand_domains?: string[] | null;
+  pasta_url?: string | null;
+}): string | null {
+  if (blog.pasta_url) {
+    const pasta = normalizarPasta(blog.pasta_url);
+    if (!("erro" in pasta)) return `https://${pasta.host}`;
+  }
+  // O domínio da marca é mantido como foi cadastrado (com ou sem www): é o
+  // endereço que o próprio cliente escreveu para o site dele.
+  const hostDaMarca = (d: string) => {
+    const host = d.trim().toLowerCase().replace(/^https?:\/\//, "").split("/")[0];
+    return getDomain(host) ? host : null;
+  };
+  const site =
+    (blog.custom_domain ? getDomain(blog.custom_domain) : null) ??
+    (blog.brand_domains ?? []).map(hostDaMarca).find(Boolean) ??
+    null;
+  return site ? `https://${site}` : null;
 }
 
 /** A URL para mostrar em texto: sem o "https://". */

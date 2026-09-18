@@ -69,6 +69,10 @@ export interface Blog {
   brand_domains: string[];
   custom_domain: string | null;
   domain_status: DomainStatus;
+  /** Blog numa pasta do site do cliente (https://cliente.com/blog).
+   *  Opcionais: as colunas só existem depois da migração 0017. */
+  pasta_url?: string | null;
+  pasta_status?: DomainStatus;
   language: Language;
   theme: BlogTheme;
   cta_config: CtaConfig;

@@ -18,14 +18,22 @@ function getVisitorId(): string {
 export function PageviewTracker({
   blogId,
   articleId,
+  rastreio,
 }: {
   blogId: string;
   articleId: string;
+  /** Endereço completo de /api/track no app. Relativo, no blog servido de
+   *  dentro do site do cliente, iria parar no servidor dele. */
+  rastreio: string;
 }) {
   useEffect(() => {
-    fetch("/api/track", {
+    // no-cors e sem Content-Type: com o blog numa pasta do site do cliente o
+    // pedido é para outra origem, e um JSON declarado dispararia uma
+    // pré-checagem que a rota não responde. Assim o corpo vai como texto e
+    // a rota lê do mesmo jeito. Não precisamos ler a resposta.
+    fetch(rastreio, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      mode: "no-cors",
       body: JSON.stringify({
         blogId,
         articleId,

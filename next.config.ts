@@ -17,9 +17,38 @@ const CABECALHOS = [
   },
 ];
 
+// Estilo, fonte e script do app sempre pelo endereço completo do app.
+//
+// Com o blog servido de dentro do site do cliente (cliente.com/blog, via
+// Worker - src/lib/pasta.ts), um "/_next/..." relativo seria pedido ao
+// servidor DELE: página sem estilo e sem o contador de visitas. A Vercel já
+// entrega /_next/static com Access-Control-Allow-Origin: *, então a fonte
+// carrega de outra origem (conferido em produção em 18/09).
+//
+// Só na produção: um deploy de prévia apontando para os arquivos da
+// produção carregaria o JavaScript de outra versão. ASSET_PREFIX explícito
+// serve para testar o modo pasta localmente com `next start`.
+const dominioDoApp =
+  process.env.NEXT_PUBLIC_APP_DOMAIN || process.env.VERCEL_PROJECT_PRODUCTION_URL;
+const assetPrefix =
+  process.env.ASSET_PREFIX ||
+  (process.env.VERCEL_ENV === "production" && dominioDoApp
+    ? `https://${dominioDoApp}`
+    : undefined);
+
 const nextConfig: NextConfig = {
+  assetPrefix,
   async headers() {
-    return [{ source: "/:path*", headers: CABECALHOS }];
+    return [
+      { source: "/:path*", headers: CABECALHOS },
+      // Fonte de outra origem só carrega com este cabeçalho, e com o blog
+      // numa pasta do site do cliente a fonte vem do app. A Vercel já o
+      // manda em /_next/static; escrito aqui, deixa de depender disso.
+      {
+        source: "/_next/static/:path*",
+        headers: [{ key: "Access-Control-Allow-Origin", value: "*" }],
+      },
+    ];
   },
 };
 

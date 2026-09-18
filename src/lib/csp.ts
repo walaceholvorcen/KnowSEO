@@ -14,27 +14,33 @@
 //   que importa é script.
 // - img-src aceita qualquer https: o corpo de um artigo pode ter imagem de
 //   qualquer site, e imagem não roda código.
-// - connect-src só 'self': desde o S1a o navegador não fala mais com o
-//   Supabase. Se alguém voltar a chamar um serviço externo do navegador, a
-//   CSP avisa.
+// - connect-src só 'self' e o app: desde o S1a o navegador não fala mais
+//   com o Supabase. Se alguém voltar a chamar um serviço externo do
+//   navegador, a CSP avisa.
 // - frame-ancestors 'self', não 'none': o editor mostra a prévia do artigo
 //   num iframe da própria origem.
-export function politicaDeSeguranca(nonce: string, dev: boolean): string {
+//
+// `app` é a origem do app. Com o blog servido de dentro do site do cliente
+// (cliente.com/blog), 'self' passa a ser o site dele - e estilo, fonte e o
+// contador de visitas continuam vindo do app. No painel, app e 'self' são
+// a mesma coisa. O relatório de violação também vai para o app: relativo,
+// iria parar no servidor do cliente.
+export function politicaDeSeguranca(nonce: string, dev: boolean, app: string): string {
   return [
     "default-src 'self'",
     // 'unsafe-eval' só em dev: o React usa eval para reconstruir a pilha de
     // erro do servidor no navegador. Em produção nada usa.
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${dev ? " 'unsafe-eval'" : ""}`,
-    "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: blob: https:",
-    "font-src 'self' data:",
-    "connect-src 'self'",
+    `style-src 'self' 'unsafe-inline' ${app}`,
+    `img-src 'self' data: blob: https: ${app}`,
+    `font-src 'self' data: ${app}`,
+    `connect-src 'self' ${app}`,
     "frame-src 'self'",
     "frame-ancestors 'self'",
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
-    "report-uri /api/csp",
+    `report-uri ${app}/api/csp`,
   ].join("; ");
 }
 

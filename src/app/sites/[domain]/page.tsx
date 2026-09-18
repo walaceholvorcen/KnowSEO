@@ -5,7 +5,8 @@ import type { Metadata } from "next";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { resolveBlogByHost, tenantOrigin } from "@/lib/tenant";
 import { textoSobre } from "@/lib/contrast";
-import { urlPublicaDoBlog, versaoDaIdentidade } from "@/lib/blog-endereco";
+import { origemDoApp, urlPublicaDoBlog, versaoDaIdentidade } from "@/lib/blog-endereco";
+import { LinkDoSite, RodapeDoBlog } from "@/components/blog-publico";
 import { formatarData, fusoDoPais } from "@/lib/datas";
 import { paisDoBlog } from "@/lib/keywords/metricas";
 import type { Article } from "@/types";
@@ -71,12 +72,15 @@ export default async function TenantBlogHome({
   return (
     <div className="min-h-screen bg-white dark:bg-slate-900">
       <header
-        className="px-6 py-16 text-center"
+        className="px-6 pb-16 pt-6 text-center"
         style={{
           backgroundColor: blog.theme.primary_color,
           color: textoSobre(blog.theme.primary_color),
         }}
       >
+        <div className="mx-auto mb-10 flex min-h-5 max-w-3xl justify-end">
+          <LinkDoSite blog={blog} />
+        </div>
         {/* O logo substitui o nome escrito: quem tem marca desenhada quer
             ver a marca, e o nome continua no título da página e no JSON-LD. */}
         {blog.theme.logo_url ? (
@@ -115,7 +119,7 @@ export default async function TenantBlogHome({
                     quando a identidade muda), deixando o card sem imagem. */}
                 <Image
                   unoptimized
-                  src={article.cover_image_url || `/api/og/${article.id}?v=${versaoDaIdentidade(blog)}`}
+                  src={article.cover_image_url || `${origemDoApp()}/api/og/${article.id}?v=${versaoDaIdentidade(blog)}`}
                   alt={article.title}
                   width={1200}
                   height={630}
@@ -137,6 +141,8 @@ export default async function TenantBlogHome({
           </div>
         )}
       </main>
+
+      <RodapeDoBlog blog={blog} largura="max-w-3xl" />
     </div>
   );
 }

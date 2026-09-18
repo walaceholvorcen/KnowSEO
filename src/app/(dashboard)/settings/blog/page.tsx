@@ -6,8 +6,9 @@ import { SettingsNav } from "../settings-nav";
 import { BlogSettingsForm } from "./blog-settings-form";
 import { InternalLinksManager } from "./internal-links-manager";
 import { PublicarNoDominio } from "./publicar-no-dominio";
+import { PublicarNaPasta } from "./publicar-na-pasta";
 import { Lede, Secao } from "@/components/lede";
-import { semEsquema, urlPublicaDoBlog } from "@/lib/blog-endereco";
+import { origemDoApp, semEsquema, urlPublicaDoBlog } from "@/lib/blog-endereco";
 
 export default async function BlogSettingsPage() {
   const { supabase, workspace } = await requireUserAndWorkspace();
@@ -56,8 +57,8 @@ export default async function BlogSettingsPage() {
           apoioPendente ||
           (!blog.custom_domain && (
             <>
-              Você pode continuar usando este endereço, ou conectar um
-              domínio próprio abaixo.
+              Você pode continuar usando este endereço, ou publicar o blog
+              no site do cliente abaixo.
             </>
           ))
         }
@@ -72,7 +73,16 @@ export default async function BlogSettingsPage() {
         ).slice(0, -blog.subdomain.length)}
       />
 
-      <Secao>Publicar no domínio do cliente</Secao>
+      <Secao>Publicar numa pasta do site do cliente</Secao>
+      <div className="mt-4">
+        <PublicarNaPasta
+          enderecoInicial={blog.pasta_url ?? null}
+          statusInicial={blog.pasta_status ?? "pending"}
+          appOrigin={origemDoApp()}
+        />
+      </div>
+
+      <Secao>Ou num subdomínio do cliente</Secao>
       <div className="mt-4">
         <PublicarNoDominio
           dominio={blog.custom_domain}

@@ -6,12 +6,15 @@ import type { Blog } from "@/types";
 export function CtaBanner({
   blog,
   articleId,
+  rastreio,
   preview = false,
 }: {
   // Só os campos usados: tudo o que chega aqui vai para o HTML público
   // (payload RSC). Quem chama deve montar o objeto, não repassar o blog.
   blog: Pick<Blog, "id" | "cta_config" | "theme">;
   articleId: string;
+  /** Endereço completo de /api/track no app (ver PageviewTracker). */
+  rastreio: string;
   /** Dentro do editor: o clique não pode virar conversa no relatório. */
   preview?: boolean;
 }) {
@@ -28,9 +31,9 @@ export function CtaBanner({
   function handleClick() {
     if (preview) return;
 
-    fetch("/api/track", {
+    fetch(rastreio, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      mode: "no-cors",
       body: JSON.stringify({
         blogId: blog.id,
         articleId,

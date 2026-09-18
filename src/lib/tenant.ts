@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isSafeCustomDomain } from "@/lib/dominio";
+import { normalizarPasta } from "@/lib/pasta";
 import type { Blog } from "@/types";
 
 // Header injetado pelo proxy na rota de preview (/b/<subdominio>) com a
@@ -23,14 +24,27 @@ export async function tenantBaseUrl(host: string): Promise<URL> {
   return new URL(await tenantOrigin(host));
 }
 
-// Origem para servir assets da aplicação (capa gerada em /api/og).
-//
-// Na rota de preview a base do tenant inclui um caminho
-// ("https://app.com/b/cliente"), e uma URL relativa resolvida contra ela
-// vira "/b/cliente/api/og/..." - que não existe. A capa mora na raiz do
-// app, então aqui devolvemos só esquema + host.
-export async function tenantAssetOrigin(host: string): Promise<string> {
-  return new URL(await tenantOrigin(host)).origin;
+/**
+ * Blog que mora na pasta que o Worker do cliente informou. É a única
+ * autorização do modo pasta: o cabeçalho vale só se for, exatamente, o
+ * endereço cadastrado de um blog - qualquer outro valor não abre nada. Por
+ * isso ele pode virar a base dos links sem risco de alguém apontar o blog de
+ * um cliente para um endereço inventado. Erro de banco (inclusive a coluna
+ * ainda não existir, antes da 0017) vale como "não achou".
+ */
+export async function blogPorPasta(
+  endereco: string | null,
+): Promise<{ subdomain: string; pasta_url: string } | null> {
+  if (!endereco) return null;
+  const pasta = normalizarPasta(endereco);
+  if ("erro" in pasta || pasta.url !== endereco) return null;
+  const { data, error } = await createAdminClient()
+    .from("blogs")
+    .select("subdomain, pasta_url")
+    .eq("pasta_url", pasta.url)
+    .maybeSingle();
+  if (error || !data?.pasta_url) return null;
+  return data as { subdomain: string; pasta_url: string };
 }
 
 // Resolve qual blog corresponde ao segmento recebido do proxy.

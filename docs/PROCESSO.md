@@ -1957,3 +1957,64 @@ teto por hora da seção 42 vale por conta, então 50 contas eram 50 tetos.
 **Como liberar:** Supabase → Table Editor → `workspaces` → marcar
 `liberado` na linha do cliente. Quando a cobrança existir, é o webhook de
 pagamento que marca.
+
+## 44. Blog numa pasta do site do cliente, e o caminho de volta ao site
+
+Pedido do dono: o blog "vinculado" ao site do cliente, "os dois juntos".
+Eram duas coisas: o blog morar no endereço do cliente e o blog levar ao site.
+
+### O caminho de volta (`src/components/blog-publico.tsx`)
+
+O blog não tinha nenhum link para o site da empresa. Agora o topo tem "Ir
+al sitio web" (no idioma do blog) e o rodapé leva o domínio. O site vem de
+`siteDoCliente()`: a pasta, senão o domínio comprado do subdomínio
+(blog.cliente.com → cliente.com), senão o primeiro domínio da marca. Sem
+nenhum, sem link - inventar seria pior.
+
+### Blog na pasta: cliente.com/blog (migração 0017, `src/lib/pasta.ts`)
+
+A pasta é o formato que mais ajuda o SEO do cliente: o Google trata como
+parte do site. O subdomínio continua existindo, para sites que não passam
+pelo Cloudflare (Wix, Squarespace, Shopify).
+
+Como funciona: o cliente instala um Worker do Cloudflare (plano grátis) com
+o código que o painel gera. O Worker encaminha só `/blog*` para
+`<app>/pasta`, com o cabeçalho `x-knowseo-pasta` dizendo de qual pasta
+veio. O proxy só atende se esse valor for exatamente o `pasta_url` de um
+blog; qualquer outro valor é 404. A base dos links vira a pasta, então o
+visitante continua em cliente.com/blog. Depois do "Conferir se já está no
+ar" (`pasta_status = 'active'`), canonical, sitemap e JSON-LD passam para a
+pasta - e o endereço antigo `/b/<slug>` aponta o canonical para ela, para o
+Google juntar a força no domínio do cliente.
+
+Armadilhas encontradas e tratadas, cada uma com teste:
+
+- **HSTS da Vercel** vale para o domínio e TODOS os subdomínios por 2 anos.
+  Repassado pelo Worker, derrubaria subdomínio do cliente sem https. O
+  Worker remove HSTS e Set-Cookie da resposta, e não manda o cookie do site.
+- **Slug no Worker criaria loop**: renomear o blog faria o 301 do slug
+  antigo voltar para a pasta. O Worker não leva slug; o blog é achado pelo
+  endereço da pasta.
+- **Caminhos relativos iriam para o servidor do cliente**: `/_next`, capa
+  `/api/og` e `/api/track`. `assetPrefix` absoluto na produção
+  (`next.config.ts`), capa e rastreio com `origemDoApp()`, rastreio em
+  `no-cors` sem Content-Type (evita a pré-checagem de CORS que a rota não
+  responde), e `Access-Control-Allow-Origin` explícito em `/_next/static`
+  para a fonte - a Vercel já mandava, `next start` não.
+- **CSP**: com o blog na pasta, `'self'` é o site do cliente; o app entra em
+  style/font/img/connect-src, e o relatório de violação vai para o app.
+- **A regra de segurança de sempre** (o site do cliente nunca é substituído)
+  em quatro lugares: validação na digitação, rota de servidor, constraint
+  no banco (conferida: `https://dataknow.es/` foi recusado) e o Worker, que
+  repassa intocado tudo o que está fora da pasta - mesmo com a rota do
+  Cloudflare cadastrada larga demais.
+- **Bug pego pelo teste antes de sair**: o gerador lia o caminho de um campo
+  inexistente e o Worker saía com a pasta vazia, repassando tudo ao site do
+  cliente. O teste carrega o código gerado como módulo e o executa com um
+  fetch simulado - testar uma cópia não provaria nada.
+
+Validação ponta a ponta: um "site do cliente" local rodando o mesmo código
+do Worker contra o app em modo produção. Estilo, as 4 fontes, capa, links
+que ficam na pasta, visita gravada com o caminho da pasta, canonical e
+sitemap depois da confirmação, barra no fim do endereço, artigo inexistente
+em 404, zero violação de CSP.
