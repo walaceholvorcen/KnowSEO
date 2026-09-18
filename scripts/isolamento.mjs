@@ -20,7 +20,14 @@ const { env } = lerEnv();
 const URL_SB = env.NEXT_PUBLIC_SUPABASE_URL;
 const ANON = env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const SERVICO = env.SUPABASE_SERVICE_ROLE_KEY;
-const APP_URL = env.APP_URL ?? `https://${env.NEXT_PUBLIC_APP_DOMAIN ?? ""}`;
+// O .env.local aponta o app para a máquina local; o teste existe para
+// conferir produção. APP_URL no ambiente escolhe outro endereço.
+const dominio = env.NEXT_PUBLIC_APP_DOMAIN ?? "";
+const APP_URL =
+  env.APP_URL ??
+  (!dominio || dominio.startsWith("localhost")
+    ? "https://know-seo.vercel.app"
+    : `https://${dominio}`);
 if (!ANON) throw new Error("falta NEXT_PUBLIC_SUPABASE_ANON_KEY");
 
 const sufixo = Math.random().toString(36).slice(2, 8);
@@ -185,10 +192,14 @@ try {
     registrar(`anon não lista ${tabela}`, linhas(r) === 0, `${linhas(r)} linhas`);
   }
 
-  if (APP_URL.length > "https://".length) {
-    console.log(`\nNo app (${APP_URL}):\n`);
+  console.log(`\nNo app (${APP_URL}):\n`);
+  try {
     const r = await fetch(`${APP_URL}/api/og/${A.artigoId}`);
     registrar("capa de rascunho não sai sem login", r.status === 404, `status ${r.status}`);
+  } catch {
+    // App fora do ar não é furo de isolamento: diz isso numa linha própria,
+    // sem misturar com a montagem do teste.
+    registrar("capa de rascunho não sai sem login", false, `app não respondeu em ${APP_URL}`);
   }
 } catch (erro) {
   registrar("montagem do teste", false, erro.message);
