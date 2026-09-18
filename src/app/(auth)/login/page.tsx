@@ -5,12 +5,11 @@ import { cn } from "@/lib/utils";
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/client";
+import { entrar } from "@/app/acoes-de-conta";
 import { traduzErroAuth } from "../traduz-erro";
 
 export default function LoginPage() {
   const router = useRouter();
-  const supabase = createClient();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -21,13 +20,10 @@ export default function LoginPage() {
     setLoading(true);
     setError(null);
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    const { erro } = await entrar(email, password);
 
-    if (error) {
-      setError(traduzErroAuth(error.message));
+    if (erro) {
+      setError(traduzErroAuth(erro));
       setLoading(false);
       return;
     }

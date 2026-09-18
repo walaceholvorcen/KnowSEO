@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link, { useLinkStatus } from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { sair } from "@/app/acoes-de-conta";
 import { cn } from "@/lib/utils";
 import { semEsquema } from "@/lib/blog-endereco";
 import { BLOG_COOKIE } from "@/lib/blog-cookie";
@@ -98,7 +98,6 @@ export function Sidebar({
   const blog = blogs.find((b) => b.id === blogAtivoId) ?? blogs[0];
   const pathname = usePathname();
   const router = useRouter();
-  const supabase = createClient();
   const [aberto, setAberto] = useState(false);
 
   useEffect(() => {
@@ -121,7 +120,7 @@ export function Sidebar({
   }
 
   async function handleLogout() {
-    await supabase.auth.signOut();
+    await sair();
     router.push("/login");
     router.refresh();
   }

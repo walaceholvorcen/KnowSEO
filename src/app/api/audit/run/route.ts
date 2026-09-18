@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireUserAndWorkspace } from "@/lib/workspace";
+import { barrarSeEstourou, LIMITES } from "@/lib/limite-de-uso";
 import { normalizeSiteUrl, isPublicHttpUrl } from "@/lib/crawler";
 import { registrarAuditoria } from "@/lib/audit/salvar";
 
@@ -7,6 +8,8 @@ export const maxDuration = 120;
 
 export async function POST(request: Request) {
   const { supabase, workspace } = await requireUserAndWorkspace();
+  const barrado = await barrarSeEstourou(supabase, workspace.id, LIMITES.auditoria);
+  if (barrado) return barrado;
   const { blogId, siteUrl } = await request.json();
 
   if (!blogId || !siteUrl) {

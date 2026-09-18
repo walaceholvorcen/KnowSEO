@@ -29,18 +29,23 @@ export function BotaoSalvar({
   /** O que mais mora na linha do botão (avisos, ações secundárias). */
   children?: React.ReactNode;
 }) {
-  const [visivel, setVisivel] = useState(false);
+  // Um salvamento novo zera o prazo do anterior. Ajustado durante o render,
+  // como a doc do React recomenda para estado que segue uma prop - num
+  // efeito, cada clique renderizaria duas vezes.
+  const [expirou, setExpirou] = useState(false);
+  const [salvandoAntes, setSalvandoAntes] = useState(salvando);
+  if (salvando !== salvandoAntes) {
+    setSalvandoAntes(salvando);
+    if (salvando) setExpirou(false);
+  }
 
   useEffect(() => {
-    if (salvando) {
-      setVisivel(false);
-      return;
-    }
-    if (!salvo) return;
-    setVisivel(true);
-    const t = setTimeout(() => setVisivel(false), 4000);
+    if (!salvo || salvando) return;
+    const t = setTimeout(() => setExpirou(true), 4000);
     return () => clearTimeout(t);
   }, [salvo, salvando]);
+
+  const visivel = salvo && !salvando && !expirou;
 
   return (
     <div className="flex flex-wrap items-center gap-3">

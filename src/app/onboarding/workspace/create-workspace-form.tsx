@@ -4,18 +4,10 @@ import { botao, campo } from "@/components/ui";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
-import { slugify } from "@/lib/utils";
+import { criarWorkspace } from "@/app/acoes-de-conta";
 
-export function CreateWorkspaceForm({
-  userId,
-  userEmail,
-}: {
-  userId: string;
-  userEmail: string;
-}) {
+export function CreateWorkspaceForm({ userEmail }: { userEmail: string }) {
   const router = useRouter();
-  const supabase = createClient();
   const [name, setName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -25,32 +17,12 @@ export function CreateWorkspaceForm({
     setLoading(true);
     setError(null);
 
-    const finalName = name || userEmail.split("@")[0] || "Mi cuenta";
-    const workspaceId = crypto.randomUUID();
-    const workspaceSlug = `${slugify(finalName)}-${Math.random()
-      .toString(36)
-      .slice(2, 6)}`;
+    const { erro } = await criarWorkspace(
+      name || userEmail.split("@")[0] || "Minha conta",
+    );
 
-    // Sin .select() acá a propósito: la policy de SELECT de "workspaces"
-    // exige membresía, que recién se crea en el insert de abajo.
-    const { error: wsError } = await supabase.from("workspaces").insert({
-      id: workspaceId,
-      name: finalName,
-      slug: workspaceSlug,
-    });
-
-    if (wsError) {
-      setError(wsError.message);
-      setLoading(false);
-      return;
-    }
-
-    const { error: memberError } = await supabase
-      .from("workspace_members")
-      .insert({ workspace_id: workspaceId, user_id: userId, role: "owner" });
-
-    if (memberError) {
-      setError(memberError.message);
+    if (erro) {
+      setError(erro);
       setLoading(false);
       return;
     }

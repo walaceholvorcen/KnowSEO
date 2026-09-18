@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
+import { headers } from "next/headers";
 import { THEME_INIT_SCRIPT } from "@/lib/theme";
 import "./globals.css";
 
@@ -25,7 +26,12 @@ export const metadata: Metadata = {
   description: "Generación y publicación automática de contenido SEO",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  // O único script escrito à mão no app precisa do nonce da CSP. Ler o
+  // cabeçalho torna as páginas dinâmicas - e é exigência do nonce, que muda
+  // a cada pedido e não existe numa página gerada no build.
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
+
   return (
     <html
       lang="es"
@@ -37,7 +43,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             del tema incorrecto. suppressHydrationWarning en <html> es
             necesario porque este script muta la clase antes de que React
             hidrate. */}
-        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+        <script nonce={nonce} dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
       {/* Antes havia bg-white com dois dark: conflitantes. O fundo agora vem
           do token, que é papel no claro e tinta no escuro. */}

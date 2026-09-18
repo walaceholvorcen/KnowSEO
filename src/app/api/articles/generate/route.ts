@@ -1,15 +1,19 @@
 import { NextResponse } from "next/server";
 import { requireUserAndWorkspace } from "@/lib/workspace";
+import { barrarSeEstourou, LIMITES } from "@/lib/limite-de-uso";
 import { createClient } from "@/lib/supabase/server";
 import { generateArticle } from "@/lib/anthropic";
 import { slugify } from "@/lib/utils";
 import { isAiConfigured, AI_NOT_CONFIGURED_MESSAGE } from "@/lib/ai-config";
 import { avaliarArtigo } from "@/lib/artigo/qualidade";
 import { urlDoArtigo } from "@/lib/blog-endereco";
+import { htmlSeguro } from "@/lib/html-seguro";
 import type { Blog, BrandDna, InternalLink, Keyword } from "@/types";
 
 export async function POST(request: Request) {
   const { supabase, workspace } = await requireUserAndWorkspace();
+  const barrado = await barrarSeEstourou(supabase, workspace.id, LIMITES.artigo);
+  if (barrado) return barrado;
   const { keywordId } = await request.json();
 
   if (!isAiConfigured()) {
@@ -127,7 +131,15 @@ export async function POST(request: Request) {
         linksConhecidos: paginas,
       });
 
-    let generated = await generateArticle(pedido);
+    // O modelo lê a web antes de escrever, e uma página pode ter texto
+    // plantado para induzi-lo a devolver HTML com script. A saída é limpa
+    // antes de qualquer coisa - antes da trava, antes do banco.
+    const gerar = async () => {
+      const a = await generateArticle(pedido);
+      return a ? { ...a, content_html: htmlSeguro(a.content_html) } : null;
+    };
+
+    let generated = await gerar();
     if (!generated) {
       throw new Error("empty response from model");
     }
@@ -142,7 +154,7 @@ export async function POST(request: Request) {
         "[articles/generate] reprovado na trava, tentando de novo",
         avaliacao.travas.map((t) => t.codigo),
       );
-      const segunda = await generateArticle(pedido);
+      const segunda = await gerar();
       if (segunda) {
         const avaliacaoDaSegunda = conferir(segunda);
         if (avaliacaoDaSegunda.travas.length < avaliacao.travas.length) {

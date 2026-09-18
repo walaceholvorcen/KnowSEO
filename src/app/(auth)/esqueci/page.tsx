@@ -4,11 +4,10 @@ import { useState } from "react";
 import Link from "next/link";
 import { botao, campo } from "@/components/ui";
 import { cn } from "@/lib/utils";
-import { createClient } from "@/lib/supabase/client";
+import { pedirNovaSenha } from "@/app/acoes-de-conta";
 import { traduzErroAuth } from "../traduz-erro";
 
 export default function EsqueciPage() {
-  const supabase = createClient();
   const [email, setEmail] = useState("");
   const [enviado, setEnviado] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
@@ -19,14 +18,12 @@ export default function EsqueciPage() {
     setCarregando(true);
     setErro(null);
 
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      // O link do e-mail cai numa rota nossa que troca o código por sessão
-      // antes de mostrar o formulário de nova senha.
-      redirectTo: `${window.location.origin}/api/auth/confirmar?destino=/nova-senha`,
-    });
+    // O link do e-mail cai numa rota nossa que troca o código por sessão
+    // antes de mostrar o formulário de nova senha.
+    const { erro } = await pedirNovaSenha(email);
 
-    if (error) {
-      setErro(traduzErroAuth(error.message));
+    if (erro) {
+      setErro(traduzErroAuth(erro));
       setCarregando(false);
       return;
     }

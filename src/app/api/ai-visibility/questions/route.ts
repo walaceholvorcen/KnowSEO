@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireUserAndWorkspace } from "@/lib/workspace";
+import { barrarSeEstourou, LIMITES } from "@/lib/limite-de-uso";
 import { generateProbeQuestions } from "@/lib/ai-visibility/questions";
 import { getProvider } from "@/lib/ai-visibility/runner";
 import type { Blog, BrandDna } from "@/types";
@@ -8,6 +9,8 @@ export const maxDuration = 60;
 
 export async function POST(request: Request) {
   const { supabase, workspace } = await requireUserAndWorkspace();
+  const barrado = await barrarSeEstourou(supabase, workspace.id, LIMITES.perguntas);
+  if (barrado) return barrado;
   const { blogId } = await request.json();
 
   if (!getProvider().isConfigured()) {

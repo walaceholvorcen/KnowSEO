@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { textoSobre } from "@/lib/contrast";
 import { versaoDaIdentidade } from "@/lib/blog-endereco";
+import { htmlSeguro } from "@/lib/html-seguro";
 import { CtaBanner } from "@/app/sites/[domain]/[slug]/cta-banner";
 import type { Article, Blog } from "@/types";
 
@@ -68,7 +69,9 @@ export function ArticleView({
         <article
           data-preview="corpo"
           className="prose dark:prose-invert prose-slate mt-8 max-w-none [&_h2]:mt-8 [&_h2]:text-xl [&_h2]:font-bold [&_h3]:mt-6 [&_h3]:text-lg [&_h3]:font-semibold [&_p]:my-4 [&_ul]:my-4 [&_ul]:list-disc [&_ul]:pl-6 [&_a]:text-cobalto-600 [&_a]:underline"
-          dangerouslySetInnerHTML={{ __html: article.content_html ?? "" }}
+          // Limpo também na leitura: artigo gravado antes da trava de 17/09
+          // não passou por htmlSeguro ao ser salvo.
+          dangerouslySetInnerHTML={{ __html: htmlSeguro(article.content_html) }}
         />
 
         {/* Só o que o banner usa: prop de componente client vai inteira para o

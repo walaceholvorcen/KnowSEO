@@ -5,7 +5,7 @@ import { BotaoSalvar } from "@/components/botao-salvar";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { salvarDnaDaMarca } from "../../acoes";
 import { dnaContradizIdioma, type IdiomaDoBlog } from "@/lib/idioma";
 import type { BrandDna } from "@/types";
 
@@ -22,7 +22,6 @@ export function BrandDnaForm({
   idioma: IdiomaDoBlog;
 }) {
   const router = useRouter();
-  const supabase = createClient();
 
   const [description, setDescription] = useState(initial?.description ?? "");
   const [targetAudience, setTargetAudience] = useState(
@@ -46,15 +45,13 @@ export function BrandDnaForm({
     setSaved(false);
     setError(null);
 
-    const { error: saveError } = await supabase.from("brand_dna").upsert({
-      blog_id: blogId,
+    const { erro: saveError } = await salvarDnaDaMarca(blogId, {
       description,
       target_audience: targetAudience,
       tone,
       writing_style: writingStyle,
       banned_topics: bannedTopics,
       banned_words: bannedWords,
-      updated_at: new Date().toISOString(),
     });
 
     // Sem esta checagem o botão dizia "Salvo" mesmo quando o upsert
@@ -62,7 +59,7 @@ export function BrandDnaForm({
     // artigos saíam com tom genérico, sem nada denunciando o problema.
     if (saveError) {
       setSaving(false);
-      setError(saveError.message);
+      setError(saveError);
       return;
     }
 

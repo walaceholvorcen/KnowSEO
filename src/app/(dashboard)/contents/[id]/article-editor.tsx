@@ -20,8 +20,7 @@ import {
   AlertTriangle,
   Info,
 } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
-import { slugify } from "@/lib/utils";
+import { salvarArtigo } from "../../acoes";
 import { cn } from "@/lib/utils";
 import type { Article } from "@/types";
 import {
@@ -61,7 +60,6 @@ export function ArticleEditor({
   versaoMarca: string;
 }) {
   const router = useRouter();
-  const supabase = createClient();
   const contentRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const molduraRef = useRef<HTMLDivElement>(null);
@@ -203,37 +201,26 @@ export function ArticleEditor({
     // o slug curto que o modelo escolhe e, pior, trocava a URL de um artigo
     // já publicado assim que alguém ajustasse o título - todo link que
     // apontava para ele passava a dar 404, num produto de SEO.
-    const slugFinal = slugify(slug) || slugify(title);
-
-    const { error: saveError } = await supabase
-      .from("articles")
-      .update({
-        title,
-        slug: slugFinal,
-        seo_title: seoTitle,
-        seo_description: seoDescription,
-        content_html: contentRef.current?.innerHTML ?? article.content_html,
-        status: finalStatus,
-        // Só a primeira publicação define a data. Sem isto, cada correção
-        // num artigo publicado o devolvia ao topo do blog como se fosse novo.
-        published_at:
-          finalStatus === "published"
-            ? (article.published_at ?? new Date().toISOString())
-            : article.published_at,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", article.id);
+    //
+    // A gravação é no servidor (acoes.ts), que também limpa o HTML antes de
+    // guardar: é este corpo que vai ao ar no blog do cliente.
+    const { erro, slug: slugFinal } = await salvarArtigo({
+      id: article.id,
+      title,
+      slug,
+      seoTitle,
+      seoDescription,
+      contentHtml: contentRef.current?.innerHTML ?? article.content_html ?? "",
+      publicar: finalStatus === "published",
+      publishedAt: article.published_at,
+    });
 
     setSaving(false);
 
     // O erro era descartado: slug repetido derrubava o salvamento e a tela
     // não dizia nada - o cliente saía achando que tinha publicado.
-    if (saveError) {
-      setError(
-        saveError.code === "23505"
-          ? "Já existe outro artigo com esse endereço. Mude o endereço do artigo."
-          : saveError.message,
-      );
+    if (erro || !slugFinal) {
+      setError(erro ?? "Não foi possível salvar agora.");
       return;
     }
 

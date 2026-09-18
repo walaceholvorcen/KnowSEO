@@ -2,6 +2,7 @@ import { ImageResponse } from "next/og";
 import { textoSobre } from "@/lib/contrast";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { CACHE_DA_CAPA } from "@/lib/blog-endereco";
+import { acessoAoArtigo, SEM_CACHE } from "@/lib/artigo/acesso";
 
 // 1080x1350 (proporção 4:5): o formato que ocupa mais espaço no feed do
 // Instagram hoje, tanto em post único quanto em carrossel.
@@ -49,9 +50,11 @@ export async function GET(
   const admin = createAdminClient();
   const { data: article } = await admin
     .from("articles")
-    .select("carousel_slides, blogs(name, theme)")
+    .select("carousel_slides, status, blogs(name, theme)")
     .eq("id", articleId)
     .maybeSingle();
+
+  const acesso = article ? await acessoAoArtigo(articleId, article.status) : null;
 
   const slides = (article?.carousel_slides ?? []) as {
     headline: string;
@@ -59,7 +62,7 @@ export async function GET(
   }[];
   const atual = slides[indice];
 
-  if (!atual) {
+  if (!atual || !acesso) {
     return new Response("slide not found", { status: 404 });
   }
 
@@ -138,7 +141,7 @@ export async function GET(
       // Navegador revalida sempre (max-age=0); a CDN guarda por um dia e
       // serve a cópia velha enquanto renova. A URL carrega ?v=<identidade>,
       // então trocar nome, cor ou logo muda a URL e fura o cache na hora.
-      headers: { "Cache-Control": CACHE_DA_CAPA },
+      headers: { "Cache-Control": acesso === "publico" ? CACHE_DA_CAPA : SEM_CACHE },
     },
   );
 }

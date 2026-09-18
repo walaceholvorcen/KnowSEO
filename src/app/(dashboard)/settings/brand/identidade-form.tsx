@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, X } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { salvarIdentidadeDaMarca } from "../../acoes";
 
 // Como a marca é escrita e onde ela mora.
 //
@@ -108,7 +108,6 @@ export function IdentidadeForm({
   initialDomains: string[];
 }) {
   const router = useRouter();
-  const supabase = createClient();
 
   const [nomes, setNomes] = useState(initialNames);
   const [dominios, setDominios] = useState(initialDomains);
@@ -121,14 +120,11 @@ export function IdentidadeForm({
     setSalvo(false);
     setErro(null);
 
-    const { error } = await supabase
-      .from("blogs")
-      .update({ brand_names: nomes, brand_domains: dominios })
-      .eq("id", blogId);
+    const { erro: falha } = await salvarIdentidadeDaMarca(blogId, nomes, dominios);
 
     setSalvando(false);
-    if (error) {
-      setErro(error.message);
+    if (falha) {
+      setErro(falha);
       return;
     }
     setSalvo(true);

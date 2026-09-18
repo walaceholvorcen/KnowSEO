@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireUserAndWorkspace } from "@/lib/workspace";
+import { barrarSeEstourou, LIMITES } from "@/lib/limite-de-uso";
 import { crawlSite, normalizeSiteUrl, isPublicHttpUrl } from "@/lib/crawler";
 import { buscarConexao } from "@/lib/google/oauth";
 import { buscarDesempenhoDeBusca } from "@/lib/google/search-console";
@@ -33,6 +34,8 @@ function diaISO(deslocamentoEmDias: number): string {
 
 export async function POST(request: Request) {
   const { supabase, workspace } = await requireUserAndWorkspace();
+  const barrado = await barrarSeEstourou(supabase, workspace.id, LIMITES.mercado);
+  if (barrado) return barrado;
   const { blogId, concorrentes } = (await request.json()) as {
     blogId?: string;
     concorrentes?: string[];

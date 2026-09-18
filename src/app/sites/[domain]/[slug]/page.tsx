@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { jsonParaScript } from "@/lib/html-seguro";
 import type { Metadata } from "next";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
@@ -110,7 +111,7 @@ export default async function TenantArticlePage({
     <div>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: jsonParaScript(jsonLd) }}
       />
       <PageviewTracker blogId={blog.id} articleId={article.id} />
       <ArticleView blog={blog} article={article} inicio={await tenantOrigin(domain)} />

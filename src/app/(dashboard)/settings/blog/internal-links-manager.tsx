@@ -7,7 +7,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Trash2, Radar } from "lucide-react";
 import { titulosSuspeitos } from "@/lib/titulo";
-import { createClient } from "@/lib/supabase/client";
+import { adicionarLinkInterno, removerLinkInterno } from "../../acoes";
 import type { InternalLink } from "@/types";
 
 export function InternalLinksManager({
@@ -18,7 +18,6 @@ export function InternalLinksManager({
   initialLinks: InternalLink[];
 }) {
   const router = useRouter();
-  const supabase = createClient();
   const [links, setLinks] = useState(initialLinks);
 
   // Detecção automática via sitemap
@@ -68,14 +67,11 @@ export function InternalLinksManager({
     if (!url) return;
     setSaving(true);
 
-    const { data } = await supabase
-      .from("internal_links")
-      .insert({ blog_id: blogId, url, title: title || null })
-      .select()
-      .single();
+    const { link, erro } = await adicionarLinkInterno(blogId, url, title);
+    setCrawlError(erro);
 
-    if (data) {
-      setLinks((prev) => [data as InternalLink, ...prev]);
+    if (link) {
+      setLinks((prev) => [link, ...prev]);
       setUrl("");
       setTitle("");
       router.refresh();
@@ -85,7 +81,7 @@ export function InternalLinksManager({
 
   async function handleRemove(id: string) {
     setLinks((prev) => prev.filter((l) => l.id !== id));
-    await supabase.from("internal_links").delete().eq("id", id);
+    await removerLinkInterno(id);
   }
 
   const suspeitos = titulosSuspeitos(links);

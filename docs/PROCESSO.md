@@ -1813,3 +1813,117 @@ existe.
 Volume de busca continua vindo da leitura do modelo enquanto o acesso
 Básico da Google Ads API não for pedido (seção 28). O plano diz **em que
 ordem escrever**; ele não prova a demanda de cada apoio.
+
+## 42. Revisão de segurança de 17/09 — sessão, HTML, CSP e isolamento
+
+Brief externo (caixa-cinza, uma conta só) com sete itens. Todos atacados; o
+teste de isolamento que o brief pedia encontrou dois furos que ele não
+tinha como ver de fora, e esses eram os piores.
+
+### S1a — o token de sessão saiu do alcance do JavaScript
+
+O cookie `sb-…-auth-token` guarda o refresh token, que renova sozinho. Ele
+era legível por `document.cookie` porque o painel tinha um client Supabase
+**no navegador** - login, cadastro, troca de senha e sete formulários
+falavam direto com o banco. Qualquer XSS virava sessão roubada sem prazo.
+
+- Tudo virou Server Action: `src/app/acoes-de-conta.ts` (entrar, cadastrar,
+  criar workspace, pedir e trocar senha, sair) e `src/app/(dashboard)/acoes.ts`
+  (salvar artigo, DNA, marca, integrações, links internos, descartar pauta).
+  `src/lib/supabase/client.ts` foi apagado: não existe mais client de
+  navegador, e a chave anon saiu do bundle.
+- `COOKIE_DE_SESSAO` (`src/lib/supabase/cookie.ts`) põe `httpOnly` e
+  `secure` nos dois clients de servidor. O proxy **regrava** os cookies de
+  sessão antigos no primeiro pedido, então quem já estava logado passa a
+  HttpOnly sem precisar entrar de novo.
+- `criarWorkspace` usa o usuário da sessão, não um `userId` vindo do
+  formulário como antes.
+
+### S1c — HTML de fora passa por um sanitizador só
+
+Dos "16 dangerouslySetInnerHTML" do bundle, 5 são nossos; o resto é do
+React/Next. Classificados:
+
+| Onde | Fonte | Tratamento |
+|---|---|---|
+| corpo do artigo (blog público) | modelo + editor | `htmlSeguro` na leitura |
+| corpo do artigo (editor) | modelo + editor | `htmlSeguro` na carga da página |
+| JSON-LD do artigo | título, resumo | `jsonParaScript` - `JSON.stringify` não escapa `<`, e um título com `</script>` abria script na página do cliente |
+| resposta da IA (Raio X) | modelo | já escapava antes de marcar (`markdown.ts`) |
+| script de tema | constante | ganhou nonce |
+
+`htmlSeguro` (`sanitize-html`, lista do que entra) roda também **na
+gravação**: na saída do modelo, antes da trava de qualidade, e no
+`salvarArtigo`. O modelo lê a web antes de escrever - texto plantado numa
+página pode induzi-lo a devolver HTML com script. 9 testes com os payloads
+do brief (`onerror`, `javascript:` com maiúscula e espaço, `svg onload`,
+`</script>` no JSON-LD).
+
+### S1b/S2 — CSP com nonce, em Report-Only
+
+`src/lib/csp.ts` + `proxy.ts`: nonce novo por pedido, nos três caminhos
+(painel, blog por `/b/`, blog em domínio do cliente). O Next lê o nonce do
+cabeçalho do pedido - inclusive no Report-Only, conferido no código dele - e
+marca os próprios scripts. O layout raiz lê o nonce para o script de tema, o
+que torna as páginas dinâmicas (exigência do nonce).
+
+`style-src` fica com `'unsafe-inline'` e sem nonce: com nonce o navegador
+ignora `'unsafe-inline'`, e o painel usa `style={}` em todo lugar.
+
+Violações vão para `/api/csp` → log da Vercel. Conferido localmente: zero
+violação no painel, no blog e no artigo; um `<img onerror>` injetado de
+propósito apareceu no log como `script-src-attr`. **Para passar a bloquear,
+troca-se uma linha** (`CABECALHO_CSP`), depois de uma semana de log limpo.
+
+### S4 — capa e carrossel só de artigo publicado
+
+`acessoAoArtigo`: publicado sai para qualquer um (é o preview do WhatsApp);
+rascunho só para quem é do workspace, conferido pela sessão e pela RLS.
+Rascunho sai com `Cache-Control: private, no-store` - senão a primeira
+visita, do dono, deixaria a cópia na CDN para qualquer um.
+
+### S5 — cabeçalhos
+
+`next.config.ts`: `X-Frame-Options: SAMEORIGIN` (é ele que impede
+clickjacking enquanto a CSP só avisa; SAMEORIGIN porque a prévia do editor
+é iframe da própria origem), `nosniff`, `Referrer-Policy`,
+`Permissions-Policy`.
+
+### S7 — teto por hora, por workspace
+
+`src/lib/limite-de-uso.ts` conta as linhas que a própria operação grava
+(artigos, pautas, perguntas, rodadas do Raio X, auditorias, análises de
+mercado) na última hora, somando os blogs do workspace. Sem tabela nova.
+Tetos folgados para uso real, 429 com `Retry-After` acima deles.
+
+### S6 — o que o teste de isolamento achou (migração 0015)
+
+Escrevendo `scripts/isolamento.mjs`, a leitura das policies mostrou:
+
+1. **`blogs` legível por qualquer um.** A policy "public can read published
+   blogs metadata" era `using (true)`, e policies de SELECT somam. Medido
+   com a chave anon, sem login: a tabela inteira, dos dois workspaces,
+   com `workspace_id`, marca, WhatsApp do CTA e propriedade do Search
+   Console. Nada no app dependia dela - o blog público lê com o client de
+   serviço. Removida, junto com a de artigos publicados.
+2. **Qualquer conta entrava em qualquer workspace.** O INSERT em
+   `workspace_members` só conferia `user_id = auth.uid()`. Com o
+   `workspace_id` que o item 1 entregava, bastava criar uma conta e se
+   inserir como `owner` na agência alheia. Agora só se entra num workspace
+   que ainda não tem ninguém (`workspace_sem_membros`, security definer para
+   não entrar em recursão de RLS) - exatamente o passo do cadastro.
+
+`npm run test:isolamento` cria duas contas descartáveis, monta uma agência
+completa para cada e tenta, como B, ler, alterar, apagar, plantar artigo e
+se vincular ao workspace de A; tenta o mesmo sem login; confere a capa de
+rascunho no app. Apaga tudo no fim e sai com código 1 se algo passar. Rode
+depois de qualquer migração que mexa em policy.
+
+### O que fica de fora, e por quê
+
+- A chave anon continua existindo nas variáveis de ambiente (os clients de
+  servidor usam) - só saiu do navegador.
+- Revisão linha a linha de todas as policies das tabelas 0002-0013: as de
+  membro seguem o mesmo padrão da 0001 e o teste de isolamento cobre as
+  principais. As que não têm policy nenhuma (`google_integration`,
+  `cron_execucoes`) ficam fechadas para usuário por construção.

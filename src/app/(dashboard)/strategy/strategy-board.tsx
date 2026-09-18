@@ -4,7 +4,7 @@ import { botao, campo, pagina } from "@/components/ui";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Sparkles, X, PenLine, Layers } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { descartarPauta } from "../acoes";
 import { Lede, Linha, Secao } from "@/components/lede";
 import { agruparEmPlanos } from "@/lib/keywords/cluster";
 import { cn } from "@/lib/utils";
@@ -58,7 +58,6 @@ export function StrategyBoard({
   nomeIdiomaFora?: string;
 }) {
   const router = useRouter();
-  const supabase = createClient();
   const [keywords, setKeywords] = useState(initialKeywords);
   const [loadingIdeas, setLoadingIdeas] = useState(false);
   const [generatingId, setGeneratingId] = useState<string | null>(null);
@@ -138,7 +137,7 @@ export function StrategyBoard({
     setKeywords((prev) =>
       prev.map((k) => (k.id === id ? { ...k, status: "rejected" } : k)),
     );
-    await supabase.from("keywords").update({ status: "rejected" }).eq("id", id);
+    await descartarPauta(id);
   }
 
   async function handleWrite(id: string) {

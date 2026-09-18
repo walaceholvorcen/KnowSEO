@@ -1,5 +1,6 @@
 import { after, NextResponse } from "next/server";
 import { requireUserAndWorkspace } from "@/lib/workspace";
+import { barrarSeEstourou, LIMITES } from "@/lib/limite-de-uso";
 import {
   executarRodada,
   getProviders,
@@ -22,6 +23,8 @@ export const maxDuration = 300;
 // de novo e recomeçava do zero. Agora a análise independe da tela aberta.
 export async function POST(request: Request) {
   const { supabase, workspace } = await requireUserAndWorkspace();
+  const barrado = await barrarSeEstourou(supabase, workspace.id, LIMITES.raioX);
+  if (barrado) return barrado;
   const { blogId } = (await request.json()) as { blogId: string };
 
   const providers = getProviders();

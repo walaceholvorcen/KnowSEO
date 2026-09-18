@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "test": "node --experimental-strip-types --test src/**/*.test.ts",
-    "test:blog": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/verificar-blog-publico.mjs"
+    "test:blog": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/verificar-blog-publico.mjs",
+    "test:isolamento": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/isolamento.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.123.0",
@@ -20,6 +21,7 @@
     "next": "16.3.4",
     "react": "19.2.8",
     "react-dom": "19.2.8",
+    "sanitize-html": "^2.17.7",
     "tailwind-merge": "^3.6.0",
     "tldts": "^7.4.13",
     "zod": "^4.5.4"
@@ -30,6 +32,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/sanitize-html": "^2.16.1",
     "eslint": "^9",
     "eslint-config-next": "16.3.4",
     "tailwindcss": "^4",

@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { COOKIE_DE_SESSAO } from "./cookie";
 
 // Client para uso em Server Components, Route Handlers e Server Actions.
 // Lê/escreve cookies de sessão do Supabase Auth.
@@ -10,6 +11,7 @@ export async function createClient() {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
+      cookieOptions: COOKIE_DE_SESSAO,
       cookies: {
         getAll() {
           return cookieStore.getAll();

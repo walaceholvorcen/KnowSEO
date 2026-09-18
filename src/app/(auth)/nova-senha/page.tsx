@@ -5,12 +5,11 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { botao, campo } from "@/components/ui";
 import { cn } from "@/lib/utils";
-import { createClient } from "@/lib/supabase/client";
+import { temSessao as conferirSessao, trocarSenha } from "@/app/acoes-de-conta";
 import { traduzErroAuth } from "../traduz-erro";
 
 export default function NovaSenhaPage() {
   const router = useRouter();
-  const supabase = createClient();
   const [senha, setSenha] = useState("");
   const [erro, setErro] = useState<string | null>(null);
   const [carregando, setCarregando] = useState(false);
@@ -20,20 +19,18 @@ export default function NovaSenhaPage() {
   const [temSessao, setTemSessao] = useState<boolean | null>(null);
 
   useEffect(() => {
-    supabase.auth
-      .getSession()
-      .then(({ data }) => setTemSessao(Boolean(data.session)));
-  }, [supabase]);
+    conferirSessao().then(setTemSessao);
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setCarregando(true);
     setErro(null);
 
-    const { error } = await supabase.auth.updateUser({ password: senha });
+    const { erro: falha } = await trocarSenha(senha);
 
-    if (error) {
-      setErro(traduzErroAuth(error.message));
+    if (falha) {
+      setErro(traduzErroAuth(falha));
       setCarregando(false);
       return;
     }

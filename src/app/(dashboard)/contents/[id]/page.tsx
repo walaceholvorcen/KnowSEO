@@ -3,6 +3,7 @@ import { requireUserAndWorkspace } from "@/lib/workspace";
 import { urlDoArtigo, versaoDaIdentidade } from "@/lib/blog-endereco";
 import type { Article, Blog } from "@/types";
 import { ArticleEditor } from "./article-editor";
+import { htmlSeguro } from "@/lib/html-seguro";
 import { lerFuso } from "@/lib/datas";
 
 export default async function ArticleEditorPage({
@@ -47,7 +48,12 @@ export default async function ArticleEditorPage({
 
   return (
     <ArticleEditor
-      article={article as Article}
+      // O editor é contentEditable no painel, com a sessão da agência: HTML
+      // antigo ou vindo do modelo não pode chegar lá sem passar pela trava.
+      article={{
+        ...(article as Article),
+        content_html: htmlSeguro((article as Article).content_html),
+      }}
       fuso={await lerFuso()}
       enderecoPublico={urlDoArtigo(blog, article.slug)}
       dominioPendente={!!blog.custom_domain && blog.domain_status !== "active"}

@@ -5,13 +5,11 @@ import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/client";
-import { slugify } from "@/lib/utils";
+import { cadastrar } from "@/app/acoes-de-conta";
 import { traduzErroAuth } from "../traduz-erro";
 
 export default function SignupPage() {
   const router = useRouter();
-  const supabase = createClient();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -24,57 +22,19 @@ export default function SignupPage() {
     setLoading(true);
     setError(null);
 
-    const { data, error: signUpError } = await supabase.auth.signUp({
-      email,
-      password,
-    });
+    // Conta e workspace nascem no servidor: o cookie de sessão é HttpOnly e
+    // o navegador não fala mais com o Supabase (ver acoes-de-conta.ts).
+    const { erro, confirmarEmail } = await cadastrar(name, email, password);
 
-    if (signUpError) {
-      setError(traduzErroAuth(signUpError.message));
+    if (erro) {
+      setError(traduzErroAuth(erro));
       setLoading(false);
       return;
     }
 
-    // Se a confirmação de email estiver ativada no projeto Supabase, ainda
-    // não há sessão - pedimos para o usuário confirmar por email.
-    if (!data.session) {
+    // Confirmação de e-mail ligada no projeto: ainda não há sessão.
+    if (confirmarEmail) {
       setNeedsConfirmation(true);
-      setLoading(false);
-      return;
-    }
-
-    // Cria o workspace inicial + vínculo de owner. O id é gerado aqui (e não
-    // com .select() depois do insert): a policy de SELECT de "workspaces"
-    // exige que o usuário já seja membro, e esse membro só é criado no
-    // insert seguinte - pedir a linha de volta antes disso dispara um falso
-    // erro de "row-level security policy".
-    const workspaceId = crypto.randomUUID();
-    const workspaceSlug = `${slugify(name || email.split("@")[0])}-${Math.random()
-      .toString(36)
-      .slice(2, 6)}`;
-
-    const { error: wsError } = await supabase.from("workspaces").insert({
-      id: workspaceId,
-      name: name || "Minha conta",
-      slug: workspaceSlug,
-    });
-
-    if (wsError) {
-      setError(traduzErroAuth(wsError.message));
-      setLoading(false);
-      return;
-    }
-
-    const { error: memberError } = await supabase
-      .from("workspace_members")
-      .insert({
-        workspace_id: workspaceId,
-        user_id: data.session.user.id,
-        role: "owner",
-      });
-
-    if (memberError) {
-      setError(traduzErroAuth(memberError.message));
       setLoading(false);
       return;
     }

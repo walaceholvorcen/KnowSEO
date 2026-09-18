@@ -5,7 +5,7 @@ import { BotaoSalvar } from "@/components/botao-salvar";
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { salvarIntegracoes } from "../../acoes";
 
 export function IntegrationsForm({
   conectado,
@@ -19,7 +19,6 @@ export function IntegrationsForm({
   ga4PropertyAtual: string | null;
 }) {
   const router = useRouter();
-  const supabase = createClient();
 
   const [carregandoPropriedades, setCarregandoPropriedades] = useState(false);
   const [gscOpcoes, setGscOpcoes] = useState<string[]>([]);
@@ -74,17 +73,11 @@ export function IntegrationsForm({
     setSalvo(false);
     setErro(null);
 
-    const { error } = await supabase
-      .from("blogs")
-      .update({
-        gsc_property: gscProperty || null,
-        ga4_property_id: ga4Property || null,
-      })
-      .eq("id", blogId);
+    const { erro: falha } = await salvarIntegracoes(blogId, gscProperty, ga4Property);
 
     setSalvando(false);
-    if (error) {
-      setErro(error.message);
+    if (falha) {
+      setErro(falha);
       return;
     }
     setSalvo(true);

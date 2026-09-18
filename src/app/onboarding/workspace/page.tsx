@@ -38,7 +38,7 @@ export default async function CreateWorkspacePage() {
             Es donde vivirán tus blogs y tu contenido.
           </p>
         </div>
-        <CreateWorkspaceForm userId={user.id} userEmail={user.email ?? ""} />
+        <CreateWorkspaceForm userEmail={user.email ?? ""} />
       </div>
     </div>
   );

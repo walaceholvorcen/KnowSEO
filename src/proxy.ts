@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
 import { TENANT_BASE_HEADER, blogPorSlugAntigo } from "@/lib/tenant";
 import { urlPublicaDoBlog } from "@/lib/blog-endereco";
+import { CABECALHO_CSP, novoNonce, politicaDeSeguranca } from "@/lib/csp";
 
 // Host da aplicação principal (dashboard). Tudo que chegar em outro host
 // é tratado como o blog público de um tenant e é reescrito para
@@ -37,6 +38,21 @@ export async function proxy(request: NextRequest) {
 
   const isInternal = PUBLIC_APP_PATHS.some((p) => pathname.startsWith(p));
 
+  // Nonce novo a cada pedido, no pedido (o Next lê para marcar os próprios
+  // scripts) e na resposta (o navegador aplica). Vale para os três caminhos
+  // abaixo: painel, blog por /b/ e blog em domínio do cliente.
+  const nonce = novoNonce();
+  const csp = politicaDeSeguranca(nonce, process.env.NODE_ENV === "development");
+  const comCsp = (headers: Headers) => {
+    headers.set(CABECALHO_CSP, csp);
+    headers.set("x-nonce", nonce);
+    return headers;
+  };
+  const responder = (r: NextResponse) => {
+    r.headers.set(CABECALHO_CSP, csp);
+    return r;
+  };
+
   // Pré-visualização por caminho: /b/<subdominio>/<resto>
   //
   // Domínios .vercel.app não aceitam wildcard, então em ambiente de teste
@@ -70,21 +86,26 @@ export async function proxy(request: NextRequest) {
 
     // Informa a base pública real para que sitemap, canonical e og:image
     // não apontem para um subdomínio inexistente.
-    const requestHeaders = new Headers(request.headers);
+    const requestHeaders = comCsp(new Headers(request.headers));
     requestHeaders.set(
       TENANT_BASE_HEADER,
       `${url.protocol}//${hostname}/b/${subdomain}`,
     );
 
-    return NextResponse.rewrite(previewUrl, {
-      request: { headers: requestHeaders },
-    });
+    return responder(
+      NextResponse.rewrite(previewUrl, {
+        request: { headers: requestHeaders },
+      }),
+    );
   }
 
   if (isAppHost || isInternal) {
     // Fluxo normal do app (dashboard/auth) - mantém sessão do Supabase viva.
-    const { response } = await updateSession(request);
-    return response;
+    const { response } = await updateSession(request, {
+      [CABECALHO_CSP]: csp,
+      "x-nonce": nonce,
+    });
+    return responder(response);
   }
 
   // Qualquer outro host = blog público de um tenant (subdomínio nosso ou
@@ -106,7 +127,11 @@ export async function proxy(request: NextRequest) {
   );
   rewrittenUrl.search = url.search;
 
-  return NextResponse.rewrite(rewrittenUrl);
+  return responder(
+    NextResponse.rewrite(rewrittenUrl, {
+      request: { headers: comCsp(new Headers(request.headers)) },
+    }),
+  );
 }
 
 export const config = {

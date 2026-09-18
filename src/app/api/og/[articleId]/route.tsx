@@ -2,6 +2,7 @@ import { ImageResponse } from "next/og";
 import { textoSobre } from "@/lib/contrast";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { CACHE_DA_CAPA } from "@/lib/blog-endereco";
+import { acessoAoArtigo, SEM_CACHE } from "@/lib/artigo/acesso";
 
 // Capa gerada na hora, com a cor da marca do cliente. Serve como imagem
 // do artigo no blog E como preview quando alguém compartilha o link no
@@ -42,15 +43,21 @@ export async function GET(
 
   const { data: article } = await admin
     .from("articles")
-    .select("title, blogs(name, theme)")
+    .select("title, status, blogs(name, theme)")
     .eq("id", articleId)
     .maybeSingle();
 
-  const blog = article?.blogs as
+  const acesso = await acessoAoArtigo(articleId, article?.status);
+  if (!article || !acesso) {
+    return new Response("not found", { status: 404 });
+  }
+
+  // O Supabase tipa a relação como lista; em runtime vem o objeto.
+  const blog = article.blogs as unknown as
     | { name: string; theme: TemaDaMarca }
     | undefined;
 
-  const title = article?.title ?? "";
+  const title = article.title ?? "";
   const blogName = blog?.name ?? "";
   const color = blog?.theme?.primary_color ?? "#15191c";
   // A capa era um degradê da cor da marca para um azul-preto fixo: em marca
@@ -127,7 +134,7 @@ export async function GET(
       // Navegador revalida sempre (max-age=0); a CDN guarda por um dia e
       // serve a cópia velha enquanto renova. A URL carrega ?v=<identidade>,
       // então trocar nome, cor ou logo muda a URL e fura o cache na hora.
-      headers: { "Cache-Control": CACHE_DA_CAPA },
+      headers: { "Cache-Control": acesso === "publico" ? CACHE_DA_CAPA : SEM_CACHE },
     },
   );
 }
