@@ -8,6 +8,7 @@ import { textoSobre } from "@/lib/contrast";
 import { origemDoApp, urlPublicaDoBlog, versaoDaIdentidade } from "@/lib/blog-endereco";
 import { LinkDoSite, RodapeDoBlog } from "@/components/blog-publico";
 import { formatarData, fusoDoPais } from "@/lib/datas";
+import { idiomaDoBlog, localeDoBlog } from "@/lib/idioma";
 import { paisDoBlog } from "@/lib/keywords/metricas";
 import type { Article } from "@/types";
 
@@ -103,7 +104,14 @@ export default async function TenantBlogHome({
       <main className="mx-auto max-w-3xl px-6 py-12">
         {list.length === 0 ? (
           <p className="text-center text-slate-400 dark:text-slate-500">
-            Todavía no hay artículos publicados.
+            {/* No idioma do blog: antes era espanhol fixo, até em blog brasileiro. */}
+            {
+              {
+                es: "Todavía no hay artículos publicados.",
+                pt: "Ainda não há artigos publicados.",
+                en: "No articles published yet.",
+              }[idiomaDoBlog(blog).codigo]
+            }
           </p>
         ) : (
           <div className="space-y-8">
@@ -133,7 +141,7 @@ export default async function TenantBlogHome({
                 )}
                 {article.published_at && (
                   <p className="mt-2 text-xs text-slate-400 dark:text-slate-500">
-                    {formatarData(article.published_at!, fuso, "longa")}
+                    {formatarData(article.published_at!, fuso, "longa", localeDoBlog(blog))}
                   </p>
                 )}
               </Link>

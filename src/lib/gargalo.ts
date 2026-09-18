@@ -119,9 +119,23 @@ export function encontrarGargalo(s: Sinais): Gargalo {
     };
   }
 
+  const resultado = `${s.artigosPublicados} ${s.artigosPublicados === 1 ? "artigo trouxe" : "artigos trouxeram"} ${s.visitas} ${s.visitas === 1 ? "visita" : "visitas"} e ${s.conversas} ${s.conversas === 1 ? "conversa" : "conversas"} em 28 dias.`;
+
+  // Raio X nunca rodado não é gargalo (seria inventar um problema), mas
+  // também não autoriza "nada travado": metade do produto - a IA - ainda
+  // não foi medida. A frase diz isso e a ação leva até lá.
+  if (s.perguntasIa === 0 || s.citacoesIa === null) {
+    return {
+      etapa: "nenhum",
+      frase: `${resultado} Falta saber se a IA cita você: o Raio X ainda não rodou.`,
+      acaoTexto: "Rodar o Raio X",
+      acaoHref: "/visibility",
+    };
+  }
+
   return {
     etapa: "nenhum",
-    frase: `${s.artigosPublicados} ${s.artigosPublicados === 1 ? "artigo trouxe" : "artigos trouxeram"} ${s.visitas} ${s.visitas === 1 ? "visita" : "visitas"} e ${s.conversas} ${s.conversas === 1 ? "conversa" : "conversas"} em 28 dias. Nada travado.`,
+    frase: `${resultado} Nada travado.`,
     acaoTexto: "Escrever o próximo",
     acaoHref: "/strategy",
   };

@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { htmlSeguro } from "@/lib/html-seguro";
 import { slugify } from "@/lib/utils";
 import type { InternalLink } from "@/types";
+import { normalizarAutor, type Autor } from "@/lib/autor";
 
 // As gravações que antes o navegador fazia direto no Supabase.
 //
@@ -173,4 +174,28 @@ export async function salvarIntegracoes(
     .select("id");
   if (error) return { erro: error.message };
   return { erro: data?.length ? null : NADA_MUDOU };
+}
+
+export async function salvarAutor(
+  blogId: string,
+  dados: { nome: string; cargo: string; bio: string; perfil: string },
+): Promise<Resultado & { autor?: Autor | null }> {
+  const r = normalizarAutor(dados);
+  if ("erro" in r) return { erro: r.erro };
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("blogs")
+    .update({ autor: r.autor })
+    .eq("id", blogId)
+    .select("id");
+  if (error) {
+    // Coluna ausente ou sem permissão = a 0018 ainda não rodou no banco.
+    return {
+      erro: ["42703", "PGRST204", "42501"].includes(error.code ?? "")
+        ? "Salvar o autor depende da migração 0018_autor_do_blog.sql, que ainda não foi aplicada no banco."
+        : error.message,
+    };
+  }
+  return data?.length ? { erro: null, autor: r.autor } : { erro: NADA_MUDOU };
 }

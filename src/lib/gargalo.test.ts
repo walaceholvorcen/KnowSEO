@@ -71,6 +71,13 @@ describe("o elo mais fraco da corrente", () => {
     assert.equal(com({ perguntasIa: 0, citacoesIa: 0 }).etapa, "nenhum");
   });
 
+  test("...mas também não vira \"nada travado\": a frase diz o que falta medir", () => {
+    const g = com({ citacoesIa: null });
+    assert.ok(!g.frase.includes("Nada travado"));
+    assert.match(g.frase, /Raio X ainda não rodou/);
+    assert.equal(g.acaoHref, "/visibility");
+  });
+
   test("site apenas mediano só aparece depois que o resto anda", () => {
     assert.equal(com({ notaGoogle: 64 }).etapa, "site");
     // ...mas perde a vez para um problema mais grave na corrente.

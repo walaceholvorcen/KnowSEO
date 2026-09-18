@@ -6,6 +6,8 @@ import type { BrandDna } from "@/types";
 import { SettingsNav } from "../settings-nav";
 import { BrandDnaForm } from "./brand-dna-form";
 import { IdentidadeForm } from "./identidade-form";
+import { AutorForm } from "./autor-form";
+import { autorGravado } from "@/lib/autor";
 import { Lede, Secao } from "@/components/lede";
 
 // Campos opcionais que realmente mudam o tom do artigo. "tone" fica de fora
@@ -51,6 +53,14 @@ export default async function BrandDnaPage() {
         initial={perfil}
         idioma={idiomaDoBlog(blog)}
       />
+
+      <Secao>Quem assina os artigos</Secao>
+      <p className="text-sm text-slate-600 dark:text-slate-400">
+        O Google e as IAs confiam mais em texto assinado por uma pessoa real,
+        com cargo e perfil público. O nome aparece no topo de cada artigo, o
+        resto num quadro no fim - e tudo vai no dado estruturado da página.
+      </p>
+      <AutorForm blogId={blog.id} inicial={autorGravado(blog.autor)} />
 
       <Secao>Identidade da marca</Secao>
       <p className="text-sm text-slate-600 dark:text-slate-400">

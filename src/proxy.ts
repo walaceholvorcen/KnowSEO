@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
-import { TENANT_BASE_HEADER, blogPorPasta, blogPorSlugAntigo } from "@/lib/tenant";
+import { CABECALHO_BLOG, TENANT_BASE_HEADER, blogPorPasta, blogPorSlugAntigo } from "@/lib/tenant";
 import { origemDoApp, urlPublicaDoBlog } from "@/lib/blog-endereco";
 import { CABECALHO_PASTA, ROTA_DA_PASTA } from "@/lib/pasta";
 import { CABECALHO_CSP, novoNonce, politicaDeSeguranca } from "@/lib/csp";
@@ -77,6 +77,7 @@ export async function proxy(request: NextRequest) {
     // devolve blog quando o endereço é exatamente o cadastrado.
     const requestHeaders = comCsp(new Headers(request.headers));
     requestHeaders.set(TENANT_BASE_HEADER, blog.pasta_url);
+    requestHeaders.set(CABECALHO_BLOG, blog.subdomain);
     return responder(
       NextResponse.rewrite(destino, { request: { headers: requestHeaders } }),
     );
@@ -120,6 +121,7 @@ export async function proxy(request: NextRequest) {
       TENANT_BASE_HEADER,
       `${url.protocol}//${hostname}/b/${subdomain}`,
     );
+    requestHeaders.set(CABECALHO_BLOG, subdomain);
 
     return responder(
       NextResponse.rewrite(previewUrl, {
@@ -133,6 +135,8 @@ export async function proxy(request: NextRequest) {
     const { response } = await updateSession(request, {
       [CABECALHO_CSP]: csp,
       "x-nonce": nonce,
+      // Vazio de propósito: no painel ninguém escolhe blog por cabeçalho.
+      [CABECALHO_BLOG]: "",
     });
     return responder(response);
   }
@@ -156,10 +160,10 @@ export async function proxy(request: NextRequest) {
   );
   rewrittenUrl.search = url.search;
 
+  const blogHeaders = comCsp(new Headers(request.headers));
+  blogHeaders.set(CABECALHO_BLOG, hostname);
   return responder(
-    NextResponse.rewrite(rewrittenUrl, {
-      request: { headers: comCsp(new Headers(request.headers)) },
-    }),
+    NextResponse.rewrite(rewrittenUrl, { request: { headers: blogHeaders } }),
   );
 }
 

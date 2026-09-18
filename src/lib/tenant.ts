@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { headers } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isSafeCustomDomain } from "@/lib/dominio";
@@ -8,6 +9,11 @@ import type { Blog } from "@/types";
 // base pública real. Sem isso, sitemap, canonical e og:image apontariam
 // para um subdomínio que não existe em ambientes sem wildcard (.vercel.app).
 export const TENANT_BASE_HEADER = "x-tenant-base";
+
+// Qual blog o pedido vai mostrar - o mesmo segmento do rewrite para
+// /sites/<isto>. O layout raiz usa para declarar o idioma do blog em
+// <html lang>, que ele não tem como saber pelos parâmetros da rota.
+export const CABECALHO_BLOG = "x-blog-host";
 
 // Origem absoluta do blog do cliente, sem barra final.
 export async function tenantOrigin(host: string): Promise<string> {
@@ -52,7 +58,11 @@ export async function blogPorPasta(
 // Aceita duas formas:
 //   - subdomínio puro ("demo")            -> rota de preview /b/demo
 //   - host completo ("demo.dominio.com")  -> subdomínio ou domínio próprio
-export async function resolveBlogByHost(host: string): Promise<Blog | null> {
+// cache(): o layout, os metadados e a página pedem o mesmo blog na mesma
+// visita - eram três consultas iguais antes de a página começar a sair.
+export const resolveBlogByHost = cache(async function resolveBlogByHost(
+  host: string,
+): Promise<Blog | null> {
   const admin = createAdminClient();
 
   // A porta pode vir percent-encoded ("host.localhost%3A3000"); sem o
@@ -95,7 +105,7 @@ export async function resolveBlogByHost(host: string): Promise<Blog | null> {
     .maybeSingle();
 
   return (data as Blog) ?? null;
-}
+});
 
 /**
  * Blog que usava este slug antes de ser renomeado - para o 301 de

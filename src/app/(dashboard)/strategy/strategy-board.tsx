@@ -253,7 +253,13 @@ export function StrategyBoard({
   return (
     <div className={pagina()}>
       <Lede
-        apoio={`Volume medido ${pais}. Pautas e artigos saem em ${idioma}.`}
+        // "Volume medido" só quando existe volume: sem o Planejador do
+        // Google ligado, a frase prometia uma medição que nenhuma pauta tinha.
+        apoio={
+          keywords.some((k) => k.search_volume != null)
+            ? `Volume medido ${pais}. Pautas e artigos saem em ${idioma}.`
+            : `Volume de busca ainda não conectado: dificuldade e oportunidade são leitura da IA. Pautas e artigos saem em ${idioma}.`
+        }
         acao={
           <div className="flex flex-wrap items-center gap-2">
             {/* O plano vem primeiro de propósito: pauta solta compete

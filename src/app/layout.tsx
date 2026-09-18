@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
 import { headers } from "next/headers";
 import { THEME_INIT_SCRIPT } from "@/lib/theme";
+import { CABECALHO_BLOG, resolveBlogByHost } from "@/lib/tenant";
+import { localeDoBlog } from "@/lib/idioma";
 import "./globals.css";
 
 // Duas famílias da mesma superfamília Plex, papéis separados:
@@ -30,11 +32,18 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   // O único script escrito à mão no app precisa do nonce da CSP. Ler o
   // cabeçalho torna as páginas dinâmicas - e é exigência do nonce, que muda
   // a cada pedido e não existe numa página gerada no build.
-  const nonce = (await headers()).get("x-nonce") ?? undefined;
+  const h = await headers();
+  const nonce = h.get("x-nonce") ?? undefined;
+  // O painel é em português; o blog, na língua do cliente. Antes tudo saía
+  // "es" - painel em português e blog brasileiro declarados como espanhol
+  // para o Google e para o leitor de tela.
+  const hostDoBlog = h.get(CABECALHO_BLOG);
+  const blog = hostDoBlog ? await resolveBlogByHost(hostDoBlog) : null;
+  const lang = blog ? localeDoBlog(blog) : "pt-BR";
 
   return (
     <html
-      lang="es"
+      lang={lang}
       suppressHydrationWarning
       className={`${sans.variable} ${mono.variable} h-full antialiased`}
     >

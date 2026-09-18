@@ -103,3 +103,15 @@ test("trechosForaDoMercado: acha 'no Brasil' e R$ com contexto", () => {
   assert.ok(trechos[1].includes("R$ 1.500"));
   assert.deepEqual(trechosForaDoMercado("Presupuesto de 1.500 € al mes."), []);
 });
+
+test("idioma do blog para <html lang> e para as datas", async () => {
+  const { localeDoBlog } = await import("./idioma.ts");
+  assert.equal(localeDoBlog({ custom_domain: "blog.dataknow.es", language: "pt" }), "es-ES");
+  assert.equal(localeDoBlog({ custom_domain: "blog.cliente.com.mx", language: "es" }), "es-MX");
+  assert.equal(localeDoBlog({ custom_domain: "blog.cliente.com.br", language: "es" }), "pt-BR");
+  assert.equal(localeDoBlog({ custom_domain: null, language: "es" }), "es-ES");
+  assert.equal(localeDoBlog({ custom_domain: null, language: "en" }), "en");
+  // A data sai no idioma pedido - o motivo de tudo isto.
+  const { formatarData } = await import("./datas.ts");
+  assert.match(formatarData("2026-09-17T12:00:00Z", "Europe/Madrid", "longa", "es-ES"), /sept?\.? 2026|sep 2026|sept\. 2026/);
+});

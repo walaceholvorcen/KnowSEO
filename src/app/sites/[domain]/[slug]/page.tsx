@@ -6,10 +6,12 @@ import { resolveBlogByHost, tenantOrigin } from "@/lib/tenant";
 import { ArticleView } from "@/components/article-view";
 import {
   origemDoApp,
+  siteDoCliente,
   urlDoArtigo,
   urlPublicaDoBlog,
   versaoDaIdentidade,
 } from "@/lib/blog-endereco";
+import { autorGravado } from "@/lib/autor";
 import { PageviewTracker } from "./pageview-tracker";
 
 export async function generateMetadata({
@@ -24,7 +26,7 @@ export async function generateMetadata({
   const admin = createAdminClient();
   const { data: article } = await admin
     .from("articles")
-    .select("id, title, seo_title, seo_description, excerpt, cover_image_url")
+    .select("id, title, seo_title, seo_description, excerpt, cover_image_url, published_at, updated_at")
     .eq("blog_id", blog.id)
     .eq("slug", slug)
     .eq("status", "published")
@@ -53,6 +55,9 @@ export async function generateMetadata({
       title,
       description,
       type: "article",
+      publishedTime: article.published_at ?? undefined,
+      modifiedTime: article.updated_at ?? undefined,
+      authors: autorGravado(blog.autor)?.nome ? [autorGravado(blog.autor)!.nome] : undefined,
       images: [{ url: image, width: 1200, height: 630 }],
     },
     twitter: {
@@ -86,6 +91,8 @@ export default async function TenantArticlePage({
 
   const origin = urlPublicaDoBlog(blog).url;
   const app = origemDoApp();
+  const autor = autorGravado(blog.autor);
+  const site = siteDoCliente(blog);
   // Dado estruturado: habilita rich results no Google e dá à IA um
   // resumo inequívoco de autor, data e tema do artigo.
   const jsonLd = {
@@ -97,10 +104,27 @@ export default async function TenantArticlePage({
     datePublished: article.published_at,
     dateModified: article.updated_at || article.published_at,
     mainEntityOfPage: `${origin}/${article.slug}`,
+    // Autor com nome, cargo e perfil é o sinal de confiança que o Google e
+    // as IAs mais pesam. Sem autor cadastrado, quem assina é a empresa - o
+    // Google aceita Organization como autor, e é melhor que campo vazio.
+    author: autor
+      ? {
+          "@type": "Person",
+          name: autor.nome,
+          jobTitle: autor.cargo ?? undefined,
+          description: autor.bio ?? undefined,
+          sameAs: autor.perfil ? [autor.perfil] : undefined,
+          worksFor: { "@type": "Organization", name: blog.name },
+        }
+      : { "@type": "Organization", name: blog.name, url: site ?? origin },
     publisher: {
       "@type": "Organization",
       name: blog.name,
-      url: origin,
+      // O site da empresa, não o blog: é a entidade que publica.
+      url: site ?? origin,
+      logo: blog.theme.logo_url
+        ? { "@type": "ImageObject", url: blog.theme.logo_url }
+        : undefined,
     },
   };
 

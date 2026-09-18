@@ -25,12 +25,15 @@ export function formatarData(
   instante: Date | string,
   fuso: string,
   estilo: "curta" | "longa",
+  // O painel fala português; o blog público fala a língua do cliente. Sem
+  // isto, um blog espanhol mostrava "17 de set. de 2026" aos leitores dele.
+  idioma = "pt-BR",
 ): string {
   // Fuso inválido cai em UTC em vez de derrubar a tela: um cookie adulterado
   // não pode quebrar a renderização.
   const timeZone = fusoValido(fuso) ? fuso : "UTC";
   return new Date(instante).toLocaleDateString(
-    "pt-BR",
+    idioma,
     estilo === "curta"
       ? { day: "2-digit", month: "2-digit", timeZone }
       : { day: "2-digit", month: "short", year: "numeric", timeZone },

@@ -37,6 +37,21 @@ const POR_PAIS: Record<string, IdiomaDoBlog> = {
   pt_pt: def("pt", "português de Portugal"),
 };
 
+/**
+ * Código de idioma para o navegador e para o Google (<html lang>) e para
+ * formatar datas no blog público. A variante vem do mesmo idiomaDoBlog que
+ * decide a língua dos artigos, então data e texto nunca discordam.
+ */
+export function localeDoBlog(blog: { custom_domain: string | null; language: string }): string {
+  const idioma = idiomaDoBlog(blog);
+  if (idioma.codigo === "en") return "en";
+  if (idioma.codigo === "pt") return idioma === POR_PAIS.pt_pt ? "pt-PT" : "pt-BR";
+  const pais = paisDoBlog({ dominio: blog.custom_domain, idioma: blog.language });
+  return pais.origem === "dominio" && /^[a-z]{2}$/.test(pais.chave)
+    ? `es-${pais.chave.toUpperCase()}`
+    : "es-ES";
+}
+
 // Reserva, quando o domínio não diz o país (blog hospedado, .com).
 const POR_IDIOMA: Record<string, IdiomaDoBlog> = {
   es: POR_PAIS.es,

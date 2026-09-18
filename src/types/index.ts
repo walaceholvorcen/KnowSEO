@@ -73,6 +73,9 @@ export interface Blog {
    *  Opcionais: as colunas só existem depois da migração 0017. */
   pasta_url?: string | null;
   pasta_status?: DomainStatus;
+  /** Quem assina os artigos (migração 0018). Jsonb: ler sempre por
+   *  autorGravado(), que descarta o que estiver fora do formato. */
+  autor?: unknown;
   language: Language;
   theme: BlogTheme;
   cta_config: CtaConfig;

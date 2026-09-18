@@ -2,7 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { textoSobre } from "@/lib/contrast";
 import { origemDoApp, versaoDaIdentidade } from "@/lib/blog-endereco";
-import { LinkDoSite, RodapeDoBlog } from "@/components/blog-publico";
+import { AssinaturaDoArtigo, LinkDoSite, RodapeDoBlog, SobreOAutor } from "@/components/blog-publico";
 import { htmlSeguro } from "@/lib/html-seguro";
 import { CtaBanner } from "@/app/sites/[domain]/[slug]/cta-banner";
 import type { Article, Blog } from "@/types";
@@ -23,7 +23,7 @@ export function ArticleView({
   blog: Blog;
   article: Pick<
     Article,
-    "id" | "title" | "content_html" | "cover_image_url"
+    "id" | "title" | "content_html" | "cover_image_url" | "published_at" | "updated_at"
   >;
   /** Dentro do editor: nada de contar visita nem clique como se fosse real. */
   preview?: boolean;
@@ -53,6 +53,11 @@ export function ArticleView({
         >
           {article.title}
         </h1>
+        <AssinaturaDoArtigo
+          blog={blog}
+          publicadoEm={article.published_at}
+          atualizadoEm={article.updated_at}
+        />
 
         {/* unoptimized: a capa já sai pronta da nossa rota /api/og, o
                     otimizador não tem o que ganhar - e no Next 16 ele recusa
@@ -75,6 +80,8 @@ export function ArticleView({
           // não passou por htmlSeguro ao ser salvo.
           dangerouslySetInnerHTML={{ __html: htmlSeguro(article.content_html) }}
         />
+
+        <SobreOAutor blog={blog} />
 
         {/* Só o que o banner usa: prop de componente client vai inteira para o
             payload RSC do HTML público, e o objeto blog carrega workspace_id,

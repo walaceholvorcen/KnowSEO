@@ -2018,3 +2018,40 @@ do Worker contra o app em modo produção. Estilo, as 4 fontes, capa, links
 que ficam na pasta, visita gravada com o caminho da pasta, canonical e
 sitemap depois da confirmação, barra no fim do endereço, artigo inexistente
 em 404, zero violação de CSP.
+
+## 45. Autor e datas nos artigos; textos que prometiam demais (migração 0018)
+
+Dois itens da revisão de 18/09 (nota de diretor de SEO/GEO):
+
+**Autor e datas (E-E-A-T).** O artigo não dizia quem escreveu nem quando.
+- `blogs.autor` (jsonb: nome, cargo, bio, perfil), gravado só pela coluna
+  (`grant update (autor)`, padrão da 0012). Validação em `src/lib/autor.ts`:
+  tudo vazio remove; com qualquer campo, nome obrigatório; perfil só https.
+  Configurado em Configurações > Marca, "Quem assina os artigos".
+- No artigo: assinatura abaixo do H1 (autor, "publicado", "atualizado" com
+  `<time datetime>`) e quadro "Sobre o autor" no fim, no idioma do blog e no
+  fuso do país do domínio. "Atualizado" só aparece com 24h ou mais depois da
+  publicação: correção feita na hora de publicar não é atualização.
+- JSON-LD: `author` vira `Person` com `jobTitle`, `description` e `sameAs`
+  (o perfil) quando há autor; senão continua `Organization`. `publisher` com
+  a URL do site do cliente e o logo da marca. OG: `article:published_time`,
+  `modified_time`, `author`.
+
+**Idioma da página.** `<html lang>` era pt-BR em todo blog, inclusive nos
+em espanhol. O proxy passa o blog no cabeçalho `x-blog-host`; o layout lê e
+usa `localeDoBlog` (es-ES, es-MX..., pt-BR, pt-PT, en). `resolveBlogByHost`
+em `cache()` para o layout e a página não consultarem duas vezes. Datas do
+blog público formatadas no mesmo locale.
+
+**Textos que prometiam demais.**
+- Estratégia dizia "volume medido" sem nenhuma palavra com volume (a conta
+  Google Ads ainda não tem acesso básico). Agora diz que volume não está
+  conectado e que dificuldade e oportunidade são leitura da IA; a frase
+  antiga volta sozinha quando existir volume.
+- Início dizia "Nada travado" quando o Raio X nunca tinha rodado. Agora
+  aponta o Raio X como o que falta saber.
+
+Conferido local: autor temporário no DataKnow (assinatura, quadro, JSON-LD
+Person com sameAs, OG author), removido depois; blog em espanhol com
+`lang="es-ES"` e data "17 sept 2026"; blog em português com pt-BR; painel
+continua pt-BR.
