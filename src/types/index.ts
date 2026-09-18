@@ -92,6 +92,9 @@ export interface BrandDna {
   writing_style: string | null;
   banned_topics: string | null;
   banned_words: string | null;
+  /** Números, casos e resultados reais: o que o concorrente não tem para
+   *  escrever (migração 0019). */
+  provas?: string | null;
   updated_at: string;
 }
 

@@ -2055,3 +2055,33 @@ Conferido local: autor temporário no DataKnow (assinatura, quadro, JSON-LD
 Person com sameAs, OG author), removido depois; blog em espanhol com
 `lang="es-ES"` e data "17 sept 2026"; blog em português com pt-BR; painel
 continua pt-BR.
+
+## 46. Artigo no formato que a IA cita (migração 0019)
+
+A partir dos 7 pilares do SEO semântico (material de 18/09): o gerador
+cobria resposta direta no primeiro parágrafo, mas não o resto.
+
+- **Regras novas no prompt** (`brand-prompt.ts`): a maioria dos H2 é a
+  pergunta do leitor, e o primeiro parágrafo depois de cada um responde em
+  1-2 frases que se entendem sozinhas (é o trecho que a IA recorta). Tabela
+  HTML quando há comparação real. Dado de terceiros com a fonte nomeada.
+  Seção final de perguntas frequentes, com título fixo por idioma
+  (`TITULO_FAQ`), 3 a 5 H3 com resposta curta.
+- **Dados e casos reais** (`brand_dna.provas`, campo novo no DNA): o que só
+  a empresa tem. O artigo usa como experiência própria e nunca inventa
+  número - sem o campo preenchido, não há caso nenhum no texto.
+- **Schema FAQPage lido do próprio HTML** (`lib/artigo/faq.ts`): se o
+  cliente edita a pergunta no editor, o schema acompanha; artigo antigo
+  sem a seção não ganha schema. Mínimo de 2 pares. O Google só mostra FAQ
+  como resultado rico para governo e saúde desde 2023; o schema é para as
+  IAs, que extraem pergunta e resposta prontas.
+- **Tabela no celular**: embrulhada numa caixa com rolagem própria na
+  renderização - a página nunca rola para o lado.
+
+Conferido com um artigo gerado de verdade (DataKnow, "agencia de marketing
+o equipo interno para una pyme", 90 s): 6 de 8 H2 em pergunta, 1 tabela
+com `th scope="col"`, os dois dados reais usados, dado do INE com a fonte
+citada, 4 perguntas frequentes lidas pelo schema. Publicado por um minuto
+no blog de teste para ver a tabela no celular (375 px: tabela rola dentro
+da caixa, página não) e o FAQPage no HTML; artigo e visitas apagados.
+Artigos já publicados não mudam: as regras valem para os novos.

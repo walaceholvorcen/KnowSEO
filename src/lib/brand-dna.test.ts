@@ -15,6 +15,7 @@ const FULL_DNA: BrandDna = {
   writing_style: "SENTINELA_ESTILO",
   banned_topics: "SENTINELA_TEMAS",
   banned_words: "SENTINELA_PALAVRAS",
+  provas: "SENTINELA_PROVAS",
   updated_at: "2026-01-01T00:00:00Z",
 };
 
@@ -68,6 +69,15 @@ describe("DNA da marca chega ao prompt", () => {
     assert.ok(prompt.includes("ignora esa parte"));
     // Sem contradição, o aviso não entra: prompt cacheado não muda à toa.
     assert.ok(!buildBrandSystemPrompt(BLOG, FULL_DNA).includes("ignora esa parte"));
+  });
+
+  test("a seção de perguntas frequentes sai no idioma do blog", () => {
+    // O título é o mesmo que perguntasFrequentes() procura para montar o
+    // schema: se divergirem, o artigo tem a seção e o Google não sabe.
+    assert.ok(buildBrandSystemPrompt(BLOG, FULL_DNA).includes('"Preguntas frecuentes"'));
+    assert.ok(
+      buildBrandSystemPrompt({ language: "pt", custom_domain: null } as Blog, FULL_DNA).includes('"Perguntas frequentes"'),
+    );
   });
 
   test("DNA vazio não quebra e cai em texto neutro", () => {

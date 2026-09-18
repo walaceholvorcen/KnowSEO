@@ -120,6 +120,7 @@ export async function salvarDnaDaMarca(
     writing_style: string;
     banned_topics: string;
     banned_words: string;
+    provas: string;
   },
 ): Promise<Resultado> {
   const supabase = await createClient();
@@ -132,8 +133,12 @@ export async function salvarDnaDaMarca(
     writing_style: limitar(dna.writing_style),
     banned_topics: limitar(dna.banned_topics),
     banned_words: limitar(dna.banned_words),
+    provas: limitar(dna.provas),
     updated_at: new Date().toISOString(),
   });
+  if (error?.code === "42703" || error?.code === "PGRST204") {
+    return { erro: "O campo de dados e casos reais depende da migração 0019 no Supabase." };
+  }
   return { erro: error?.message ?? null };
 }
 

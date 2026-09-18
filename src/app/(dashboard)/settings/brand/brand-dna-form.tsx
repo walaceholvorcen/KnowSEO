@@ -35,6 +35,7 @@ export function BrandDnaForm({
     initial?.banned_topics ?? "",
   );
   const [bannedWords, setBannedWords] = useState(initial?.banned_words ?? "");
+  const [provas, setProvas] = useState(initial?.provas ?? "");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -52,6 +53,7 @@ export function BrandDnaForm({
       writing_style: writingStyle,
       banned_topics: bannedTopics,
       banned_words: bannedWords,
+      provas,
     });
 
     // Sem esta checagem o botão dizia "Salvo" mesmo quando o upsert
@@ -89,6 +91,28 @@ export function BrandDnaForm({
           rows={3}
           className={cn(campo(), "w-full")}
           placeholder="Ex: Somos uma agência de performance que cuida de anúncios para pequenas empresas..."
+        />
+      </div>
+
+      <div>
+        <label
+          htmlFor="dna-provas"
+          className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300"
+        >
+          Dados e casos reais
+        </label>
+        <p className="mb-1.5 text-sm text-slate-500 dark:text-slate-400">
+          Números, resultados e histórias que só a sua empresa tem. É o que
+          faz a IA citar o seu artigo e não o do concorrente. Os artigos só
+          usam o que estiver aqui: sem isto, não inventam dado nenhum.
+        </p>
+        <textarea
+          id="dna-provas"
+          value={provas}
+          onChange={(e) => setProvas(e.target.value)}
+          rows={4}
+          className={cn(campo(), "w-full")}
+          placeholder="Ex: 140 clientes atendidos desde 2015. Custo por lead médio caiu 38% em 6 meses para uma rede de clínicas. 9 em cada 10 clientes renovam o contrato."
         />
       </div>
 
@@ -162,7 +186,7 @@ export function BrandDnaForm({
 
       {error && (
         <p className="text-sm text-red-600 dark:text-red-400">
-          No se pudo guardar: {error}
+          Não foi possível salvar: {error}
         </p>
       )}
     </form>

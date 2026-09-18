@@ -11,6 +11,7 @@ import {
   urlPublicaDoBlog,
   versaoDaIdentidade,
 } from "@/lib/blog-endereco";
+import { perguntasFrequentes } from "@/lib/artigo/faq";
 import { autorGravado } from "@/lib/autor";
 import { PageviewTracker } from "./pageview-tracker";
 
@@ -128,12 +129,34 @@ export default async function TenantArticlePage({
     },
   };
 
+  // Perguntas frequentes lidas do próprio texto (ver lib/artigo/faq.ts).
+  // O Google só mostra FAQ como resultado rico para sites de governo e
+  // saúde; o schema fica pelas IAs, que extraem pergunta e resposta prontas.
+  const faq = perguntasFrequentes(article.content_html);
+  const faqLd = faq.length
+    ? {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        mainEntity: faq.map((p) => ({
+          "@type": "Question",
+          name: p.pergunta,
+          acceptedAnswer: { "@type": "Answer", text: p.resposta },
+        })),
+      }
+    : null;
+
   return (
     <div>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonParaScript(jsonLd) }}
       />
+      {faqLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: jsonParaScript(faqLd) }}
+        />
+      )}
       <PageviewTracker blogId={blog.id} articleId={article.id} rastreio={`${app}/api/track`} />
       <ArticleView blog={blog} article={article} inicio={await tenantOrigin(domain)} />
     </div>

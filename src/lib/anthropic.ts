@@ -274,7 +274,7 @@ const ArticleSchema = z.object({
   content_html: z
     .string()
     .describe(
-      "Cuerpo del artículo en HTML semántico (h2, h3, p, ul, li, strong) - SIN <html>, <head> ni <body>. No repitas el título como H1 dentro del contenido.",
+      "Cuerpo del artículo en HTML semántico (h2, h3, p, ul, ol, li, strong, table, thead, tbody, tr, th, td) - SIN <html>, <head> ni <body>. No repitas el título como H1 dentro del contenido.",
     ),
 });
 
