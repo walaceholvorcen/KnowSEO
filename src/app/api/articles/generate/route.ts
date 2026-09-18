@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireUserAndWorkspace } from "@/lib/workspace";
-import { barrarSeEstourou, LIMITES } from "@/lib/limite-de-uso";
+import { barrarSemLiberacao, barrarSeEstourou, LIMITES } from "@/lib/limite-de-uso";
 import { createClient } from "@/lib/supabase/server";
 import { generateArticle } from "@/lib/anthropic";
 import { slugify } from "@/lib/utils";
@@ -13,6 +13,8 @@ import type { Blog, BrandDna, InternalLink, Keyword } from "@/types";
 export async function POST(request: Request) {
   const { supabase, workspace } = await requireUserAndWorkspace();
   const barrado = await barrarSeEstourou(supabase, workspace.id, LIMITES.artigo);
+  const semLiberacao = barrarSemLiberacao(workspace);
+  if (semLiberacao) return semLiberacao;
   if (barrado) return barrado;
   const { keywordId } = await request.json();
 

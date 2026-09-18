@@ -1,11 +1,14 @@
 import { NextResponse } from "next/server";
 import { requireUserAndWorkspace } from "@/lib/workspace";
+import { barrarSemLiberacao } from "@/lib/limite-de-uso";
 import { auditProfile } from "@/lib/gbp/runner";
 import { isGbpConfigured, GBP_NOT_CONFIGURED_MESSAGE } from "@/lib/gbp/places";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function POST(request: Request) {
   const { supabase, workspace } = await requireUserAndWorkspace();
+  const semLiberacao = barrarSemLiberacao(workspace);
+  if (semLiberacao) return semLiberacao;
   const { blogId, query } = await request.json();
 
   if (!blogId || !query?.trim()) {

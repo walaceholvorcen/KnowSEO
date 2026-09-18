@@ -57,10 +57,16 @@ export async function GET(request: Request) {
   const admin = createAdminClient();
   // Ordem fixa: sem ela o Postgres devolve em qualquer ordem e o mesmo blog
   // pode cair sempre fora dos MAX_BLOGS - nunca é reauditado.
-  const { data: blogs } = await admin
+  //
+  // Conta em liberação (migração 0016) fica de fora: o Raio X semanal gasta
+  // IA do dono da plataforma. `workspaces(*)` e não o nome da coluna: com o
+  // deploy antes da migração, pedir `liberado` derrubaria a consulta inteira.
+  const { data: todos } = await admin
     .from("blogs")
-    .select("*")
+    .select("*, workspaces(*)")
     .order("created_at", { ascending: true });
+  const blogs = ((todos ?? []) as (Blog & { workspaces: { liberado?: boolean } | null })[])
+    .filter((b) => b.workspaces?.liberado !== false);
   const providers = getProviders();
 
   // Cada tarefa leva um rótulo: é o que permite dizer no log QUAL blog e

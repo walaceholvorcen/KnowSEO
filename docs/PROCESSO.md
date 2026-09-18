@@ -1927,3 +1927,33 @@ depois de qualquer migração que mexa em policy.
   membro seguem o mesmo padrão da 0001 e o teste de isolamento cobre as
   principais. As que não têm policy nenhuma (`google_integration`,
   `cron_execucoes`) ficam fechadas para usuário por construção.
+
+## 43. Conta nova nasce em liberação (migração 0016)
+
+Nota de segurança do app dada ao dono em 18/09: 75/100, e o primeiro item
+para subir era o cadastro aberto. Qualquer pessoa criava conta e gerava
+artigos, pautas e rodadas do Raio X na conta da Anthropic do dono - e o
+teto por hora da seção 42 vale por conta, então 50 contas eram 50 tetos.
+
+- `workspaces.liberado` (padrão `false`; as contas que já existiam foram
+  marcadas `true` na própria migração, são do dono).
+- **Conta em liberação usa o que não custa IA**: auditoria, mercado,
+  configurações, blog. `barrarSemLiberacao` fica só nas rotas que gastam
+  IA ou API paga: artigo, pautas, perguntas e rodada do Raio X, carrossel e
+  Google Meu Negócio. O robô semanal pula essas contas.
+- **O usuário não se libera sozinho.** INSERT e UPDATE em `workspaces`
+  passam a valer só para as colunas que o app grava (`id, name, slug` no
+  cadastro; `name, onboarding_steps` depois). Mesmo padrão da 0012: o
+  Supabase concede a tabela inteira, e permissão de tabela vence revoke de
+  coluna - por isso tira-se da tabela e devolve-se por coluna.
+- Aviso no topo do painel enquanto a conta não é liberada, com o contato
+  de vendas (`NEXT_PUBLIC_CONTATO_VENDAS`) quando existe. Sem ele, o
+  primeiro "Escrever artigo" seria a primeira notícia e soaria como defeito.
+- `liberado !== false`, não `!liberado`: com o deploy antes da migração a
+  coluna não existe, e travar todo mundo seria pior que deixar passar.
+- O teste de isolamento ganhou três linhas: conta nova nasce em liberação,
+  não se libera mudando a própria conta, e não nasce já liberada.
+
+**Como liberar:** Supabase → Table Editor → `workspaces` → marcar
+`liberado` na linha do cliente. Quando a cobrança existir, é o webhook de
+pagamento que marca.

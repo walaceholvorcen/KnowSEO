@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireUserAndWorkspace } from "@/lib/workspace";
+import { barrarSemLiberacao } from "@/lib/limite-de-uso";
 import { generateCarouselSlides } from "@/lib/anthropic";
 import { htmlParaTexto } from "@/lib/utils";
 import { isAiConfigured, AI_NOT_CONFIGURED_MESSAGE } from "@/lib/ai-config";
@@ -7,6 +8,8 @@ import type { Blog, BrandDna } from "@/types";
 
 export async function POST(request: Request) {
   const { supabase, workspace } = await requireUserAndWorkspace();
+  const semLiberacao = barrarSemLiberacao(workspace);
+  if (semLiberacao) return semLiberacao;
   const { articleId } = await request.json();
 
   if (!articleId) {

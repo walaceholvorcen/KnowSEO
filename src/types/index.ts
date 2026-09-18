@@ -30,6 +30,8 @@ export interface Workspace {
   plan: Plan;
   credits: number;
   onboarding_steps: OnboardingSteps;
+  /** Pode usar o que gasta IA. Conta nova nasce false (migração 0016). */
+  liberado?: boolean;
   created_at: string;
 }
 

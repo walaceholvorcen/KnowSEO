@@ -186,6 +186,32 @@ try {
     registrar("artigo de A intacto", r.corpo?.[0]?.title === "Rascunho privado", r.corpo?.[0]?.title ?? "sumiu");
   }
 
+  // Migração 0016: conta nova nasce em liberação e não se libera sozinha -
+  // nem mudando a própria conta, nem já nascendo liberada.
+  console.log("\nLiberação de conta (logado como A, na própria conta):\n");
+  {
+    const antes = await admin(`/rest/v1/workspaces?id=eq.${A.ws}&select=liberado`);
+    registrar("conta nova nasce em liberação", antes.corpo?.[0]?.liberado === false, `liberado = ${antes.corpo?.[0]?.liberado}`);
+
+    const r = await api(`/rest/v1/workspaces?id=eq.${A.ws}`, {
+      token: contaA.token,
+      method: "PATCH",
+      body: JSON.stringify({ liberado: true }),
+    });
+    const depois = await admin(`/rest/v1/workspaces?id=eq.${A.ws}&select=liberado`);
+    registrar("A não se libera sozinha", depois.corpo?.[0]?.liberado === false, `status ${r.status}`);
+
+    const extra = crypto.randomUUID();
+    const nascer = await api("/rest/v1/workspaces", {
+      token: contaA.token,
+      method: "POST",
+      body: JSON.stringify({ id: extra, name: "já liberada", slug: `iso-lib-${sufixo}`, liberado: true }),
+      headers: { Prefer: "return=minimal" },
+    });
+    registrar("conta não nasce já liberada", nascer.status >= 400, `status ${nascer.status}`);
+    await admin(`/rest/v1/workspaces?id=eq.${extra}`, { method: "DELETE" });
+  }
+
   console.log("\nSem login (chave anon):\n");
   for (const tabela of ["blogs", "articles", "workspaces", "workspace_members", "keywords", "brand_dna", "google_integration"]) {
     const r = await api(`/rest/v1/${tabela}?select=*&limit=5`);

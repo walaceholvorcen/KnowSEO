@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireUserAndWorkspace } from "@/lib/workspace";
-import { barrarSeEstourou, LIMITES } from "@/lib/limite-de-uso";
+import { barrarSemLiberacao, barrarSeEstourou, LIMITES } from "@/lib/limite-de-uso";
 import { generateContentCluster, generateKeywordIdeas, type KeywordIdea } from "@/lib/anthropic";
 import {
   fetchRealKeywordMetrics,
@@ -15,6 +15,8 @@ import type { Blog, BrandDna, Keyword } from "@/types";
 export async function POST(request: Request) {
   const { supabase, workspace } = await requireUserAndWorkspace();
   const barrado = await barrarSeEstourou(supabase, workspace.id, LIMITES.pauta);
+  const semLiberacao = barrarSemLiberacao(workspace);
+  if (semLiberacao) return semLiberacao;
   if (barrado) return barrado;
   const { blogId, temaId, pergunta, plano, assunto } = (await request.json()) as {
     blogId: string;

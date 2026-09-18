@@ -66,3 +66,22 @@ export async function barrarSeEstourou(
     { status: 429, headers: { "Retry-After": "900" } },
   );
 }
+
+// Conta nova nasce em liberação (migração 0016): usa auditoria e mercado,
+// que não custam IA, e espera o dono da plataforma liberar o resto. Só as
+// rotas que gastam IA ou API paga chamam isto.
+//
+// `=== false` e não `!liberado`: com o deploy na frente da migração a
+// coluna ainda não existe, e travar todo mundo seria pior que deixar passar.
+export function barrarSemLiberacao(workspace: {
+  liberado?: boolean;
+}): NextResponse | null {
+  if (workspace.liberado !== false) return null;
+  return NextResponse.json(
+    {
+      error:
+        "Sua conta está em liberação. Auditoria e Mercado já funcionam; artigos, pautas e Raio X liberam assim que a conta for aprovada.",
+    },
+    { status: 403 },
+  );
+}
