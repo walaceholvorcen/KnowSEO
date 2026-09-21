@@ -39,6 +39,18 @@ export async function proxy(request: NextRequest) {
 
   const isInternal = PUBLIC_APP_PATHS.some((p) => pathname.startsWith(p));
 
+  // Troca do endereço do app (know-seo.vercel.app -> domínio próprio): o
+  // endereço antigo passa a redirecionar sozinho, porque todo artigo já
+  // indexado e todo link compartilhado aponta para ele. 301 e não 308 pelo
+  // mesmo motivo do slug renomeado. Só o host de produção: preview
+  // deployment continua servindo o app normalmente.
+  const hostDeProducao = process.env.VERCEL_PROJECT_PRODUCTION_URL;
+  if (hostDeProducao && hostname === hostDeProducao && APP_DOMAIN !== hostDeProducao) {
+    const destino = new URL(`https://${APP_DOMAIN}${pathname}`);
+    destino.search = url.search;
+    return NextResponse.redirect(destino, 301);
+  }
+
   // Nonce novo a cada pedido, no pedido (o Next lê para marcar os próprios
   // scripts) e na resposta (o navegador aplica). Vale para os três caminhos
   // abaixo: painel, blog por /b/ e blog em domínio do cliente.

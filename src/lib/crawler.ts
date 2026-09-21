@@ -65,8 +65,9 @@ export function isPublicHttpUrl(raw: string): boolean {
   return true;
 }
 
-const USER_AGENT =
-  "KnowSEO-Crawler/1.0 (+https://know-seo.vercel.app; auditoria de SEO)";
+const USER_AGENT = `KnowSEO-Crawler/1.0 (+https://${
+  process.env.NEXT_PUBLIC_APP_DOMAIN || "know-seo.vercel.app"
+}; auditoria de SEO)`;
 
 export async function safeFetch(url: string): Promise<Response | null> {
   const resposta = await fetchComStatus(url);

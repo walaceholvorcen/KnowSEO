@@ -29,11 +29,20 @@ export function ehDominioRaiz(dominio: string): boolean {
  * esse host como domínio de projeto - o endereço morreria no TLS. IP e host
  * sem ponto não são domínio de ninguém. Vale no navegador e no servidor.
  */
-export function isSafeCustomDomain(input: string): boolean {
+export function isSafeCustomDomain(
+  input: string,
+  /** O endereço do app (NEXT_PUBLIC_APP_DOMAIN). Blog de cliente num
+   *  subdomínio nosso seria servido por qualquer wildcard que a gente
+   *  venha a ligar no domínio próprio - o blog do cliente A responderia
+   *  num endereço nosso que ninguém cadastrou. */
+  appDomain = process.env.NEXT_PUBLIC_APP_DOMAIN,
+): boolean {
   const host = input.trim().toLowerCase().replace(/\.$/, "");
   if (!/^[a-z0-9-]+(\.[a-z0-9-]+)+$/.test(host)) return false; // sem ponto, IPv6, esquema, caminho
   if (/^\d+(\.\d+){3}$/.test(host)) return false; // IPv4
   if (host === "vercel.app" || host.endsWith(".vercel.app")) return false;
   if (host.startsWith("www.")) return false;
+  const app = appDomain?.trim().toLowerCase().split(":")[0];
+  if (app && (host === app || host.endsWith(`.${app}`))) return false;
   return !ehDominioRaiz(host);
 }

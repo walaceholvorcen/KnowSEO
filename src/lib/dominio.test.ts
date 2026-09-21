@@ -42,3 +42,12 @@ describe("domínio próprio seguro", () => {
     }
   });
 });
+
+describe("endereço nosso não vira domínio do cliente", () => {
+  test("o app e qualquer subdomínio dele são recusados", () => {
+    assert.equal(isSafeCustomDomain("blog.knowseo.com", "knowseo.com"), false);
+    assert.equal(isSafeCustomDomain("knowseo.com", "knowseo.com"), false);
+    // O domínio do cliente continua valendo.
+    assert.equal(isSafeCustomDomain("blog.dataknow.es", "knowseo.com"), true);
+  });
+})

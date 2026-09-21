@@ -2099,3 +2099,25 @@ Agora a evidência é o DNS (`node:dns/promises` lookup), não a resposta
 HTTP: sem registro = "ainda não apareceu no DNS"; com registro e sem blog =
 "o cliente já fez a parte dele, falta liberar na Vercel (Settings >
 Domains)". Cobre também o DNS que achata CNAME em A.
+
+## 48. Trocar o endereço do app por um domínio próprio
+
+Preparado antes da troca, para que ela seja uma variável de ambiente:
+
+- `NEXT_PUBLIC_APP_DOMAIN` já manda em tudo que é endereço absoluto: capa
+  do artigo, rastreio, CSP, `assetPrefix`, endereço público de cada blog
+  (/b/), redirect do Google e validação da pasta.
+- **O endereço antigo passa a redirecionar** (proxy): quando o host da
+  requisição é o de produção da Vercel e `NEXT_PUBLIC_APP_DOMAIN` já é
+  outro, responde 301 para o novo. Hoje os dois são iguais e a regra não
+  faz nada; no dia da troca ela liga sozinha e nenhum link indexado morre.
+  Preview deployment não entra (host diferente do de produção).
+- **Domínio do cliente nunca pode ser um endereço nosso**:
+  `isSafeCustomDomain` passa a recusar o próprio app e qualquer subdomínio
+  dele. Importa no dia em que existir wildcard no domínio próprio - sem a
+  guarda, o blog de um cliente responderia num endereço nosso.
+- O crawler se apresenta com o domínio atual, não com o fixo.
+
+Fora do código, no dia da troca: domínio adicionado na Vercel (apex + www),
+variável trocada, Supabase (Site URL e lista de redirect) e Google Cloud
+(URI de callback) apontando para o novo endereço.
