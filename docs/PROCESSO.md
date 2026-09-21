@@ -2085,3 +2085,17 @@ citada, 4 perguntas frequentes lidas pelo schema. Publicado por um minuto
 no blog de teste para ver a tabela no celular (375 px: tabela rola dentro
 da caixa, página não) e o FAQPage no HTML; artigo e visitas apagados.
 Artigos já publicados não mudam: as regras valem para os novos.
+
+## 47. "Ainda sem resposta" mentia quando faltava liberar o domínio
+
+blog.dataknow.es: CNAME criado e correto, e o painel dizia "o CNAME ainda
+não foi criado". A checagem só batia em https://; como o domínio ainda não
+estava adicionado no projeto da Vercel, não há certificado, o TLS falha
+antes de qualquer resposta e `fetchComStatus` devolve null - o mesmo null
+de um domínio inexistente. A agência ficava esperando propagação de um
+registro que já estava propagado.
+
+Agora a evidência é o DNS (`node:dns/promises` lookup), não a resposta
+HTTP: sem registro = "ainda não apareceu no DNS"; com registro e sem blog =
+"o cliente já fez a parte dele, falta liberar na Vercel (Settings >
+Domains)". Cobre também o DNS que achata CNAME em A.

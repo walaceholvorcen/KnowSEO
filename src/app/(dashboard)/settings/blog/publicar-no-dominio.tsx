@@ -29,14 +29,14 @@ const RESULTADO: Record<DomainStatus, { titulo: string; detalhe: string }> = {
     detalhe: "O endereço já responde com o blog. Não precisa fazer mais nada.",
   },
   pending: {
-    titulo: "Ainda sem resposta",
+    titulo: "O registro ainda não apareceu no DNS",
     detalhe:
-      "O endereço não respondeu. Ou o CNAME ainda não foi criado, ou está propagando - pode levar até algumas horas. Confira de novo mais tarde.",
+      "O endereço não existe no DNS: ou o cliente ainda não criou o CNAME, ou está propagando - pode levar até algumas horas.",
   },
   error: {
-    titulo: "Responde, mas não é o blog",
+    titulo: "O cliente já fez a parte dele - falta liberar do nosso lado",
     detalhe:
-      "Existe alguma coisa nesse endereço que não é o blog. Normalmente falta liberar o domínio do nosso lado: adicione-o no projeto da Vercel, em Settings, Domains.",
+      "O endereço já aponta para cá, mas ainda não responde o blog. Abra o projeto na Vercel, vá em Settings > Domains, adicione este endereço e confira de novo. Sem isso não existe certificado e o endereço fica sem https.",
   },
 };
 

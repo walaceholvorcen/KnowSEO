@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { lookup } from "node:dns/promises";
 import { requireUserAndWorkspace, getBlogAtivo } from "@/lib/workspace";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { fetchComStatus } from "@/lib/crawler";
@@ -30,7 +31,13 @@ export async function POST() {
   const html = resposta?.res.ok ? await resposta.res.text() : "";
   const nosso = html.includes('name="generator" content="Know SEO"');
 
-  const status = nosso ? "active" : resposta ? "error" : "pending";
+  // Sem o DNS não dá para separar os dois casos pela resposta HTTP: quando
+  // o domínio já aponta para a Vercel mas ainda não foi liberado lá, não há
+  // certificado, o https falha antes de responder e isso parecia "DNS não
+  // propagou" - o cliente já tinha feito a parte dele. O DNS é a evidência.
+  const dnsPronto = await lookup(blog.custom_domain).then(() => true).catch(() => false);
+
+  const status = nosso ? "active" : dnsPronto ? "error" : "pending";
   // Client de serviço: domain_status não tem UPDATE para o navegador
   // (migração 0012). O blog já veio de getBlogAtivo, filtrado pelo workspace.
   await createAdminClient().from("blogs").update({ domain_status: status }).eq("id", blog.id);
