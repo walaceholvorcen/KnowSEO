@@ -15,8 +15,15 @@ describe("o que falta no DNS do cliente", () => {
   });
 
   test("usa o destino que a Vercel recomenda para aquele domínio", () => {
-    assert.deepEqual(registrosPendentes("blog.cliente.com", {}, { recommendedCNAME: "abc123.vercel-dns-017.com" }), [
-      { tipo: "CNAME", nome: "blog", valor: "abc123.vercel-dns-017.com" },
+    // Formato real da API: lista ordenada por rank, com ponto no fim.
+    const config = {
+      recommendedCNAME: [
+        { rank: 1, value: "d433667938f5b093.vercel-dns-017.com." },
+        { rank: 2, value: "cname.vercel-dns.com." },
+      ],
+    };
+    assert.deepEqual(registrosPendentes("blog.cliente.com", {}, config), [
+      { tipo: "CNAME", nome: "blog", valor: "d433667938f5b093.vercel-dns-017.com" },
     ]);
   });
 

@@ -2147,3 +2147,24 @@ Vercel para o endereço do app.
 
 A prova de "no ar" continua sendo o blog responder com o nosso generator -
 a Vercel dizer que está tudo certo não é o mesmo que a página existir.
+
+### O redirect que engoliu o domínio do cliente (causa raiz)
+
+blog.dataknow.es ficou horas respondendo 301 para o painel, com a Vercel
+configurada corretamente o tempo todo (`verified: true`, `redirect: null`,
+`misconfigured: false`, conferidos pela API). O culpado era a regra da
+seção 48: ela deduzia o endereço antigo do app por
+`VERCEL_PROJECT_PRODUCTION_URL`.
+
+**Essa variável não quer dizer "endereço do app".** Ela passa a valer o
+domínio próprio do projeto assim que um é adicionado - e a Vercel, com
+`autoAssignCustomDomains`, apontou-a para blog.dataknow.es no instante em
+que o domínio do cliente entrou. Resultado: o blog do cliente passou a se
+achar "endereço antigo" e redirecionava para o painel.
+
+Agora o endereço antigo é dito à mão (`DOMINIO_ANTIGO`). Regra que fica:
+**variável de ambiente da plataforma não é fonte de verdade sobre o nosso
+produto** - o que é "o endereço do app" é decisão nossa, escrita por nós.
+
+Diagnóstico só foi possível batendo na API da Vercel com token: por fora,
+o sintoma (301) apontava para a configuração do domínio, que estava certa.

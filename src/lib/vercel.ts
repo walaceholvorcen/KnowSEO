@@ -80,11 +80,15 @@ export function registrosPendentes(
   // Apontamento normal. `recommendedCNAME` é o destino novo por domínio; o
   // fixo de sempre continua valendo, e é o que usamos quando ela não
   // recomenda nada.
+  // Vem como [{rank, value}] ordenado, e com ponto no fim ("...com.") -
+  // painel de DNS nenhum quer o ponto.
   const recomendado = config.recommendedCNAME;
-  const valor =
-    (typeof recomendado === "string" && recomendado) ||
-    (Array.isArray(recomendado) && typeof recomendado[0] === "string" && recomendado[0]) ||
-    "cname.vercel-dns.com";
+  const primeiro = Array.isArray(recomendado) ? recomendado[0] : recomendado;
+  const bruto =
+    typeof primeiro === "string"
+      ? primeiro
+      : (primeiro as { value?: string } | undefined)?.value;
+  const valor = (bruto || "cname.vercel-dns.com").replace(/\.$/, "");
   return [{ tipo: "CNAME", nome: dominio.split(".")[0], valor }];
 }
 
