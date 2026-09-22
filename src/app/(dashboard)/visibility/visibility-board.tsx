@@ -150,6 +150,11 @@ export function VisibilityBoard({
           setRunAtivo(null);
           if (data.status === "error") {
             setError(data.error_message ?? "A análise falhou.");
+          } else if (data.status === "done" && data.error_message) {
+            // Rodada que terminou com um motor falhando: o número dos outros
+            // vale, e o motivo do que falhou precisa aparecer em vez de
+            // sumir no log do servidor.
+            setError(`Um dos assistentes não respondeu — ${data.error_message}`);
           }
           router.refresh();
           return;

@@ -232,9 +232,13 @@ export async function executarRodada(params: {
       .update({
         status: tudoFalhou ? "error" : "done",
         falhas: summary.failed,
+        // Guardar o motivo mesmo quando só um motor falhou: um assistente
+        // que erra todas as perguntas sumia da tela como "entra na próxima
+        // análise", igualzinho a um motor recém-ligado. Foi o que aconteceu
+        // ao ligar o Gemini - a falha não tinha onde aparecer.
         error_message: tudoFalhou
           ? "Nenhum assistente respondeu. Confira as chaves de API configuradas."
-          : null,
+          : (summary.primeiroErro ?? null),
         finished_at: new Date().toISOString(),
       })
       .eq("id", runId);
