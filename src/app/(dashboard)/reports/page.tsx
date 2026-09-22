@@ -17,7 +17,7 @@ export default async function ReportsPage({
   // Período na URL, não em estado: "?dias=90" colado no chat abre o mesmo
   // recorte. Padrão de 28 dias, a mesma janela do Início.
   const periodo = lerPeriodo(await searchParams);
-  const { eventos, artigos } = await carregarRelatorio(supabase, blog.id, periodo);
+  const { eventos, artigos, contexto } = await carregarRelatorio(supabase, blog.id, periodo);
 
   // Sem segredo não há link: um token assinado com string vazia seria
   // forjável por qualquer um.
@@ -27,6 +27,6 @@ export default async function ReportsPage({
     : null;
 
   return (
-    <Relatorio blog={blog} periodo={periodo} eventos={eventos} artigos={artigos} token={token} fuso={await lerFuso()} />
+    <Relatorio blog={blog} periodo={periodo} eventos={eventos} artigos={artigos} contexto={contexto} token={token} fuso={await lerFuso()} />
   );
 }

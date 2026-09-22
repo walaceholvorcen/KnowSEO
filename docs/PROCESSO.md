@@ -2203,3 +2203,30 @@ link e termina em "responda melhor que ele").
 
 Voltar é uma linha: `false` vira `true`. Nada foi apagado, então religar
 não custa nada e o que já foi analisado continua no banco.
+
+## 52. Relatório: a corrente inteira e a leitura do período
+
+O relatório contava só a visita e o clique, sem dizer se aquilo era bom nem
+o que fazer depois. Três blocos novos, na ordem em que a conversa acontece:
+
+- **Onde o trabalho está**: cinco elos numa faixa - saúde do site (nota
+  Google e nota IA), citações em IA, artigos publicados no período e no
+  total, visitas com a variação, conversas com a taxa. É a corrente do
+  produto inteiro numa olhada, sem abrir outra tela. Auditoria e Raio X são
+  lidos do estado mais recente, não do período: são fotos de hoje.
+- **A leitura do período** (`src/lib/relatorio/leitura.ts`, função pura, 7
+  testes): quatro parágrafos - o que aconteceu, o que explica, o que virou
+  conversa, em que pé está a base técnica - e um próximo passo com link.
+  **Escrita por regra, não por IA**: o relatório vai assinado para o cliente
+  final, e um modelo inventando causa ("o tráfego subiu por causa do artigo
+  X") seria a pior mentira possível num produto que vende prova. As frases
+  mudam de tom conforme o número: abaixo de 30 visitas o texto se recusa a
+  culpar o botão de contato, porque não há volume para essa conclusão.
+- **Movimento dia a dia**: uma barra por dia do período. O total esconde o
+  formato - 6 visitas num dia é divulgação pontual, 6 espalhadas em 20 dias
+  é busca começando a funcionar. Dia zerado ocupa lugar, senão o gráfico
+  mente sobre o intervalo entre picos.
+
+O mesmo conteúdo vale no link público e no PDF (os blocos novos têm
+`break-inside-avoid`). Conferido na vitrine com dado real: 90 dias, 9
+visitas, 2 conversas, nota 88, Raio X ainda não rodado naquele blog.

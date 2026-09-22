@@ -20,7 +20,9 @@ import { formatDate, cn } from "@/lib/utils";
 import { formatarData } from "@/lib/datas";
 import type { Blog } from "@/types";
 import { AcoesDoRelatorio } from "./acoes";
-import type { ArtigoDoRelatorio } from "./dados";
+import type { ArtigoDoRelatorio, Contexto } from "./dados";
+import { CorrenteDoTrabalho, LeituraDoPeriodo, VisitasPorDia } from "./visao";
+import { leituraDoPeriodo } from "@/lib/relatorio/leitura";
 
 // O mesmo relatório no painel (/reports) e no link do cliente (/r/<token>).
 // `publico` tira tudo o que leva ao painel: seletor de período, link para o
@@ -55,6 +57,7 @@ export function Relatorio({
   periodo,
   eventos,
   artigos,
+  contexto = { auditoria: null, geo: null },
   publico = false,
   token = null,
   fuso = "America/Sao_Paulo",
@@ -63,6 +66,8 @@ export function Relatorio({
   periodo: Periodo;
   eventos: Evento[];
   artigos: ArtigoDoRelatorio[];
+  /** Nota do site e citações em IA: o relatório mostra a corrente inteira. */
+  contexto?: Contexto;
   publico?: boolean;
   /** Token do link público; null quando RELATORIO_SECRET não existe. */
   token?: string | null;
@@ -95,6 +100,32 @@ export function Relatorio({
     desempenho.map((a) => ({ titulo: a.title, conversas: a.conversas })),
     periodo.texto,
   );
+
+  const publicados = artigos.filter(
+    (a) =>
+      a.published_at &&
+      Date.parse(a.published_at) >= periodo.inicio.getTime() &&
+      Date.parse(a.published_at) < periodo.fim.getTime(),
+  ).length;
+
+  const melhor = [...desempenho].sort((a, b) => b.conversas - a.conversas || b.visitas - a.visitas)[0];
+  const leitura = leituraDoPeriodo({
+    dias: periodo.dias,
+    texto: periodo.texto,
+    visitas: atual.visitas,
+    conversas: atual.conversas,
+    taxa: atual.taxa,
+    semBase: cmp.semBase,
+    visitasAntes: anterior.visitas,
+    conversasAntes: anterior.conversas,
+    publicados,
+    noAr: artigos.length,
+    melhor: melhor
+      ? { titulo: melhor.title, visitas: melhor.visitas, conversas: melhor.conversas }
+      : null,
+    auditoria: contexto.auditoria,
+    geo: contexto.geo,
+  });
 
   // "de" e "até" são dias de calendário, sem hora: em UTC saem como foram
   // escolhidos. A emissão é um instante e vai no fuso de quem lê - senão um
@@ -182,6 +213,26 @@ export function Relatorio({
           )}
         </div>
       )}
+
+      <Secao>Onde o trabalho está</Secao>
+      <CorrenteDoTrabalho
+        auditoria={contexto.auditoria}
+        geo={contexto.geo}
+        publicados={publicados}
+        noAr={artigos.length}
+        visitas={atual.visitas}
+        variacaoVisitas={
+          cmp.semBase ? null : fraseVariacao(cmp.visitas, ["visita", "visitas"], periodo.dias, false)
+        }
+        conversas={atual.conversas}
+        taxa={atual.taxa}
+      />
+
+      <Secao>A leitura do período</Secao>
+      <LeituraDoPeriodo leitura={leitura} publico={publico} />
+
+      <Secao>Movimento dia a dia</Secao>
+      <VisitasPorDia eventos={eventos} periodo={periodo} />
 
       <Secao>Contra os {periodo.dias} dias anteriores</Secao>
       <ul className="mt-2">
