@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, Copy, RefreshCw } from "lucide-react";
-import { botao, campo } from "@/components/ui";
+import { botao, campo, folha } from "@/components/ui";
 import { BotaoSalvar } from "@/components/botao-salvar";
 import { cn } from "@/lib/utils";
 import { codigoDoWorker, normalizarPasta, passosDaPasta } from "@/lib/pasta";
@@ -121,7 +121,7 @@ export function PublicarNaPasta({
   }
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
+    <div className={folha()}>
       <p className="text-sm text-slate-600 dark:text-slate-400">
         O blog fica dentro do site do cliente, como <strong>cliente.com/blog</strong>.
         É o formato que mais ajuda o SEO dele: cada artigo soma força ao site

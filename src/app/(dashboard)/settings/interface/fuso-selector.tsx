@@ -2,7 +2,7 @@
 
 import { useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
-import { botao, campo } from "@/components/ui";
+import { botao, campo, folha } from "@/components/ui";
 
 const UM_ANO = 60 * 60 * 24 * 365;
 const gravar = (nome: string, valor: string, maxAge = UM_ANO) => {
@@ -37,7 +37,7 @@ export function FusoSelector({
   const opcoes = fusos.includes(atual) ? fusos : [atual, ...fusos];
 
   return (
-    <div className="mt-6 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+    <div className={folha()}>
       <label htmlFor="fuso" className="text-sm font-medium text-slate-900 dark:text-slate-100">
         Fuso horário
       </label>

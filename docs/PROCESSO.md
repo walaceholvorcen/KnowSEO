@@ -2342,3 +2342,19 @@ qualquer outro dashboard.
 Conferido com dado real: três bancadas (2 + 2 + 1 células), nenhum painel
 com borda ou canto próprio, filete cobalto no Raio X, uma coluna no celular,
 zero rolagem lateral. Detector da impeccable: zero achados na tela.
+
+## 56. Configurações: uma folha, não dez cards diferentes
+
+A tela que o cliente novo mais visita tinha dez blocos de formulário com o
+mesmo desenho e dez classes diferentes: `p-4` e `p-6`, `space-y-4` e
+`space-y-6`, `mt-4` e `mt-6`. Lidas em sequência, as quatro abas pareciam
+quatro produtos.
+
+- **`folha()`** em `components/ui.ts`, ao lado de `botao()`, `campo()` e
+  `pagina()`: um corpo de formulário só, com dois espaçamentos possíveis.
+  Aplicada nos nove blocos das quatro abas.
+- **As abas viraram `<nav>` com `aria-current`** e 44px no toque (tinham 38
+  e são o único caminho entre as quatro telas).
+
+Regra que fica: bloco de formulário vem de `folha()`. Card escrito à mão em
+Configurações é regressão, como já vale para botão e campo.

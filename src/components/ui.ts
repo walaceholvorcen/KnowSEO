@@ -74,3 +74,16 @@ export function pagina(largura: "larga" | "estreita" = "larga") {
     largura === "larga" ? "max-w-5xl" : "max-w-3xl",
   );
 }
+
+// A folha de formulário: o corpo branco onde mora um grupo de campos.
+//
+// Existiam dez variações do mesmo bloco em Configurações (p-4 e p-6,
+// space-y-4 e space-y-6, mt-4 e mt-6), e o efeito era uma pilha de cards
+// levemente diferentes - a mesma falha que a Bancada corrigiu no Início.
+// Uma função, uma folha.
+export function folha(espaco: "normal" | "solto" = "normal") {
+  return cn(
+    "mt-4 rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900",
+    espaco === "solto" ? "space-y-6" : "space-y-4",
+  );
+}

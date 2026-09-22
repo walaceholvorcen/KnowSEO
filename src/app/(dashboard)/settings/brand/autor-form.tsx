@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { campo } from "@/components/ui";
+import { campo, folha } from "@/components/ui";
 import { BotaoSalvar } from "@/components/botao-salvar";
 import { cn } from "@/lib/utils";
 import type { Autor } from "@/lib/autor";
@@ -49,7 +49,7 @@ export function AutorForm({
   return (
     <form
       onSubmit={salvar}
-      className="mt-4 space-y-4 rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900"
+      className={folha()}
     >
       <div className="grid gap-4 sm:grid-cols-2">
         <div>

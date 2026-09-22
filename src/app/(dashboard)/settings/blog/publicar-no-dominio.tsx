@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Check, Copy, RefreshCw } from "lucide-react";
-import { botao } from "@/components/ui";
+import { botao, folha } from "@/components/ui";
 import { ehDominioRaiz } from "@/lib/dominio";
 import type { DomainStatus } from "@/types";
 
@@ -106,7 +106,7 @@ export function PublicarNoDominio({
   }
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
+    <div className={folha()}>
       <p className="text-sm text-slate-600 dark:text-slate-400">
         O acesso ao domínio é do cliente, então quem cria o registro é ele.
         Copie o passo a passo abaixo e mande - o endereço já vai preenchido.

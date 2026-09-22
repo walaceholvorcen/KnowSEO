@@ -1,6 +1,6 @@
 "use client";
 
-import { botao, campo } from "@/components/ui";
+import { botao, campo, folha } from "@/components/ui";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import Link from "next/link";
@@ -136,7 +136,7 @@ export function InternalLinksManager({
       </form>
 
       {/* Lista + adição manual */}
-      <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6">
+      <div className={folha()}>
         <form onSubmit={handleAdd} className="mb-4 flex gap-2">
           <input
             value={url}

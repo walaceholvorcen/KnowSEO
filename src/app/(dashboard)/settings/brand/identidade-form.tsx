@@ -1,6 +1,6 @@
 "use client";
 
-import { botao, campo } from "@/components/ui";
+import { botao, campo, folha } from "@/components/ui";
 import { BotaoSalvar } from "@/components/botao-salvar";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -132,7 +132,7 @@ export function IdentidadeForm({
   }
 
   return (
-    <div className="mt-4 space-y-6 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6">
+    <div className={folha("solto")}>
       <Lista
         titulo="Como a marca é escrita"
         ajuda={`Toda grafia que uma IA poderia usar: nome comercial, razão social, apelido, com e sem acento. Sem nada aqui, procuramos apenas por "${nomeDoBlog}".`}

@@ -1,6 +1,6 @@
 "use client";
 
-import { campo } from "@/components/ui";
+import { campo, folha } from "@/components/ui";
 import { BotaoSalvar } from "@/components/botao-salvar";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -79,7 +79,7 @@ export function BrandDnaForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="space-y-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6"
+      className={folha()}
     >
       <div>
         <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">

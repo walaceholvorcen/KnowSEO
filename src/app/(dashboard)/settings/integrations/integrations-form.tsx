@@ -1,6 +1,6 @@
 "use client";
 
-import { botao, campo } from "@/components/ui";
+import { botao, campo, folha } from "@/components/ui";
 import { BotaoSalvar } from "@/components/botao-salvar";
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
@@ -96,7 +96,7 @@ export function IntegrationsForm({
   }
 
   return (
-    <div className="space-y-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6">
+    <div className={folha()}>
       <div>
         <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
           Propriedade do Search Console
