@@ -79,7 +79,14 @@ export function CorrenteDoTrabalho({
       titulo: "Conversas",
       valor: conversas.toLocaleString("pt-BR"),
       sufixo: null,
-      apoio: conversas > 0 ? `${taxa.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}% de quem leu` : "ninguém chamou",
+      // Abaixo de 30 visitas a porcentagem é falsa precisão: "22,2%" sobre 9
+      // visitas convence mais do que o dado permite. A fração diz a verdade.
+      apoio:
+        conversas === 0
+          ? "ninguém chamou"
+          : visitas < 30
+            ? `${conversas} de ${visitas} visitas`
+            : `${taxa.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}% de quem leu`,
     },
   ];
 

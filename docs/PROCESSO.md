@@ -2230,3 +2230,62 @@ o que fazer depois. Três blocos novos, na ordem em que a conversa acontece:
 O mesmo conteúdo vale no link público e no PDF (os blocos novos têm
 `break-inside-avoid`). Conferido na vitrine com dado real: 90 dias, 9
 visitas, 2 conversas, nota 88, Raio X ainda não rodado naquele blog.
+
+## 53. Revisão de UX/UI a duas vozes: impeccable + Emil Kowalski
+
+Pedido do dono: usar as duas escolas de design instaladas, fazê-las chegar a
+um consenso e elevar o painel. O protocolo `critique` da impeccable exige
+duas avaliações isoladas: A (direção de design, sem ver ferramenta) e B
+(detector mecânico + medição no navegador). As duas rodaram em subagentes
+paralelos, sem se ver.
+
+**O veredito cruzado:** o painel passa no teste mais difícil - não é
+intercambiável (a régua graduada, o veredito no lugar do título, a corrente
+na navegação). Heurísticas de Nielsen: 23/40. O padrão do que derruba é um
+só: **o produto é excelente no caminho feliz e desarmado fora dele.**
+
+A medição absolveu o movimento (nenhum `transition: all`, nada acima de
+300ms, nenhum `ease-in`, foco desenhado em 22 de 22 controles) e a rolagem
+lateral (zero em 375px). O detector mecânico achou 3 itens, os três falsos
+positivos (o filete da casa e um `blockquote`).
+
+O que entrou nesta leva:
+
+- **`(dashboard)/error.tsx`** - o painel não tinha tela de erro. Toda falha
+  de servidor caía no "Application error" do Next, com digest hexadecimal,
+  na frente do cliente da agência. Um arquivo cobre as nove telas, no
+  vocabulário da casa, com o digest explicado em vez de escondido.
+- **Estratégia à prova de falha** - o arquivo não tinha um `try/catch`. A
+  geração de artigo (~90s, a operação mais cara do produto) deixava o botão
+  presoem "Gerando..." até alguém recarregar - e recarregar significa pagar
+  de novo. Agora: `try/catch/finally` nos três pedidos, **uma geração por
+  vez** (antes dava para disparar seis em paralelo), e descarte que volta
+  atrás se o servidor recusar.
+- **Editor que não perde trabalho** - rótulo nos cinco ícones da barra
+  (eram 28×28 sem nome acessível), marca "Alterações não salvas", aviso do
+  navegador ao fechar com texto pendente e `Ctrl/Cmd+S`.
+- **Contraste: o par de cinza estava invertido.** `text-slate-400
+  dark:text-slate-500` dava 2,10:1 no claro e 3,73:1 no escuro - reprovava
+  nos dois. Trocado para `text-slate-500 dark:text-slate-400` (4,7:1 e
+  8,4:1) em 13 arquivos. Também: placeholder do editor (1,33:1) e **links
+  dentro do corpo do artigo no escuro (2,21:1)**, que vazavam para o blog
+  publicado do cliente.
+- **Um cobalto por tela.** A Estratégia tinha 7 botões cobalto simultâneos;
+  a lei da casa é que cor é sinal. Ação de linha virou secundária, o
+  primário ficou só no topo. No Raio X sem perguntas, "Analisar agora"
+  nascia desabilitado e cobalto: agora quem tem o destaque é a ação
+  possível.
+- **Auditoria: o que corrigir subiu.** As 31 checagens (22 "passou")
+  ficavam entre a nota e os achados, 963px de lista sempre aberta. Viraram
+  `<details>` fechado ("28 de 31 checagens passaram") e foram para depois
+  dos achados. E "Próxima verificação" era renderizada duas vezes com
+  textos diferentes - ficou a do topo.
+- **Celular:** nome do cliente na barra superior (sumia, e operar o cliente
+  errado é o erro caro) e alvos de 44px no menu.
+- **Relatório:** "22,2% de quem leu" sobre 9 visitas virou "2 de 9 visitas".
+  Abaixo de 30 visitas, porcentagem é falsa precisão.
+
+Conferido na vitrine com dado real, claro e escuro, 1280px e 375px: zero
+reprovação de contraste, um único botão cobalto por tela, sete ícones com
+rótulo, checagens fechadas por padrão, nome do cliente no topo do celular,
+e a tela de erro renderizada de verdade (não só compilada).

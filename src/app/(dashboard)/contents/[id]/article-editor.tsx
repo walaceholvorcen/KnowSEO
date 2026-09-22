@@ -82,6 +82,9 @@ export function ArticleEditor({
   // Resultado da trava de qualidade. Só nasce quando alguém tenta publicar:
   // conferir a cada tecla transformaria a escrita numa lista de reclamações.
   const [avaliacao, setAvaliacao] = useState<AvaliacaoDoArtigo | null>(null);
+  // O artigo custa ~90s de IA e a revisão humana em cima. Sem marca de
+  // "não salvo", "Voltar" levava tudo embora em silêncio.
+  const [sujo, setSujo] = useState(false);
 
   const isGenerating = article.generation_status === "generating";
 
@@ -97,6 +100,30 @@ export function ArticleEditor({
       window.location.origin,
     );
   }
+
+  // Fechar a aba com texto não salvo pede confirmação do navegador. É a
+  // única guarda que funciona para fechar/recarregar - dentro do app, quem
+  // avisa é a marca "não salvo" ao lado de Voltar.
+  useEffect(() => {
+    if (!sujo) return;
+    const aviso = (e: BeforeUnloadEvent) => e.preventDefault();
+    window.addEventListener("beforeunload", aviso);
+    return () => window.removeEventListener("beforeunload", aviso);
+  }, [sujo]);
+
+  // Ctrl/Cmd+S salva o rascunho: é o reflexo de quem escreve, e sem ele o
+  // atalho abria a caixa de salvar página do navegador.
+  useEffect(() => {
+    function atalho(e: KeyboardEvent) {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
+        e.preventDefault();
+        if (!saving) void handleSave();
+      }
+    }
+    window.addEventListener("keydown", atalho);
+    return () => window.removeEventListener("keydown", atalho);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [saving, title, seoTitle, seoDescription, slug, status]);
 
   // A prévia avisa quando montou; sem isso o primeiro envio se perde no ar
   // e o cliente vê o texto salvo, não o que acabou de escrever.
@@ -194,6 +221,7 @@ export function ArticleEditor({
 
     setSaving(true);
     setError(null);
+    setSujo(false);
 
     // O slug vem do campo, não do título.
     //
@@ -265,10 +293,14 @@ export function ArticleEditor({
         </Link>
 
         <div className="flex items-center gap-3">
-          {savedAt && (
-            <span className="text-sm text-slate-400 dark:text-slate-500">
-              Salvo {savedAt}
-            </span>
+          {sujo ? (
+            <span className="text-sm text-nota-atencao">Alterações não salvas</span>
+          ) : (
+            savedAt && (
+              <span className="text-sm text-slate-500 dark:text-slate-400">
+                Salvo {savedAt}
+              </span>
+            )
           )}
           <button
             onClick={() => handleSave()}
@@ -318,7 +350,7 @@ export function ArticleEditor({
                           <Info
                             size={15}
                             aria-hidden="true"
-                            className="mt-0.5 shrink-0 text-slate-400 dark:text-slate-500"
+                            className="mt-0.5 shrink-0 text-slate-500 dark:text-slate-400"
                           />
                         )}
                         <span className="min-w-0">
@@ -356,9 +388,9 @@ export function ArticleEditor({
             <textarea
               value={title}
               rows={1}
-              onChange={(e) => setTitle(e.target.value.replace(/\n/g, " "))}
+              onChange={(e) => { setSujo(true); setTitle(e.target.value.replace(/\n/g, " ")); }}
               placeholder="Título"
-              className="w-full resize-none border-none bg-transparent text-3xl font-bold text-slate-900 dark:text-slate-100 outline-none field-sizing-content placeholder:text-slate-300"
+              className="w-full resize-none border-none bg-transparent text-3xl font-bold text-slate-900 dark:text-slate-100 outline-none field-sizing-content placeholder:text-slate-500 dark:placeholder:text-slate-400"
             />
 
             <div className="mt-2 flex items-baseline gap-1.5 text-sm text-slate-500 dark:text-slate-400">
@@ -366,7 +398,7 @@ export function ArticleEditor({
               <textarea
                 value={slug}
                 rows={1}
-                onChange={(e) => setSlug(e.target.value.replace(/\n/g, ""))}
+                onChange={(e) => { setSujo(true); setSlug(e.target.value.replace(/\n/g, "")); }}
                 placeholder="endereco-do-artigo"
                 className="min-w-0 flex-1 resize-none break-all border-none bg-transparent outline-none field-sizing-content focus:text-slate-900 dark:focus:text-slate-100"
               />
@@ -389,6 +421,8 @@ export function ArticleEditor({
                 onClick={() => exec("bold")}
                 className="rounded p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700"
                 type="button"
+                title="Negrito"
+                aria-label="Negrito"
               >
                 <Bold size={16} />
               </button>
@@ -396,6 +430,8 @@ export function ArticleEditor({
                 onClick={() => exec("italic")}
                 className="rounded p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700"
                 type="button"
+                title="Itálico"
+                aria-label="Itálico"
               >
                 <Italic size={16} />
               </button>
@@ -403,6 +439,8 @@ export function ArticleEditor({
                 onClick={() => exec("formatBlock", "h2")}
                 className="rounded p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700"
                 type="button"
+                title="Subtítulo (H2)"
+                aria-label="Subtítulo (H2)"
               >
                 <Heading2 size={16} />
               </button>
@@ -410,6 +448,8 @@ export function ArticleEditor({
                 onClick={() => exec("insertUnorderedList")}
                 className="rounded p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700"
                 type="button"
+                title="Lista"
+                aria-label="Lista"
               >
                 <List size={16} />
               </button>
@@ -420,6 +460,8 @@ export function ArticleEditor({
                 }}
                 className="rounded p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700"
                 type="button"
+                title="Inserir link"
+                aria-label="Inserir link"
               >
                 <LinkIcon size={16} />
               </button>
@@ -430,6 +472,7 @@ export function ArticleEditor({
               contentEditable
               suppressContentEditableWarning
               onInput={() => {
+                setSujo(true);
                 // Direto no evento, sem estado intermediário: guardar o HTML
                 // do corpo em useState a cada tecla faz o cursor pular.
                 clearTimeout(
@@ -439,7 +482,7 @@ export function ArticleEditor({
                   window.setTimeout(enviarParaPrevia, 400);
               }}
               dangerouslySetInnerHTML={{ __html: article.content_html ?? "" }}
-              className="prose dark:prose-invert prose-slate mt-4 min-h-[400px] max-w-none rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 outline-none focus:border-cobalto-400 dark:focus:border-cobalto-300 [&_h2]:text-xl [&_h2]:font-bold [&_h3]:text-lg [&_h3]:font-semibold [&_p]:my-3 [&_ul]:my-3 [&_ul]:list-disc [&_ul]:pl-6 [&_a]:text-cobalto-600 [&_a]:underline"
+              className="prose dark:prose-invert prose-slate mt-4 min-h-[400px] max-w-none rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 outline-none focus:border-cobalto-400 dark:focus:border-cobalto-300 [&_h2]:text-xl [&_h2]:font-bold [&_h3]:text-lg [&_h3]:font-semibold [&_p]:my-3 [&_ul]:my-3 [&_ul]:list-disc [&_ul]:pl-6 [&_a]:text-cobalto-600 [&_a]:dark:text-cobalto-300 [&_a]:underline"
             />
 
             <div className="mt-8 space-y-4 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
@@ -469,7 +512,7 @@ export function ArticleEditor({
                 <textarea
                   value={seoDescription}
                   maxLength={155}
-                  onChange={(e) => setSeoDescription(e.target.value)}
+                  onChange={(e) => { setSujo(true); setSeoDescription(e.target.value); }}
                   rows={2}
                   // Altura real do texto: com 2 linhas fixas a descrição de 155
                   // caracteres rolava dentro do campo e a primeira linha sumia.
@@ -483,7 +526,7 @@ export function ArticleEditor({
                   em vez de espremê-lo em três linhas. */}
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <h3 className="flex items-center gap-2 font-medium text-slate-900 dark:text-slate-100">
-                  <GalleryHorizontal size={16} className="text-slate-400 dark:text-slate-500" />
+                  <GalleryHorizontal size={16} className="text-slate-500 dark:text-slate-400" />
                   Carrossel para Instagram
                 </h3>
                 <button

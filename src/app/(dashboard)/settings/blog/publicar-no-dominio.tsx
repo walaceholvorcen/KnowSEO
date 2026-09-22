@@ -125,7 +125,7 @@ export function PublicarNoDominio({
       <ol className="mt-4 space-y-3">
         {passos.map((passo, i) => (
           <li key={i} className="flex gap-3">
-            <span className="tabular font-display mt-0.5 shrink-0 text-sm text-slate-400 dark:text-slate-500">
+            <span className="tabular font-display mt-0.5 shrink-0 text-sm text-slate-500 dark:text-slate-400">
               {i + 1}
             </span>
             <span className="whitespace-pre-line text-sm text-slate-700 dark:text-slate-300">

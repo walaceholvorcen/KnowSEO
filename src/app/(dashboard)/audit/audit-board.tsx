@@ -293,57 +293,6 @@ export function AuditBoard({
             )}
           </div>
 
-          {/* A régua aberta: o que entra na conta, e o que passou. Sem ela
-              "88" era um número sem denominador - não dava para saber se
-              foram checadas 5 coisas ou 50. */}
-          <section>
-            <Secao>O que a nota mede</Secao>
-            <p className="text-sm text-slate-600 dark:text-slate-400">
-              {doGoogle.length} checagens no Google, {daIa.length} na prontidão para IA.
-            </p>
-            <div className="mt-3 grid gap-x-8 sm:grid-cols-2">
-              {[
-                { titulo: "Google", lista: doGoogle },
-                { titulo: "Prontidão para IA", lista: daIa },
-              ].map((grupo) => (
-                <div key={grupo.titulo} className="min-w-0">
-                  <p className="mt-3 text-sm font-medium text-slate-900 dark:text-slate-100">
-                    {grupo.titulo}
-                  </p>
-                  <ul>
-                    {grupo.lista.map((c) => {
-                      const achado = achadoDe.get(c.code);
-                      return (
-                        <Linha key={c.code} className="!py-2">
-                          <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5 text-sm">
-                            <span className="min-w-0 text-slate-700 dark:text-slate-300">
-                              {c.rotulo}
-                            </span>
-                            {achado ? (
-                              <a
-                                href={`#achado-${c.code}`}
-                                onClick={() =>
-                                  setOpen((prev) => new Set(prev).add(achado.id))
-                                }
-                                className="min-w-0 text-cobalto-700 underline-offset-2 hover:underline dark:text-cobalto-300"
-                              >
-                                {achado.title}
-                              </a>
-                            ) : (
-                              <span className="shrink-0 text-slate-500 dark:text-slate-400">
-                                passou
-                              </span>
-                            )}
-                          </div>
-                        </Linha>
-                      );
-                    })}
-                  </ul>
-                </div>
-              ))}
-            </div>
-          </section>
-
           {jornada && <JornadaDoSite jornada={jornada} fuso={fuso} />}
 
           {/* O que transforma a auditoria de coisa que se roda três vezes em
@@ -475,7 +424,7 @@ export function AuditBoard({
                         onClick={() => toggle(f.id)}
                         className="flex w-full items-start gap-3 p-4 text-left hover:bg-slate-50 dark:hover:bg-slate-800/50"
                       >
-                        <span className="mt-0.5 shrink-0 text-slate-400 dark:text-slate-500">
+                        <span className="mt-0.5 shrink-0 text-slate-500 dark:text-slate-400">
                           {isOpen ? (
                             <ChevronDown size={16} />
                           ) : (
@@ -608,6 +557,69 @@ export function AuditBoard({
           Cole a URL de um site acima para receber o diagnóstico.
         </div>
       )}
+
+          {/* A régua aberta: o que entra na conta, e o que passou. Sem ela
+              "88" era um número sem denominador - não dava para saber se
+              foram checadas 5 coisas ou 50. */}
+          <section>
+            {/* Fechada por padrão: a régua precisa existir (sem ela o "88" não
+                tem denominador), mas quem abre a auditoria quer a lista de
+                correções, não as 22 linhas que passaram. */}
+            <details className="group">
+              <summary className="cursor-pointer list-none">
+                <Secao>
+                  O que a nota mede
+                  <span className="ml-2 font-normal text-slate-500 group-open:hidden dark:text-slate-400">
+                    {CHECAGENS.length - findings.length} de {CHECAGENS.length} checagens passaram
+                  </span>
+                </Secao>
+              </summary>
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              {doGoogle.length} checagens no Google, {daIa.length} na prontidão para IA.
+            </p>
+            <div className="mt-3 grid gap-x-8 sm:grid-cols-2">
+              {[
+                { titulo: "Google", lista: doGoogle },
+                { titulo: "Prontidão para IA", lista: daIa },
+              ].map((grupo) => (
+                <div key={grupo.titulo} className="min-w-0">
+                  <p className="mt-3 text-sm font-medium text-slate-900 dark:text-slate-100">
+                    {grupo.titulo}
+                  </p>
+                  <ul>
+                    {grupo.lista.map((c) => {
+                      const achado = achadoDe.get(c.code);
+                      return (
+                        <Linha key={c.code} className="!py-2">
+                          <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5 text-sm">
+                            <span className="min-w-0 text-slate-700 dark:text-slate-300">
+                              {c.rotulo}
+                            </span>
+                            {achado ? (
+                              <a
+                                href={`#achado-${c.code}`}
+                                onClick={() =>
+                                  setOpen((prev) => new Set(prev).add(achado.id))
+                                }
+                                className="min-w-0 text-cobalto-700 underline-offset-2 hover:underline dark:text-cobalto-300"
+                              >
+                                {achado.title}
+                              </a>
+                            ) : (
+                              <span className="shrink-0 text-slate-500 dark:text-slate-400">
+                                passou
+                              </span>
+                            )}
+                          </div>
+                        </Linha>
+                      );
+                    })}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </details>
+          </section>
 
       {(audits.length > 1 || acompanhamentoAtivo || cron) && latest && (
         <>

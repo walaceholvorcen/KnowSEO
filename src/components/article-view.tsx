@@ -75,7 +75,7 @@ export function ArticleView({
 
         <article
           data-preview="corpo"
-          className="prose dark:prose-invert prose-slate mt-8 max-w-none [&_h2]:mt-8 [&_h2]:text-xl [&_h2]:font-bold [&_h3]:mt-6 [&_h3]:text-lg [&_h3]:font-semibold [&_p]:my-4 [&_ul]:my-4 [&_ul]:list-disc [&_ul]:pl-6 [&_a]:text-cobalto-600 [&_a]:underline [&_.tabela]:overflow-x-auto [&_.tabela]:my-6 [&_table]:my-0 [&_th]:whitespace-nowrap"
+          className="prose dark:prose-invert prose-slate mt-8 max-w-none [&_h2]:mt-8 [&_h2]:text-xl [&_h2]:font-bold [&_h3]:mt-6 [&_h3]:text-lg [&_h3]:font-semibold [&_p]:my-4 [&_ul]:my-4 [&_ul]:list-disc [&_ul]:pl-6 [&_a]:text-cobalto-600 [&_a]:dark:text-cobalto-300 [&_a]:underline [&_.tabela]:overflow-x-auto [&_.tabela]:my-6 [&_table]:my-0 [&_th]:whitespace-nowrap"
           // Limpo também na leitura: artigo gravado antes da trava de 17/09
           // não passou por htmlSeguro ao ser salvo. A tabela ganha uma caixa
           // com rolagem própria: comparação de 4 colunas não cabe no celular

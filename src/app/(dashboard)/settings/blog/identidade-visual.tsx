@@ -99,7 +99,7 @@ function CampoDeCor({
           className={cn(campo(), "tabular w-28 font-mono")}
         />
       </div>
-      <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">{apoio}</p>
+      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{apoio}</p>
     </div>
   );
 }
@@ -177,7 +177,7 @@ export function IdentidadeVisual({
                 className="max-h-12 w-auto object-contain"
               />
             ) : (
-              <span className="text-xs text-slate-400 dark:text-slate-500">
+              <span className="text-xs text-slate-500 dark:text-slate-400">
                 Sem logo
               </span>
             )}
@@ -211,7 +211,7 @@ export function IdentidadeVisual({
             </button>
           )}
         </div>
-        <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
+        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
           PNG, JPG, WEBP ou SVG, até 2 MB. Fundo transparente fica melhor: o
           logo aparece no topo do blog, na capa do artigo e no carrossel.
         </p>

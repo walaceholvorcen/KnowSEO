@@ -67,12 +67,12 @@ export function EvolucaoDosArtigos({
                     "flex-1 sm:mt-3 sm:flex-none sm:text-sm",
                     alcancada
                       ? "text-slate-900 dark:text-slate-100"
-                      : "text-slate-400 dark:text-slate-500",
+                      : "text-slate-500 dark:text-slate-400",
                   )}
                 >
                   {fase.nome}
                 </span>
-                <span className="text-sm text-slate-400 dark:text-slate-500">
+                <span className="text-sm text-slate-500 dark:text-slate-400">
                   {fase.mes === 0 ? "1º dia" : `mês ${fase.mes}`}
                 </span>
               </li>
@@ -119,7 +119,7 @@ export function EvolucaoDosArtigos({
                       </span>
                     )}
                   </span>
-                  <span className="shrink-0 text-sm text-slate-400 dark:text-slate-500">
+                  <span className="shrink-0 text-sm text-slate-500 dark:text-slate-400">
                     {fase.mes === 0 ? "desde o 1º dia" : `mês ${fase.mes}`}
                   </span>
                 </dt>

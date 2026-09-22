@@ -93,22 +93,33 @@ export function StrategyBoard({
     );
   }
 
+  // Os três pedidos abaixo chamam IA e demoram. Sem try/catch/finally, uma
+  // queda de rede ou um tempo estourado deixava o botão preso em "Buscando"
+  // ou "Gerando" até alguém recarregar a página - e recarregar durante a
+  // geração significa pagar a chamada duas vezes. Mesmo defeito que a
+  // Auditoria e o Raio X já tinham tido (PROCESSO 20 e 21); faltava aqui.
+  const FALHOU = "A conexão caiu ou o pedido demorou demais. Nada foi cobrado se não chegou a gerar - tente de novo.";
+
   async function handleFindIdeas() {
     setLoadingIdeas(true);
     setError(null);
-    const res = await fetch("/api/keywords/suggest", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ blogId }),
-    });
-    const data = await res.json();
-    setLoadingIdeas(false);
-
-    if (!res.ok) {
-      setError(data.error ?? "Não foi possível buscar pautas agora.");
-      return;
+    try {
+      const res = await fetch("/api/keywords/suggest", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ blogId }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error ?? "Não foi possível buscar pautas agora.");
+        return;
+      }
+      setKeywords((prev) => [...(data.keywords as Keyword[]), ...prev]);
+    } catch {
+      setError(FALHOU);
+    } finally {
+      setLoadingIdeas(false);
     }
-    setKeywords((prev) => [...(data.keywords as Keyword[]), ...prev]);
   }
 
   async function handleMontarPlano(e: React.FormEvent) {
@@ -116,46 +127,74 @@ export function StrategyBoard({
     if (!assunto.trim() || montando) return;
     setMontando(true);
     setError(null);
-    const res = await fetch("/api/keywords/suggest", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ blogId, plano: true, assunto }),
-    });
-    const data = await res.json();
-    setMontando(false);
-
-    if (!res.ok) {
-      setError(data.error ?? "Não foi possível montar o plano agora.");
-      return;
+    try {
+      const res = await fetch("/api/keywords/suggest", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ blogId, plano: true, assunto }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error ?? "Não foi possível montar o plano agora.");
+        return;
+      }
+      setKeywords((prev) => [...(data.keywords as Keyword[]), ...prev]);
+      setAssunto("");
+      setFormPlano(false);
+    } catch {
+      setError(FALHOU);
+    } finally {
+      setMontando(false);
     }
-    setKeywords((prev) => [...(data.keywords as Keyword[]), ...prev]);
-    setAssunto("");
-    setFormPlano(false);
   }
 
+  // A linha some na hora (a tela não espera o banco), mas se o servidor
+  // recusar ela volta: antes, a pauta sumia da tela sem ter sido descartada
+  // de verdade e reaparecia no próximo carregamento, sem explicação.
   async function handleReject(id: string) {
+    const antes = keywords;
     setKeywords((prev) =>
       prev.map((k) => (k.id === id ? { ...k, status: "rejected" } : k)),
     );
-    await descartarPauta(id);
+    try {
+      const r = await descartarPauta(id);
+      if (r?.erro) {
+        setKeywords(antes);
+        setError(r.erro);
+      }
+    } catch {
+      setKeywords(antes);
+      setError(FALHOU);
+    }
   }
 
   async function handleWrite(id: string) {
+    // Uma geração por vez: cada uma leva ~90s e custa chamada de IA. Antes só
+    // a linha clicada travava, e dava para disparar seis em paralelo sem
+    // perceber.
+    if (generatingId) return;
     setGeneratingId(id);
-    const res = await fetch("/api/articles/generate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ keywordId: id }),
-    });
-    const data = await res.json();
-    setGeneratingId(null);
-
-    if (res.ok) {
-      router.push(`/contents/${data.article.id}`);
-    } else if (data.articleId) {
-      router.push(`/contents/${data.articleId}`);
-    } else {
-      setError(data.error ?? "Não foi possível gerar o artigo.");
+    setError(null);
+    try {
+      const res = await fetch("/api/articles/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ keywordId: id }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        router.push(`/contents/${data.article.id}`);
+      } else if (data.articleId) {
+        // O rascunho existe mesmo com a geração falhando no meio: leva para
+        // lá, senão o texto fica órfão no banco.
+        router.push(`/contents/${data.articleId}`);
+      } else {
+        setError(data.error ?? "Não foi possível gerar o artigo.");
+      }
+    } catch {
+      setError(FALHOU);
+    } finally {
+      setGeneratingId(null);
     }
   }
 
@@ -231,20 +270,28 @@ export function StrategyBoard({
                   .
                 </p>
 
+                {/* Ação de linha não é a ação da tela. Com uma pauta por
+                    linha, o cobalto aparecia seis vezes na mesma tela e
+                    deixava de querer dizer "a decisão é esta" - a lei da
+                    casa é que cor é sinal. O primário fica no alto, um só. */}
                 <div className="mt-3 flex items-center gap-2">
                   <button
                     onClick={() => handleReject(kw.id)}
-                    className={botao("secundario", "sm")}
+                    className={botao("fantasma", "sm")}
                   >
                     <X size={14} /> Descartar
                   </button>
                   <button
                     onClick={() => handleWrite(kw.id)}
-                    disabled={generatingId === kw.id}
-                    className={cn(botao("primario", "sm"), "ml-auto")}
+                    disabled={generatingId !== null}
+                    className={cn(botao("secundario", "sm"), "ml-auto")}
                   >
                     <PenLine size={14} />
-                    {generatingId === kw.id ? "Gerando..." : "Escrever artigo"}
+                    {generatingId === kw.id
+                      ? "Gerando..."
+                      : generatingId
+                        ? "Aguarde"
+                        : "Escrever artigo"}
                   </button>
                 </div>
               </Linha>

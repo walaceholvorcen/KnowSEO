@@ -147,7 +147,7 @@ export function BlogSettingsForm({
           className={cn(campo(), "w-full")}
           placeholder="Nome da empresa"
         />
-        <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
+        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
           Aparece no topo do blog publicado, no compartilhamento e na barra
           lateral do painel.
         </p>
@@ -178,7 +178,7 @@ export function BlogSettingsForm({
           id="slug-ajuda"
           className={cn(
             "mt-1 text-xs",
-            slugErro ? "text-nota-critico" : "text-slate-400 dark:text-slate-500",
+            slugErro ? "text-nota-critico" : "text-slate-500 dark:text-slate-400",
           )}
         >
           {slugErro ??
@@ -225,7 +225,7 @@ export function BlogSettingsForm({
             cliente, como blog.suaempresa.com.
           </p>
         ) : (
-          <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
+          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
             Use um subdomínio, como blog.suaempresa.com. O passo a passo para
             apontar o DNS está logo abaixo, pronto para enviar ao cliente.
           </p>

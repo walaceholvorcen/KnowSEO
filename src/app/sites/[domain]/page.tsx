@@ -103,7 +103,7 @@ export default async function TenantBlogHome({
 
       <main className="mx-auto max-w-3xl px-6 py-12">
         {list.length === 0 ? (
-          <p className="text-center text-slate-400 dark:text-slate-500">
+          <p className="text-center text-slate-500 dark:text-slate-400">
             {/* No idioma do blog: antes era espanhol fixo, até em blog brasileiro. */}
             {
               {
@@ -140,7 +140,7 @@ export default async function TenantBlogHome({
                   <p className="mt-2 text-slate-600 dark:text-slate-400">{article.excerpt}</p>
                 )}
                 {article.published_at && (
-                  <p className="mt-2 text-xs text-slate-400 dark:text-slate-500">
+                  <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
                     {formatarData(article.published_at!, fuso, "longa", localeDoBlog(blog))}
                   </p>
                 )}

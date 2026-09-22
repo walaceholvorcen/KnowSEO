@@ -263,7 +263,7 @@ export function InicioBoard({
                       <span
                         className={
                           feito
-                            ? "text-slate-400 dark:text-slate-500"
+                            ? "text-slate-500 dark:text-slate-400"
                             : "text-slate-900 group-hover:text-cobalto-600 dark:text-slate-100 dark:group-hover:text-cobalto-400"
                         }
                       >

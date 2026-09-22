@@ -153,7 +153,7 @@ export function Sidebar({
           onClick={() => setAberto(false)}
           aria-current={on ? "page" : undefined}
           className={cn(
-            "group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-150 motion-reduce:transition-none pointer-coarse:py-2.5",
+            "group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-150 motion-reduce:transition-none pointer-coarse:min-h-11 pointer-coarse:py-2.5",
             // O item ativo sobe para a superfície branca: lê como a tecla
             // pressionada de um instrumento, sem precisar de cor de fundo.
             on
@@ -194,7 +194,14 @@ export function Sidebar({
       {/* Celular e tablet: barra no topo com o menu recolhido. A barra lateral
           fixa ocupava a tela inteira numa tela estreita. */}
       <header className="flex h-14 shrink-0 items-center justify-between border-b border-slate-200 bg-slate-100 px-4 dark:border-slate-800 dark:bg-slate-950 lg:hidden">
-        <Link href="/dashboard">{marca}</Link>
+        <div className="flex min-w-0 items-baseline gap-2">
+          <Link href="/dashboard">{marca}</Link>
+          {/* Sem isto, no celular nada na tela dizia de quem eram os números -
+              o mesmo motivo do seletor no topo da barra lateral. */}
+          <span className="truncate text-sm text-slate-600 dark:text-slate-400">
+            {blog?.nome}
+          </span>
+        </div>
         <button
           type="button"
           onClick={() => setAberto(true)}
@@ -231,7 +238,7 @@ export function Sidebar({
           type="button"
           onClick={() => setAberto(false)}
           aria-label="Fechar menu"
-          className="absolute right-3 top-4 flex h-10 w-10 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-800 lg:hidden"
+          className="absolute right-3 top-4 flex h-11 w-11 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-800 lg:hidden"
         >
           <X size={18} aria-hidden="true" />
         </button>
@@ -240,9 +247,6 @@ export function Sidebar({
           <Link href="/dashboard" onClick={() => setAberto(false)}>
             {marca}
           </Link>
-          <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-            A evolução da busca começa aqui.
-          </p>
         </div>
 
         {/* Qual blog está sendo operado. Toda ferramenta séria mostra o
@@ -289,7 +293,7 @@ export function Sidebar({
             href={blog.endereco}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1.5 hover:text-cobalto-600 dark:hover:text-cobalto-400"
+            className="flex items-center gap-1.5 pointer-coarse:min-h-11 pointer-coarse:py-2 hover:text-cobalto-600 dark:hover:text-cobalto-400"
           >
             <ExternalLink size={12} aria-hidden="true" />
             Abrir blog
@@ -297,7 +301,7 @@ export function Sidebar({
           <Link
             href="/onboarding?novo=1"
             onClick={() => setAberto(false)}
-            className="flex items-center gap-1.5 hover:text-cobalto-600 dark:hover:text-cobalto-400"
+            className="flex items-center gap-1.5 pointer-coarse:min-h-11 pointer-coarse:py-2 hover:text-cobalto-600 dark:hover:text-cobalto-400"
           >
             <Plus size={12} aria-hidden="true" />
             Adicionar cliente
@@ -326,7 +330,7 @@ export function Sidebar({
           <button
             type="button"
             onClick={handleLogout}
-            className="mt-3 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-500 transition-colors duration-150 hover:bg-slate-200/70 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
+            className="mt-3 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-500 transition-colors duration-150 hover:bg-slate-200/70 hover:text-slate-900 pointer-coarse:min-h-11 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
           >
             <LogOut size={16} aria-hidden="true" />
             Sair

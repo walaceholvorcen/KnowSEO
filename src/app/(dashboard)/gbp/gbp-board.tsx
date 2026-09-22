@@ -174,7 +174,7 @@ export function GbpBoard({
                         onClick={() => toggle(f.id)}
                         className="flex w-full items-start gap-3 p-4 text-left hover:bg-slate-50 dark:hover:bg-slate-800/50"
                       >
-                        <span className="mt-0.5 shrink-0 text-slate-400 dark:text-slate-500">
+                        <span className="mt-0.5 shrink-0 text-slate-500 dark:text-slate-400">
                           {isOpen ? (
                             <ChevronDown size={16} />
                           ) : (

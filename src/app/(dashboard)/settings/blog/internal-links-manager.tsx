@@ -92,7 +92,7 @@ export function InternalLinksManager({
           veredito no topo da página - só uma coisa grita por vez. */}
       <form onSubmit={handleCrawl}>
         <div className="mb-1 flex items-center gap-2">
-          <Radar size={16} className="text-slate-400 dark:text-slate-500" />
+          <Radar size={16} className="text-slate-500 dark:text-slate-400" />
           <h3 className="font-medium text-slate-900 dark:text-slate-100">
             Detectar páginas automaticamente
           </h3>
@@ -160,7 +160,7 @@ export function InternalLinksManager({
         </form>
 
         {links.length === 0 ? (
-          <p className="text-sm text-slate-400 dark:text-slate-500">
+          <p className="text-sm text-slate-500 dark:text-slate-400">
             Nenhuma página mapeada ainda.
           </p>
         ) : (
@@ -180,7 +180,7 @@ export function InternalLinksManager({
                       {link.title || link.url}
                     </p>
                     {link.title && (
-                      <p className="truncate text-xs text-slate-400 dark:text-slate-500">
+                      <p className="truncate text-xs text-slate-500 dark:text-slate-400">
                         {link.url}
                       </p>
                     )}
@@ -196,7 +196,7 @@ export function InternalLinksManager({
                   </div>
                   <button
                     onClick={() => handleRemove(link.id)}
-                    className="shrink-0 text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400"
+                    className="shrink-0 text-slate-500 dark:text-slate-400 hover:text-red-500 dark:hover:text-red-400"
                   >
                     <Trash2 size={14} />
                   </button>

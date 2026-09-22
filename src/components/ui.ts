@@ -52,7 +52,7 @@ const BASE_CAMPO =
   "placeholder:text-slate-500 transition-[border-color,box-shadow] duration-150 " +
   "focus:border-cobalto-500 focus:outline-none focus:ring-3 focus:ring-cobalto-500/15 " +
   "disabled:opacity-60 motion-reduce:transition-none " +
-  "dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500 " +
+  "dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-400 " +
   "dark:focus:border-cobalto-400 dark:focus:ring-cobalto-400/20";
 
 export function campo(tamanho: Tamanho = "md") {

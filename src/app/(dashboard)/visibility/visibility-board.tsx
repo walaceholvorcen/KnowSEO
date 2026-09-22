@@ -317,18 +317,24 @@ export function VisibilityBoard({
         apoio={apoio}
         acao={
           <>
-            <button
-              onClick={analisar}
-              disabled={busy !== null || runAtivo !== null || queries.length === 0}
-              className={botao("primario")}
-            >
-              <Play size={15} />
-              {runAtivo ? "Analisando..." : busy === "run" ? "Iniciando..." : "Analisar agora"}
-            </button>
+            {/* Sem pergunta cadastrada, "Analisar agora" nasce desabilitado:
+                o olho ia para o botão cobalto que não funcionava e o produto
+                lia como quebrado no primeiro acesso. Quem manda no destaque é
+                a ação possível agora. */}
+            {queries.length > 0 && (
+              <button
+                onClick={analisar}
+                disabled={busy !== null || runAtivo !== null}
+                className={botao("primario")}
+              >
+                <Play size={15} />
+                {runAtivo ? "Analisando..." : busy === "run" ? "Iniciando..." : "Analisar agora"}
+              </button>
+            )}
             <button
               onClick={gerarPerguntas}
               disabled={busy !== null || runAtivo !== null}
-              className={botao("secundario")}
+              className={botao(queries.length === 0 ? "primario" : "secundario")}
             >
               <Sparkles size={15} />
               {busy === "questions" ? "Gerando..." : "Gerar perguntas"}
@@ -394,7 +400,7 @@ export function VisibilityBoard({
                   {p ? (
                     <span className="tabular font-display">
                       <span className="text-2xl">{p.citadas}</span>
-                      <span className="text-sm text-slate-400 dark:text-slate-500">
+                      <span className="text-sm text-slate-500 dark:text-slate-400">
                         {" "}
                         de {p.total}
                       </span>
@@ -423,7 +429,7 @@ export function VisibilityBoard({
                 {timeline.map((t) => (
                   <span
                     key={t.chave}
-                    className="tabular text-sm text-slate-400 dark:text-slate-500"
+                    className="tabular text-sm text-slate-500 dark:text-slate-400"
                   >
                     {t.rotulo}
                   </span>
@@ -454,7 +460,7 @@ export function VisibilityBoard({
                       style={{ height: `${Math.max(t.score, 2)}%` }}
                     />
                   </div>
-                  <span className="tabular text-sm text-slate-400 dark:text-slate-500">
+                  <span className="tabular text-sm text-slate-500 dark:text-slate-400">
                     {t.rotulo}
                   </span>
                 </div>
@@ -543,7 +549,7 @@ export function VisibilityBoard({
                           <button
                             onClick={() => responderComArtigo(q.question)}
                             disabled={gerando !== null}
-                            className={botao("primario", "sm")}
+                            className={botao("secundario", "sm")}
                           >
                             {gerando === q.question
                               ? "Gerando..."
@@ -567,7 +573,7 @@ export function VisibilityBoard({
                                   sai de markdownParaHtml, que escapa o texto
                                   antes de marcar — seguro para innerHTML. */}
                               <blockquote
-                                className="mt-1 max-h-80 overflow-y-auto border-l-2 border-slate-200 dark:border-slate-700 pl-3 text-sm text-slate-600 dark:text-slate-400 [&_h1]:mt-3 [&_h1]:text-base [&_h1]:font-semibold [&_h1]:text-slate-900 dark:[&_h1]:text-slate-100 [&_h2]:mt-3 [&_h2]:text-base [&_h2]:font-semibold [&_h2]:text-slate-900 dark:[&_h2]:text-slate-100 [&_h3]:mt-2 [&_h3]:font-semibold [&_h3]:text-slate-900 dark:[&_h3]:text-slate-100 [&_p]:my-2 [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:my-0.5 [&_strong]:font-semibold [&_strong]:text-slate-800 dark:[&_strong]:text-slate-200 [&_a]:text-cobalto-600 [&_a]:underline [&_code]:rounded [&_code]:bg-slate-200/60 dark:[&_code]:bg-slate-800 [&_code]:px-1 [&_code]:font-mono [&_code]:text-xs"
+                                className="mt-1 max-h-80 overflow-y-auto border-l-2 border-slate-200 dark:border-slate-700 pl-3 text-sm text-slate-600 dark:text-slate-400 [&_h1]:mt-3 [&_h1]:text-base [&_h1]:font-semibold [&_h1]:text-slate-900 dark:[&_h1]:text-slate-100 [&_h2]:mt-3 [&_h2]:text-base [&_h2]:font-semibold [&_h2]:text-slate-900 dark:[&_h2]:text-slate-100 [&_h3]:mt-2 [&_h3]:font-semibold [&_h3]:text-slate-900 dark:[&_h3]:text-slate-100 [&_p]:my-2 [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:my-0.5 [&_strong]:font-semibold [&_strong]:text-slate-800 dark:[&_strong]:text-slate-200 [&_a]:text-cobalto-600 [&_a]:dark:text-cobalto-300 [&_a]:underline [&_code]:rounded [&_code]:bg-slate-200/60 dark:[&_code]:bg-slate-800 [&_code]:px-1 [&_code]:font-mono [&_code]:text-xs"
                                 dangerouslySetInnerHTML={{
                                   __html: markdownParaHtml(r.answer_excerpt!),
                                 }}

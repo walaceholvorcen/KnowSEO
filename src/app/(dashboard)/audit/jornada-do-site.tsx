@@ -71,7 +71,7 @@ const LEITURA_DA_ETAPA: Record<Jornada["atual"], string> = {
 // explícito: o texto é o mesmo no servidor e no navegador, sem #418.
 export function JornadaDoSite({ jornada, fuso }: { jornada: Jornada; fuso: string }) {
   const dataCurta = (iso: string) => formatarData(iso, fuso, "curta");
-  const { etapas, atual, proxima, evolucao, ganhoGoogle } = jornada;
+  const { etapas, atual, evolucao, ganhoGoogle } = jornada;
   const primeira = evolucao[0];
   const ultima = evolucao[evolucao.length - 1];
 
@@ -152,17 +152,18 @@ export function JornadaDoSite({ jornada, fuso }: { jornada: Jornada; fuso: strin
 
       {evolucao.length > 1 && <GraficoNotas pontos={evolucao} fuso={fuso} />}
 
+      {/* A data e o motivo da próxima verificação já são o card do topo desta
+          tela. Aqui fica só o que fazer enquanto se espera - repetir a mesma
+          frase duas vezes na mesma página fazia a segunda parecer outra
+          informação. Sem ação na etapa de correção, o bloco não existe. */}
+      {atual !== "correcao" && (
       <div className="mt-6 rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
-        <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
-          {proxima.quando
-            ? `Próxima verificação: ${dataCurta(proxima.quando)}`
-            : "Próxima verificação: assim que corrigir"}
+        <p className="max-w-[68ch] text-sm text-slate-600 dark:text-slate-400">
+          {atual === "efeito"
+            ? "Enquanto o Google reage, o trabalho continua nas duas frentes que ainda rendem."
+            : "Com o site são, o que faz a curva subir é conteúdo novo e presença nas respostas de IA."}
         </p>
-        <p className="mt-1 max-w-[68ch] text-sm text-slate-600 dark:text-slate-400">
-          {proxima.motivo}
-        </p>
-        {atual !== "correcao" && (
-          <div className="mt-3 flex flex-wrap gap-2">
+        <div className="mt-3 flex flex-wrap gap-2">
             {atual === "efeito" && MODULOS_VISIVEIS.mercado ? (
               <Link href="/market" className={botao("secundario", "sm")}>
                 Ver o que o Google já mostra
@@ -172,12 +173,12 @@ export function JornadaDoSite({ jornada, fuso }: { jornada: Jornada; fuso: strin
                 Ver citações em IA
               </Link>
             )}
-            <Link href="/strategy" className={botao("fantasma", "sm")}>
-              Escolher o próximo artigo
-            </Link>
-          </div>
-        )}
+          <Link href="/strategy" className={botao("fantasma", "sm")}>
+            Escolher o próximo artigo
+          </Link>
+        </div>
       </div>
+      )}
     </section>
   );
 }
