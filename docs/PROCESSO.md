@@ -2358,3 +2358,21 @@ quatro produtos.
 
 Regra que fica: bloco de formulário vem de `folha()`. Card escrito à mão em
 Configurações é regressão, como já vale para botão e campo.
+
+## 57. Estratégia: descartar deixou de ser definitivo
+
+Heurística mais fraca da revisão (controle e liberdade, nota 1): "Descartar"
+era um clique, sem confirmação, sem desfazer e **sem tela para recuperar**.
+A pauta descartada por engano levava junto o título e a medição de volume
+que o modelo já tinha gerado - refazer custa chamada de IA.
+
+- **Faixa de desfazer**: logo depois do descarte, "Descartada: <título>" com
+  "Trazer de volta". Resolve o engano imediato sem caixa de confirmação -
+  confirmar todo descarte atrapalharia quem descarta dez seguidas.
+- **`<details>` "Descartadas (N)"** no fim da tela, fechado: recupera
+  qualquer uma, em qualquer sessão, até 20 itens.
+- **`restaurarPauta`** (acoes.ts) volta o status para `suggested`, com
+  `.eq("status", "rejected")` - só descartada volta, nunca uma já escrita.
+
+Conferido na vitrine com uma pauta marcada como descartada no banco: a lista
+apareceu com o título certo e o botão, e o dado foi revertido depois.

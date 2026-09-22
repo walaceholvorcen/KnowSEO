@@ -4,7 +4,7 @@ import { botao, campo, pagina } from "@/components/ui";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Sparkles, X, PenLine, Layers } from "lucide-react";
-import { descartarPauta } from "../acoes";
+import { descartarPauta, restaurarPauta } from "../acoes";
 import { Lede, Linha, Secao } from "@/components/lede";
 import { agruparEmPlanos } from "@/lib/keywords/cluster";
 import { cn } from "@/lib/utils";
@@ -63,12 +63,17 @@ export function StrategyBoard({
   const [generatingId, setGeneratingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [descartando, setDescartando] = useState(false);
+  // A última pauta descartada fica à mão para voltar. Descartar é um clique
+  // e não tinha confirmação nem volta: o engano custava o título e a
+  // medição que o modelo já havia gerado.
+  const [desfazer, setDesfazer] = useState<Keyword | null>(null);
 
   const [assunto, setAssunto] = useState("");
   const [formPlano, setFormPlano] = useState(false);
   const [montando, setMontando] = useState(false);
 
   const suggested = keywords.filter((k) => k.status === "suggested");
+  const descartadas = keywords.filter((k) => k.status === "rejected");
   const { planos, soltas } = agruparEmPlanos(keywords);
   const fora = new Set(foraDoIdioma);
   const qtdFora = suggested.filter((k) => fora.has(k.id)).length;
@@ -153,6 +158,7 @@ export function StrategyBoard({
   // de verdade e reaparecia no próximo carregamento, sem explicação.
   async function handleReject(id: string) {
     const antes = keywords;
+    setDesfazer(keywords.find((k) => k.id === id) ?? null);
     setKeywords((prev) =>
       prev.map((k) => (k.id === id ? { ...k, status: "rejected" } : k)),
     );
@@ -160,10 +166,24 @@ export function StrategyBoard({
       const r = await descartarPauta(id);
       if (r?.erro) {
         setKeywords(antes);
+        setDesfazer(null);
         setError(r.erro);
       }
     } catch {
       setKeywords(antes);
+      setError(FALHOU);
+    }
+  }
+
+  async function handleRestaurar(kw: Keyword) {
+    setDesfazer(null);
+    setKeywords((prev) =>
+      prev.map((k) => (k.id === kw.id ? { ...k, status: "suggested" } : k)),
+    );
+    try {
+      const r = await restaurarPauta(kw.id);
+      if (r?.erro) setError(r.erro);
+    } catch {
       setError(FALHOU);
     }
   }
@@ -370,6 +390,34 @@ export function StrategyBoard({
 
       {error && <p className="mb-6 text-nota-critico">{error}</p>}
 
+      {desfazer && (
+        <div
+          role="status"
+          className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 px-4 py-3 text-sm text-slate-700 dark:border-slate-800 dark:text-slate-300"
+        >
+          <p>
+            Descartada:{" "}
+            <span className="text-slate-900 dark:text-slate-100">
+              {desfazer.suggested_title || desfazer.keyword}
+            </span>
+          </p>
+          <span className="flex items-center gap-2">
+            <button
+              onClick={() => handleRestaurar(desfazer)}
+              className={botao("secundario", "sm")}
+            >
+              Trazer de volta
+            </button>
+            <button
+              onClick={() => setDesfazer(null)}
+              className={botao("fantasma", "sm")}
+            >
+              Fechar
+            </button>
+          </span>
+        </div>
+      )}
+
       {qtdFora > 0 && (
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 border-l-2 border-l-nota-atencao px-4 py-3 text-sm text-slate-700 dark:border-slate-800 dark:border-l-nota-atencao dark:text-slate-300">
           <p>
@@ -426,6 +474,34 @@ export function StrategyBoard({
           {planos.length > 0 && <Secao>Pautas soltas</Secao>}
           <ul className="mt-1">{soltas.map(linhaDaPauta)}</ul>
         </>
+      )}
+
+      {/* Fechada: descartada é decisão tomada. Mas existe, porque o descarte
+          é um clique e a pauta leva junto o título e a medição que o modelo
+          gerou - recomeçar do zero por um engano é caro. */}
+      {descartadas.length > 0 && (
+        <details className="mt-10 border-t border-slate-200 pt-4 dark:border-slate-800">
+          <summary className="cursor-pointer list-none text-sm text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100">
+            Descartadas ({descartadas.length})
+          </summary>
+          <ul className="mt-2">
+            {descartadas.slice(0, 20).map((kw) => (
+              <Linha key={kw.id}>
+                <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+                  <span className="min-w-0 text-sm text-slate-600 dark:text-slate-400">
+                    {kw.suggested_title || kw.keyword}
+                  </span>
+                  <button
+                    onClick={() => handleRestaurar(kw)}
+                    className={botao("fantasma", "sm")}
+                  >
+                    Trazer de volta
+                  </button>
+                </div>
+              </Linha>
+            ))}
+          </ul>
+        </details>
       )}
     </div>
   );

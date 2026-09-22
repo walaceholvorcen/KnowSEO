@@ -111,6 +111,21 @@ export async function descartarPauta(id: string): Promise<Resultado> {
   return { erro: error?.message ?? null };
 }
 
+/**
+ * Volta atrás no descarte. Descartar era um clique sem confirmação, sem
+ * desfazer e sem tela para recuperar - e a pauta descartada por engano
+ * levava junto o título e a medição de volume que o modelo já tinha gerado.
+ */
+export async function restaurarPauta(id: string): Promise<Resultado> {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("keywords")
+    .update({ status: "suggested" })
+    .eq("id", id)
+    .eq("status", "rejected");
+  return { erro: error?.message ?? null };
+}
+
 export async function salvarDnaDaMarca(
   blogId: string,
   dna: {
