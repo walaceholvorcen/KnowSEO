@@ -40,12 +40,19 @@ export async function proxy(request: NextRequest) {
   const isInternal = PUBLIC_APP_PATHS.some((p) => pathname.startsWith(p));
 
   // Troca do endereço do app (know-seo.vercel.app -> domínio próprio): o
-  // endereço antigo passa a redirecionar sozinho, porque todo artigo já
-  // indexado e todo link compartilhado aponta para ele. 301 e não 308 pelo
-  // mesmo motivo do slug renomeado. Só o host de produção: preview
-  // deployment continua servindo o app normalmente.
-  const hostDeProducao = process.env.VERCEL_PROJECT_PRODUCTION_URL;
-  if (hostDeProducao && hostname === hostDeProducao && APP_DOMAIN !== hostDeProducao) {
+  // endereço antigo redireciona, porque todo artigo já indexado e todo link
+  // compartilhado aponta para ele. 301 e não 308 pelo mesmo motivo do slug
+  // renomeado.
+  //
+  // O endereço antigo é dito à mão, em DOMINIO_ANTIGO. A primeira versão
+  // disto deduzia pelo VERCEL_PROJECT_PRODUCTION_URL, e essa variável não
+  // quer dizer "endereço do app": ela vira o domínio próprio do PROJETO
+  // assim que um é adicionado. Foi o que aconteceu quando blog.dataknow.es
+  // entrou no projeto - a Vercel o marcou como domínio de produção, e o
+  // blog do cliente passou a redirecionar para o painel. Deduzir aqui é
+  // caro demais: o erro só aparece no domínio de um cliente.
+  const dominioAntigo = process.env.DOMINIO_ANTIGO;
+  if (dominioAntigo && hostname === dominioAntigo && hostname !== APP_DOMAIN) {
     const destino = new URL(`https://${APP_DOMAIN}${pathname}`);
     destino.search = url.search;
     return NextResponse.redirect(destino, 301);
