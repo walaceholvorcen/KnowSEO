@@ -2188,3 +2188,18 @@ do lado deles.
 
 Regra que fica: mensagem de erro de terceiro que chega vazia é caso a
 tratar, não caso a repassar.
+
+## 51. Mercado e Google Meu Negócio saem da tela, não do produto
+
+Decisão do dono: o painel apresenta o caminho curto (diagnóstico → pauta →
+conteúdo → resultado). Mercado e Google Meu Negócio continuam inteiros -
+rota, código, dado, teste - e só somem do que o cliente vê.
+
+`src/lib/modulos.ts` guarda `MODULOS_VISIVEIS`. Quem consulta: a barra
+lateral (item escondido sai, e grupo que fica vazio some junto), o painel
+Início (o quadro de Mercado), a jornada da Auditoria (na janela de efeito
+o botão passa a ser o do Raio X) e as fontes do Raio X (a frase perde o
+link e termina em "responda melhor que ele").
+
+Voltar é uma linha: `false` vira `true`. Nada foi apagado, então religar
+não custa nada e o que já foi analisado continua no banco.

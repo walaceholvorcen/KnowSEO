@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Check } from "lucide-react";
+import { MODULOS_VISIVEIS } from "@/lib/modulos";
 import { botao } from "@/components/ui";
 import { Secao } from "@/components/lede";
 import { cn } from "@/lib/utils";
@@ -162,7 +163,7 @@ export function JornadaDoSite({ jornada, fuso }: { jornada: Jornada; fuso: strin
         </p>
         {atual !== "correcao" && (
           <div className="mt-3 flex flex-wrap gap-2">
-            {atual === "efeito" ? (
+            {atual === "efeito" && MODULOS_VISIVEIS.mercado ? (
               <Link href="/market" className={botao("secundario", "sm")}>
                 Ver o que o Google já mostra
               </Link>

@@ -11,6 +11,7 @@ import type { Gargalo, Etapa } from "@/lib/gargalo";
 import type { DomainStatus, OnboardingSteps } from "@/types";
 import { EvolucaoDosArtigos } from "./evolucao";
 import { Numero, Painel, Vazio } from "./painel";
+import { MODULOS_VISIVEIS } from "@/lib/modulos";
 import { DIAS_JANELA, type DadosInicio } from "./dados";
 
 // O passo "veja as primeiras visitas" saiu: ver um número não é
@@ -383,6 +384,7 @@ export function InicioBoard({
           )}
         </Painel>
 
+        {MODULOS_VISIVEIS.mercado && (
         <Painel
           titulo="Mercado"
           href="/market"
@@ -425,6 +427,7 @@ export function InicioBoard({
             </ul>
           )}
         </Painel>
+        )}
       </div>
 
       <Secao>Produção</Secao>

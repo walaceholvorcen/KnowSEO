@@ -7,6 +7,7 @@ import { sair } from "@/app/acoes-de-conta";
 import { cn } from "@/lib/utils";
 import { semEsquema } from "@/lib/blog-endereco";
 import { BLOG_COOKIE } from "@/lib/blog-cookie";
+import { MODULOS_VISIVEIS } from "@/lib/modulos";
 import { Logotipo } from "@/components/marca";
 import {
   LayoutGrid,
@@ -71,6 +72,18 @@ const GRUPOS: { rotulo: string | null; itens: Item[] }[] = [
     itens: [{ href: "/reports", label: "Relatórios", icon: BarChart3 }],
   },
 ];
+
+// Módulo escondido sai do menu, não do produto (ver lib/modulos.ts). O
+// grupo que ficar vazio some junto, para não sobrar rótulo sem item.
+const ESCONDIDOS = [
+  !MODULOS_VISIVEIS.mercado && "/market",
+  !MODULOS_VISIVEIS.gbp && "/gbp",
+].filter(Boolean) as string[];
+
+const MENU = GRUPOS.map((g) => ({
+  ...g,
+  itens: g.itens.filter((i) => !ESCONDIDOS.includes(i.href)),
+})).filter((g) => g.itens.length > 0);
 
 const CONFIGURACOES: Item = {
   href: "/settings/brand",
@@ -295,7 +308,7 @@ export function Sidebar({
           aria-label="Principal"
           className="flex-1 overflow-y-auto px-3 py-4"
         >
-          {GRUPOS.map((grupo, i) => (
+          {MENU.map((grupo, i) => (
             <div key={grupo.rotulo ?? i} className={i > 0 ? "mt-5" : undefined}>
               {grupo.rotulo && (
                 <p className="px-3 pb-1.5 text-xs font-medium text-slate-500 dark:text-slate-400">

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Linha, Secao } from "@/components/lede";
 import { cn } from "@/lib/utils";
+import { MODULOS_VISIVEIS } from "@/lib/modulos";
 import { ROTULO_MOTOR } from "@/lib/ai-visibility/resumo";
 import type { LeituraFontes } from "@/lib/ai-visibility/fontes";
 
@@ -168,13 +169,20 @@ export function FontesDoMercado({ leitura }: { leitura: LeituraFontes }) {
               Site citado:{" "}
             </dt>
             <dd className="inline text-slate-600 dark:text-slate-400">
-              veja o que ele publica sobre o tema; se for concorrente direto,{" "}
-              <Link
-                href="/market"
-                className="font-medium text-cobalto-700 hover:underline dark:text-cobalto-300"
-              >
-                compare no Mercado
-              </Link>
+              veja o que ele publica sobre o tema
+              {MODULOS_VISIVEIS.mercado ? (
+                <>
+                  ; se for concorrente direto,{" "}
+                  <Link
+                    href="/market"
+                    className="font-medium text-cobalto-700 hover:underline dark:text-cobalto-300"
+                  >
+                    compare no Mercado
+                  </Link>
+                </>
+              ) : (
+                " e responda melhor que ele"
+              )}
               .
             </dd>
           </div>
