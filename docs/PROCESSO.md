@@ -2318,3 +2318,27 @@ do mostrador**:
 
 Conferido a 1280px e a 375px: cursor em 72, dez células, zero rolagem
 lateral.
+
+## 55. O Início deixa de ser grade de cards
+
+Nota de design dada ao dono: painel 7,5, e o Início era a tela mais fraca
+(6) - justamente a que abre todo dia. O motivo: seis cards arredondados
+soltos numa grade, que é a forma que a `Linha` foi criada para substituir no
+resto do produto (seção 17). A tela mais aberta era a mais parecida com
+qualquer outro dashboard.
+
+- **`Bancada`** (`dashboard/painel.tsx`): os instrumentos de uma etapa num
+  corpo só, separados por filete de 1px (`gap-px` sobre o fundo da borda).
+  O `Painel` perdeu borda e canto próprios - virou célula. Num aparelho só,
+  o elo travado é uma célula marcada; em cards soltos, era um card alarmado.
+- **O painel que responde ao veredito fica marcado** mesmo sem gargalo
+  (filete cobalto, "É daqui que fala o resumo lá em cima"). A frase do topo
+  apontava para uma tela e nenhum painel respondia.
+- **Um verbo por ação**: o veredito dizia "Rodar o Raio X" e o painel do
+  mesmo assunto dizia "Analisar".
+- **O esqueleto de carregamento ganhou a bancada.** Ele desenhava só lista,
+  e a troca "pulava" no Início e na Auditoria - as duas telas mais abertas.
+
+Conferido com dado real: três bancadas (2 + 2 + 1 células), nenhum painel
+com borda ou canto próprio, filete cobalto no Raio X, uma coluna no celular,
+zero rolagem lateral. Detector da impeccable: zero achados na tela.

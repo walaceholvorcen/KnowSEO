@@ -10,7 +10,9 @@ import { pagina } from "@/components/ui";
 // quando chega.
 //
 // A forma imita a de toda tela do painel (veredito com ação à direita,
-// depois linhas com filete), para a troca não "pular" quando o dado chega.
+// depois a bancada de instrumentos e as linhas com filete), para a troca não
+// "pular" quando o dado chega. O esqueleto que desenhava só lista fazia o
+// Início e a Auditoria - as duas telas mais abertas - saltarem na entrada.
 export default function Carregando() {
   const barra =
     "rounded bg-slate-200 motion-safe:animate-pulse dark:bg-slate-800";
@@ -31,7 +33,18 @@ export default function Carregando() {
       </div>
 
       <div className={`mb-2 h-4 w-40 ${barra}`} />
-      <div className={`mb-6 h-4 w-72 ${barra}`} />
+      <div className={`mb-4 h-4 w-72 ${barra}`} />
+
+      {/* A bancada: dois instrumentos num corpo só, como no Início. */}
+      <div className="mb-8 grid gap-px overflow-hidden rounded-xl border border-slate-200 bg-slate-200 dark:border-slate-800 dark:bg-slate-800 lg:grid-cols-2">
+        {[0, 1].map((i) => (
+          <div key={i} className="space-y-3 bg-white p-5 dark:bg-slate-900">
+            <div className={`h-4 w-32 ${barra}`} />
+            <div className={`h-9 w-24 ${barra}`} />
+            <div className={`h-3 w-3/4 ${barra}`} />
+          </div>
+        ))}
+      </div>
 
       <ul>
         {[72, 56, 64, 48, 60].map((largura, i) => (

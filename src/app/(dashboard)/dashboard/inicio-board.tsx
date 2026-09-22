@@ -10,7 +10,7 @@ import { ROTULO_MOTOR } from "@/lib/ai-visibility/resumo";
 import type { Gargalo, Etapa } from "@/lib/gargalo";
 import type { DomainStatus, OnboardingSteps } from "@/types";
 import { EvolucaoDosArtigos } from "./evolucao";
-import { Numero, Painel, Vazio } from "./painel";
+import { Bancada, Numero, Painel, Vazio } from "./painel";
 import { MODULOS_VISIVEIS } from "@/lib/modulos";
 import { DIAS_JANELA, type DadosInicio } from "./dados";
 
@@ -288,7 +288,7 @@ export function InicioBoard({
         O que o Google e os assistentes de IA encontram hoje.
       </p>
 
-      <div className="mt-4 grid gap-4 lg:grid-cols-2">
+      <Bancada>
         <Painel
           titulo="Saúde do site"
           href="/audit"
@@ -342,7 +342,10 @@ export function InicioBoard({
         <Painel
           titulo="Raio X - GEO"
           href="/visibility"
-          acao={dados.citacoes === null ? "Analisar" : "Ver análise"}
+          // Sem gargalo, mas com o veredito apontando para cá ("falta saber
+          // se a IA cita você"), este é o painel que responde à frase.
+          apontado={gargalo.etapa === "nenhum" && gargalo.acaoHref === "/visibility"}
+          acao={dados.citacoes === null ? "Rodar o Raio X" : "Ver análise"}
           travado={travado("geo")}
           rodape={
             dados.geoEm ? (
@@ -428,14 +431,14 @@ export function InicioBoard({
           )}
         </Painel>
         )}
-      </div>
+      </Bancada>
 
       <Secao>Produção</Secao>
       <p className="text-sm text-slate-600 dark:text-slate-400">
         O que está na fila e o que já foi ao ar.
       </p>
 
-      <div className="mt-4 grid gap-4 lg:grid-cols-2">
+      <Bancada>
         <Painel
           titulo="Pautas esperando escolha"
           href="/strategy"
@@ -514,15 +517,16 @@ export function InicioBoard({
             </ul>
           )}
         </Painel>
-      </div>
+      </Bancada>
 
       <Secao>Resultado</Secao>
       <p className="text-sm text-slate-600 dark:text-slate-400">
         Os últimos {DIAS_JANELA} dias no blog publicado.
       </p>
 
-      <div className="mt-4">
+      <Bancada>
         <Painel
+          className="lg:col-span-2"
           titulo={`Visitas e conversas em ${DIAS_JANELA} dias`}
           href="/reports"
           acao="Ver relatórios"
@@ -551,7 +555,7 @@ export function InicioBoard({
             </p>
           )}
         </Painel>
-      </div>
+      </Bancada>
 
       <EvolucaoDosArtigos primeiraPublicacao={dados.primeiraPublicacao} />
     </div>
