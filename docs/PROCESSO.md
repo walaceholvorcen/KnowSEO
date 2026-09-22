@@ -2289,3 +2289,32 @@ Conferido na vitrine com dado real, claro e escuro, 1280px e 375px: zero
 reprovação de contraste, um único botão cobalto por tela, sete ícones com
 rótulo, checagens fechadas por padrão, nome do cliente no topo do celular,
 e a tela de erro renderizada de verdade (não só compilada).
+
+## 54. A porta de entrada: de tela dividida a face de instrumento
+
+"A tela de login está meio estranha... tela dividida e só." Era isso mesmo:
+azul à esquerda, formulário à direita, e um card flutuando no meio do azul.
+
+A direção não mudou (PROCESSO 15 e 23: instrumento, não revista) - mudou o
+que a coluna da marca é. Ela deixou de ter um card e passou a ser **a face
+do mostrador**:
+
+- **Escala gravada** em tamanho grande, com traço a cada 2 pontos e marcas
+  altas em 50/70/90 - a graduação real de `scoreBand()`, a mesma do painel.
+  O cursor **assenta na leitura ao abrir** (900ms, ease-out forte), um único
+  momento de movimento; login é ocasional, e o que se vê cem vezes por dia
+  não anima.
+- **Mostrador de citação**: dez células que acendem em cascata (45ms entre
+  elas), a forma que o Raio X usa no painel.
+- **Fundo de papel milimetrado** (linhas de 1px a 26px) com uma luz fria no
+  alto e sombra no pé. Sem vidro, sem blur decorativo.
+- **Honestidade**: "Leitura de exemplo. No painel, cada número vem da
+  medição do seu site." Número inventado sem etiqueta, na porta de um
+  produto que vende prova, seria a pior abertura possível.
+- **No celular a marca voltou a existir**: antes a coluna escura sumia
+  abaixo de 1024px e sobrava um formulário solto no branco. Agora há uma
+  faixa com logotipo, a pergunta e a mesma escala com a leitura.
+- `prefers-reduced-motion` desliga as duas animações.
+
+Conferido a 1280px e a 375px: cursor em 72, dez células, zero rolagem
+lateral.
