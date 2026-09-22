@@ -12,31 +12,46 @@ import type { DomainStatus } from "@/types";
 // é isso que a agência precisa ter na mão, não uma explicação de DNS.
 const ALVO_CNAME = "cname.vercel-dns.com";
 
-function passoAPasso(dominio: string) {
+/** O que o servidor recebeu da Vercel: tipo, nome e valor do registro. */
+export type RegistroDns = { tipo: string; nome: string; valor: string };
+
+function passoAPasso(dominio: string, registros: RegistroDns[]) {
   const [sub, ...resto] = dominio.split(".");
   const raiz = resto.join(".");
+  // Sem resposta da Vercel ainda, o destino fixo de sempre - que continua
+  // valendo. Com resposta, o que ela pede para ESTE domínio.
+  const lista = registros.length ? registros : [{ tipo: "CNAME", nome: sub, valor: ALVO_CNAME }];
   return [
     `Entre no painel onde o domínio ${raiz} foi comprado (GoDaddy, Hostinger, Registro.br, Cloudflare, Squarespace...) e abra a área de DNS, também chamada de "Gerenciar DNS" ou "Zona DNS".`,
-    `Crie um registro novo com estes três valores:\n   Tipo: CNAME\n   Nome (ou Host): ${sub}\n   Aponta para (ou Valor): ${ALVO_CNAME}`,
+    `Crie ${lista.length > 1 ? "estes registros" : "um registro novo"} com estes valores:\n${lista
+      .map((r) => `   Tipo: ${r.tipo}\n   Nome (ou Host): ${r.nome}\n   Aponta para (ou Valor): ${r.valor}`)
+      .join("\n\n")}`,
     `Se o campo TTL aparecer, deixe o valor automático ou 3600. Salve.`,
     `Pronto. O endereço ${dominio} começa a responder entre 10 minutos e algumas horas, sem tirar nada do site atual: só esse subdomínio passa a ser o blog.`,
   ];
 }
 
-const RESULTADO: Record<DomainStatus, { titulo: string; detalhe: string }> = {
+type Resultado = DomainStatus | "certificado";
+
+const RESULTADO: Record<Resultado, { titulo: string; detalhe: string }> = {
   active: {
     titulo: "No ar",
     detalhe: "O endereço já responde com o blog. Não precisa fazer mais nada.",
   },
   pending: {
-    titulo: "O registro ainda não apareceu no DNS",
+    titulo: "Esperando o registro no DNS do cliente",
     detalhe:
-      "O endereço não existe no DNS: ou o cliente ainda não criou o CNAME, ou está propagando - pode levar até algumas horas.",
+      "Do nosso lado está tudo liberado. Falta o registro abaixo existir no DNS - ou ele ainda não foi criado, ou está propagando, o que leva de minutos a algumas horas.",
+  },
+  certificado: {
+    titulo: "Quase lá: emitindo o certificado",
+    detalhe:
+      "O registro já aponta para cá e o endereço está liberado. Falta só o certificado de segurança, que costuma sair em menos de um minuto. Confira de novo daqui a pouco.",
   },
   error: {
-    titulo: "O cliente já fez a parte dele - falta liberar do nosso lado",
+    titulo: "Travou e precisa de mão",
     detalhe:
-      "O endereço já aponta para cá, mas ainda não responde o blog. Abra o projeto na Vercel, vá em Settings > Domains, adicione este endereço e confira de novo. Sem isso não existe certificado e o endereço fica sem https.",
+      "Não consegui liberar este endereço automaticamente. O motivo aparece abaixo.",
   },
 };
 
@@ -47,9 +62,13 @@ export function PublicarNoDominio({
   dominio: string | null;
   statusInicial: DomainStatus;
 }) {
-  const [status, setStatus] = useState<DomainStatus | null>(
+  const [status, setStatus] = useState<Resultado | null>(
     dominio ? statusInicial : null,
   );
+  // O que a Vercel pede para ESTE domínio. Enquanto ninguém conferiu, o
+  // passo a passo usa o destino fixo de sempre, que continua valendo.
+  const [registros, setRegistros] = useState<RegistroDns[]>([]);
+  const [mensagem, setMensagem] = useState<string | null>(null);
   const [conferindo, setConferindo] = useState(false);
   const [copiado, setCopiado] = useState(false);
 
@@ -57,7 +76,7 @@ export function PublicarNoDominio({
   // pelo blog. O que ele quer é o blog DENTRO do site: um subdomínio.
   const raizSalva = dominio ? ehDominioRaiz(dominio) : false;
   const alvo = dominio ? (raizSalva ? `blog.${dominio}` : dominio) : "blog.suaempresa.com";
-  const passos = passoAPasso(alvo);
+  const passos = passoAPasso(alvo, registros);
 
   async function copiar() {
     const texto = [
@@ -80,7 +99,10 @@ export function PublicarNoDominio({
     const res = await fetch("/api/blog/verificar-dominio", { method: "POST" });
     const data = await res.json();
     setConferindo(false);
-    if (res.ok) setStatus(data.status as DomainStatus);
+    if (!res.ok) return;
+    setStatus(data.status as Resultado);
+    setRegistros((data.registros as RegistroDns[]) ?? []);
+    setMensagem((data.mensagem as string) ?? null);
   }
 
   return (
@@ -142,6 +164,9 @@ export function PublicarNoDominio({
           <p className="mt-0.5 text-sm text-slate-600 dark:text-slate-400">
             {RESULTADO[status].detalhe}
           </p>
+          {mensagem && (
+            <p className="mt-2 text-sm text-nota-critico">{mensagem}</p>
+          )}
         </div>
       )}
     </div>

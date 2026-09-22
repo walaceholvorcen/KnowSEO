@@ -2121,3 +2121,29 @@ Preparado antes da troca, para que ela seja uma variável de ambiente:
 Fora do código, no dia da troca: domínio adicionado na Vercel (apex + www),
 variável trocada, Supabase (Site URL e lista de redirect) e Google Cloud
 (URI de callback) apontando para o novo endereço.
+
+## 49. Domínio do cliente liberado sozinho (API da Vercel)
+
+O buraco do fluxo: o cliente criava o CNAME e alguém da agência tinha que
+entrar na Vercel e adicionar o domínio no projeto. Quem pulava esse passo
+via "não responde" e "sem cadeado" sem nenhuma pista - foi o que travou
+blog.dataknow.es, que chegou a ficar com um redirect preso da própria
+Vercel para o endereço do app.
+
+`src/lib/vercel.ts` fala com a API (`VERCEL_TOKEN`, `VERCEL_PROJECT_ID`, e
+`VERCEL_TEAM_ID` em conta de time):
+
+- Salvar o domínio em Configurações > Blog já **adiciona o domínio ao
+  projeto**. Não existe mais passo manual.
+- "Conferir se já está no ar" pergunta à Vercel o que falta e devolve o
+  **registro exato que ela quer para aquele domínio** - inclusive o destino
+  novo (`...vercel-dns-017.com`) e o TXT de posse quando o domínio já está
+  em outra conta. O passo a passo que a agência copia usa esse valor; antes
+  era um valor fixo no código, que já estava velho.
+- Quatro respostas em vez de duas: esperando o DNS do cliente / emitindo o
+  certificado / no ar / travou (com o motivo da Vercel escrito na tela).
+- Sem token configurado tudo isso fica desligado e vale a checagem antiga
+  por DNS (seção 47). Ambiente local segue funcionando sem token.
+
+A prova de "no ar" continua sendo o blog responder com o nosso generator -
+a Vercel dizer que está tudo certo não é o mesmo que a página existir.
