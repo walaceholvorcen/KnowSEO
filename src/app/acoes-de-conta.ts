@@ -17,10 +17,22 @@ type Resultado = { erro: string | null };
 
 export async function entrar(email: string, senha: string): Promise<Resultado> {
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({
-    email: String(email).trim(),
-    password: String(senha),
-  });
+  const tentar = () =>
+    supabase.auth.signInWithPassword({
+      email: String(email).trim(),
+      password: String(senha),
+    });
+
+  let { error } = await tentar();
+  // O servidor de contas do Supabase pisca: uma vez devolveu 522 (o servidor
+  // não respondeu) e a tela disse "<none>", que é o que o cliente da
+  // biblioteca põe quando não há mensagem. Senha errada é 400 e não repete;
+  // falha de servidor merece uma segunda chance antes de virar erro na cara
+  // de quem só quer entrar.
+  if (error && (error.status ?? 0) >= 500) {
+    await new Promise((r) => setTimeout(r, 700));
+    ({ error } = await tentar());
+  }
   return { erro: error?.message ?? null };
 }
 

@@ -2168,3 +2168,23 @@ produto** - o que é "o endereço do app" é decisão nossa, escrita por nós.
 
 Diagnóstico só foi possível batendo na API da Vercel com token: por fora,
 o sintoma (301) apontava para a configuração do domínio, que estava certa.
+
+## 50. "<none>" na tela de login
+
+O dono não conseguia entrar e a tela mostrava `<none>` numa caixa vermelha.
+Reproduzido com o cliente do Supabase: `error.status = 522` (o servidor de
+contas não respondeu) e `error.message = "<none>"` - é o que a biblioteca
+põe quando não há mensagem. A mensagem desconhecida passava direto para a
+tela, como manda a regra do `traduzErroAuth`; só que "desconhecida" aqui
+era "vazia".
+
+Medido logo depois: 8 de 8 tentativas responderam normal. Falha de segundos
+do lado deles.
+
+- `entrar` repete uma vez, depois de 0,7s, quando o erro é 5xx. Senha errada
+  é 400 e não repete - repetir senha errada só atrasa a resposta.
+- `traduzErroAuth` traduz `<none>`, timeout e unavailable para "O servidor
+  de contas não respondeu. Tente de novo em alguns segundos."
+
+Regra que fica: mensagem de erro de terceiro que chega vazia é caso a
+tratar, não caso a repassar.
