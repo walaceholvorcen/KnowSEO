@@ -6,6 +6,7 @@ import { normalizarDominio } from "@/lib/cta";
 import { isSafeCustomDomain } from "@/lib/dominio";
 import { erroNoSlug, slugsAposRenomear } from "@/lib/blog-endereco";
 import { liberarDominio } from "@/lib/vercel";
+import { barrarSemLiberacao } from "@/lib/limite-de-uso";
 
 // Configurações → Blog. Antes o formulário gravava direto pelo client do
 // Supabase no navegador, e a única guarda contra apontar o domínio raiz do
@@ -117,8 +118,11 @@ export async function PATCH(req: Request) {
 
   // Domínio novo já sai liberado do nosso lado: é o passo que ninguém
   // lembrava de fazer na Vercel, e sem ele o endereço fica sem certificado.
+  // Conta em liberação grava o domínio, mas não fala com a Vercel: sem essa
+  // trava, qualquer cadastro novo poderia encher o projeto de domínios só
+  // salvando endereços em sequência.
   let registros = null;
-  if (typeof update.custom_domain === "string") {
+  if (typeof update.custom_domain === "string" && !barrarSemLiberacao(workspace)) {
     const liberacao = await liberarDominio(update.custom_domain);
     if (liberacao.estado === "esperando-dns") registros = liberacao.registros;
     if (liberacao.estado === "ocupado" || liberacao.estado === "erro") {
