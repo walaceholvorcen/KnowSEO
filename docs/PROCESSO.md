@@ -2376,3 +2376,27 @@ que o modelo já tinha gerado - refazer custa chamada de IA.
 
 Conferido na vitrine com uma pauta marcada como descartada no banco: a lista
 apareceu com o título certo e o botão, e o dado foi revertido depois.
+
+## 58. Conteúdos: de galeria de capas para lista que responde
+
+A tela mostrava uma grade de capas de 1200×630, três por linha, com título,
+estado e data. Bonita e muda: quem abre Conteúdos quer saber **o que falta
+revisar** e **o que já está rendendo**, e nenhuma das duas perguntas tinha
+resposta ali.
+
+- **Lista, não grade**: capa pequena à esquerda (some no celular), título,
+  estado e data no meio, e **as visitas de 28 dias à direita** - o dado já
+  estava no banco desde o primeiro dia, a uma consulta de distância.
+- **Rascunho primeiro**: "Esperando revisão" antes de "No ar". É o grupo que
+  espera decisão; publicado é arquivo.
+- **`ContentsBoard`** separado da página, como audit/visibility/strategy: a
+  página busca, o board desenha - e agora a tela pode ser revisada na
+  vitrine (`?tela=contents`), que era o único lugar do painel sem isso.
+- A largura passou a vir de `pagina()`; era a única tela com `max-w-5xl
+  px-8 py-12` escrito à mão.
+- **O último erro de lint do projeto saiu junto**: `Date.now()` no corpo de
+  um componente (contents e audit). Virou função nomeada fora do componente.
+  `npx eslint src` agora sai limpo.
+
+Conferido na vitrine com dado real: dois artigos no ar, 0 e 9 visitas, capas
+200 OK, uma coluna no celular.

@@ -32,6 +32,11 @@ export interface FindingRow {
   affected_count: number;
 }
 
+/** Mesma razão do contents: relógio fora do corpo do componente. */
+function rodouNosUltimosDias(iso: string, dias: number) {
+  return Date.now() - new Date(iso).getTime() < dias * 86_400_000;
+}
+
 export default async function AuditPage() {
   const { supabase, workspace } = await requireUserAndWorkspace();
   const blog = await getBlogAtivo(supabase, workspace.id);
@@ -80,7 +85,7 @@ export default async function AuditPage() {
   const acompanhamentoAtivo =
     Boolean(process.env.CRON_SECRET) &&
     cron !== null &&
-    Date.now() - new Date(cron.iniciada_em).getTime() < 8 * 86_400_000;
+    rodouNosUltimosDias(cron.iniciada_em, 8);
   const jornada = await lerJornada(supabase, {
     concluidas,
     latest,
