@@ -85,6 +85,9 @@ export function ArticleEditor({
   // O artigo custa ~90s de IA e a revisão humana em cima. Sem marca de
   // "não salvo", "Voltar" levava tudo embora em silêncio.
   const [sujo, setSujo] = useState(false);
+  // O corpo é um campo editável: o texto não passa por estado, e sem este
+  // contador o autosave não teria como saber que algo mudou.
+  const [mudancas, setMudancas] = useState(0);
 
   const isGenerating = article.generation_status === "generating";
 
@@ -110,6 +113,20 @@ export function ArticleEditor({
     window.addEventListener("beforeunload", aviso);
     return () => window.removeEventListener("beforeunload", aviso);
   }, [sujo]);
+
+  // Autosave do rascunho, dois segundos depois da última tecla.
+  //
+  // Só rascunho: num artigo publicado, salvar sozinho jogaria no ar do
+  // cliente um texto no meio da edição. Lá, salvar continua sendo decisão
+  // de quem escreve.
+  useEffect(() => {
+    if (!sujo || status !== "draft" || saving) return;
+    const id = setTimeout(() => {
+      void handleSave();
+    }, 2000);
+    return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sujo, mudancas, title, seoTitle, seoDescription, slug, status, saving]);
 
   // Ctrl/Cmd+S salva o rascunho: é o reflexo de quem escreve, e sem ele o
   // atalho abria a caixa de salvar página do navegador.
@@ -221,7 +238,6 @@ export function ArticleEditor({
 
     setSaving(true);
     setError(null);
-    setSujo(false);
 
     // O slug vem do campo, não do título.
     //
@@ -248,10 +264,13 @@ export function ArticleEditor({
     // O erro era descartado: slug repetido derrubava o salvamento e a tela
     // não dizia nada - o cliente saía achando que tinha publicado.
     if (erro || !slugFinal) {
+      // "Não salvo" continua ligado: limpar a marca antes de a gravação
+      // dar certo faria o autosave falhado parecer autosave bem-sucedido.
       setError(erro ?? "Não foi possível salvar agora.");
       return;
     }
 
+    setSujo(false);
     setSlug(slugFinal);
     setStatus(finalStatus);
     // Fuso explícito: com um fuso escolhido à mão em Configurações, a hora
@@ -293,8 +312,12 @@ export function ArticleEditor({
         </Link>
 
         <div className="flex items-center gap-3">
-          {sujo ? (
-            <span className="text-sm text-nota-atencao">Alterações não salvas</span>
+          {saving ? (
+            <span className="text-sm text-slate-500 dark:text-slate-400">Salvando…</span>
+          ) : sujo ? (
+            <span className="text-sm text-nota-atencao">
+              {status === "draft" ? "Salvando em instantes…" : "Alterações não salvas"}
+            </span>
           ) : (
             savedAt && (
               <span className="text-sm text-slate-500 dark:text-slate-400">
@@ -388,7 +411,7 @@ export function ArticleEditor({
             <textarea
               value={title}
               rows={1}
-              onChange={(e) => { setSujo(true); setTitle(e.target.value.replace(/\n/g, " ")); }}
+              onChange={(e) => { setSujo(true); setMudancas((n) => n + 1); setTitle(e.target.value.replace(/\n/g, " ")); }}
               placeholder="Título"
               className="w-full resize-none border-none bg-transparent text-3xl font-bold text-slate-900 dark:text-slate-100 outline-none field-sizing-content placeholder:text-slate-500 dark:placeholder:text-slate-400"
             />
@@ -398,7 +421,7 @@ export function ArticleEditor({
               <textarea
                 value={slug}
                 rows={1}
-                onChange={(e) => { setSujo(true); setSlug(e.target.value.replace(/\n/g, "")); }}
+                onChange={(e) => { setSujo(true); setMudancas((n) => n + 1); setSlug(e.target.value.replace(/\n/g, "")); }}
                 placeholder="endereco-do-artigo"
                 className="min-w-0 flex-1 resize-none break-all border-none bg-transparent outline-none field-sizing-content focus:text-slate-900 dark:focus:text-slate-100"
               />
@@ -473,6 +496,7 @@ export function ArticleEditor({
               suppressContentEditableWarning
               onInput={() => {
                 setSujo(true);
+                setMudancas((n) => n + 1);
                 // Direto no evento, sem estado intermediário: guardar o HTML
                 // do corpo em useState a cada tecla faz o cursor pular.
                 clearTimeout(
@@ -512,7 +536,7 @@ export function ArticleEditor({
                 <textarea
                   value={seoDescription}
                   maxLength={155}
-                  onChange={(e) => { setSujo(true); setSeoDescription(e.target.value); }}
+                  onChange={(e) => { setSujo(true); setMudancas((n) => n + 1); setSeoDescription(e.target.value); }}
                   rows={2}
                   // Altura real do texto: com 2 linhas fixas a descrição de 155
                   // caracteres rolava dentro do campo e a primeira linha sumia.

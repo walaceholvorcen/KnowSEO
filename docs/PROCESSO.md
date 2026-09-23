@@ -2444,3 +2444,30 @@ devolve os mesmos 1.760px de antes.
 
 Medida acumulada das três rodadas (seções 53, 59 e esta): de 2.839px, com os
 achados no fim, para 1.410px com os achados na primeira tela.
+
+## 60. Autosave do rascunho
+
+Último item aberto da revisão de UX (prevenção de erro): o editor avisava
+que havia trabalho não salvo, mas não salvava. É o único documento do
+produto e o mais caro de perder - 90s de IA e a revisão humana em cima.
+
+- **Dois segundos depois da última tecla**, o rascunho é salvo. O relógio
+  reinicia a cada mudança, então quem escreve sem parar não dispara uma
+  gravação por letra.
+- **Só rascunho.** Em artigo publicado, salvar sozinho jogaria no blog do
+  cliente um texto no meio da edição - lá, salvar continua sendo decisão de
+  quem escreve, e o cabeçalho diz "Alterações não salvas".
+- **Três estados no cabeçalho**: "Salvando em instantes…", "Salvando…" e
+  "Salvo <hora>".
+- **A marca de não salvo só sai quando a gravação dá certo.** Ela era limpa
+  no início do salvamento: um autosave que falhasse (slug repetido, sessão
+  vencida) deixaria a tela dizendo "salvo" com o texto só na memória do
+  navegador.
+- O corpo é campo editável e não passa por estado; um contador de mudanças
+  (`mudancas`) é o que permite ao efeito perceber a digitação no texto.
+
+Conferido na vitrine com um rascunho de verdade criado para o teste: com
+artigo publicado o autosave não dispara; com rascunho dispara em ~2s, e
+como a vitrine não tem sessão a gravação falhou - a marca de não salvo
+continuou de pé e o erro apareceu na tela, que é exatamente o
+comportamento desejado. Rascunho apagado depois.
