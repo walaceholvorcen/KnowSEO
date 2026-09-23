@@ -29,13 +29,13 @@ export function ProximaVerificacaoCard({
   fuso: string;
 }) {
   return (
-    <div className="h-full rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
+    <div className="h-full bg-white p-4 dark:bg-slate-900">
       <p className="text-sm text-slate-500 dark:text-slate-400">
         Próxima verificação
       </p>
       <p className="mt-2 text-slate-900 dark:text-slate-100">
         {proxima.quando ? (
-          <span className="tabular font-display text-5xl leading-none tracking-tight sm:text-4xl lg:text-5xl">
+          <span className="tabular font-display text-4xl leading-none tracking-tight">
             {formatarData(proxima.quando, fuso, "curta")}
           </span>
         ) : (
@@ -96,7 +96,7 @@ export function JornadaDoSite({ jornada, fuso }: { jornada: Jornada; fuso: strin
       {/* Sequência real - uma etapa depende da anterior -, por isso ganha
           ordem e marcador. É a mesma linguagem da régua de expectativa do
           Início. */}
-      <ol className="mt-6 grid gap-4 sm:grid-cols-4 sm:gap-0">
+      <ol className="mt-4 grid gap-3 sm:grid-cols-4 sm:gap-0">
         {etapas.map((e, i) => (
           <li key={e.chave} className="relative flex gap-3 sm:block sm:pr-4">
             {i < etapas.length - 1 && (
@@ -257,7 +257,7 @@ function GraficoNotas({
           ))}
         </div>
 
-        <div className="relative h-36 min-w-0 flex-1">
+        <div className="relative h-28 min-w-0 flex-1">
           <svg
             viewBox="0 0 100 100"
             preserveAspectRatio="none"

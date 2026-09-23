@@ -2400,3 +2400,32 @@ resposta ali.
 
 Conferido na vitrine com dado real: dois artigos no ar, 0 e 9 visitas, capas
 200 OK, uma coluna no celular.
+
+## 59. Densidade: o mesmo ritmo nas oito telas
+
+A nota de design apontou densidade desigual - a Auditoria era uma página de
+quase 1.900px enquanto o Raio X cabia em uma tela. Aprovado pelo dono com
+antes/depois.
+
+- **A `Bancada` saiu do Início para o vocabulário** (`components/lede.tsx`,
+  com 2 ou 3 colunas). A Auditoria abria com três cards soltos fazendo o
+  trabalho de uma faixa de instrumento; o Google Meu Negócio, com dois.
+  `NotaCard` e `ProximaVerificacaoCard` viraram células, sem borda própria.
+- **Ritmo**: `Secao` de `mt-10` para `mt-8`, `Lede` de `mb-8 pb-6` para
+  `mb-6 pb-5`. Vale para as oito telas.
+- **A nota desceu de `text-5xl` para `text-4xl`.** Continua sendo a maior
+  coisa da célula - deixou de ter altura de manchete.
+- **Gráfico da jornada** de `h-36` para `h-28`: a tendência se lê igual.
+- **Histórico**: três auditorias à vista e o resto em `<details>`. A
+  comparação que importa (contra a anterior) já está na seção acima.
+
+Medido na vitrine com dado real: Auditoria de **1.857px para 1.724px**.
+Somado à reordenação da seção 53 (achados acima das checagens), a lista de
+correções aparece cerca de 1.100px antes do que aparecia antes das duas
+rodadas. Início 1.499px, Relatórios 1.866px, Raio X 768px - as três
+renderizadas depois da mudança de ritmo, sem quebra.
+
+Honestidade sobre o ganho: 7% de altura não é transformação. O que sobrou
+de comprimento na Auditoria é conteúdo real; o próximo ganho viria de tirar
+seção da tela (a jornada com o gráfico poderia abrir e fechar), não de
+espremer mais.

@@ -4,13 +4,13 @@ import { botao, pagina } from "@/components/ui";
 import { cn } from "@/lib/utils";
 import { formatarData } from "@/lib/datas";
 import { semEsquema } from "@/lib/blog-endereco";
-import { Lede, Linha, Secao, Regua } from "@/components/lede";
+import { Bancada, Lede, Linha, Secao, Regua } from "@/components/lede";
 import { scoreBand } from "@/lib/audit/rules";
 import { ROTULO_MOTOR } from "@/lib/ai-visibility/resumo";
 import type { Gargalo, Etapa } from "@/lib/gargalo";
 import type { DomainStatus, OnboardingSteps } from "@/types";
 import { EvolucaoDosArtigos } from "./evolucao";
-import { Bancada, Numero, Painel, Vazio } from "./painel";
+import { Numero, Painel, Vazio } from "./painel";
 import { MODULOS_VISIVEIS } from "@/lib/modulos";
 import { DIAS_JANELA, type DadosInicio } from "./dados";
 

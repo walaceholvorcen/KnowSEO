@@ -5,7 +5,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Check, ChevronDown, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Lede, Linha, NotaCard, Secao } from "@/components/lede";
+import { Bancada, Lede, Linha, NotaCard, Secao } from "@/components/lede";
 import { resumirComparacao, type Comparacao } from "@/lib/audit/comparar";
 import type { AuditRow, FindingRow } from "./page";
 import type { Jornada } from "@/lib/audit/jornada";
@@ -265,7 +265,7 @@ export function AuditBoard({
 
       {latest && (
         <>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <Bancada colunas={3}>
             <NotaCard
               label="Nota Google"
               score={latest.score_google}
@@ -279,7 +279,7 @@ export function AuditBoard({
             {jornada ? (
               <ProximaVerificacaoCard proxima={jornada.proxima} fuso={fuso} />
             ) : (
-            <div className="h-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
+            <div className="h-full bg-white p-5 dark:bg-slate-900">
               <p className="text-sm text-slate-500 dark:text-slate-400">
                 Páginas analisadas
               </p>
@@ -291,7 +291,7 @@ export function AuditBoard({
               </p>
             </div>
             )}
-          </div>
+          </Bancada>
 
           {jornada && <JornadaDoSite jornada={jornada} fuso={fuso} />}
 
@@ -640,8 +640,11 @@ export function AuditBoard({
                 ? "O acompanhamento automático ainda não tem execução registrada. As rodadas automáticas aparecem marcadas."
                 : "O acompanhamento automático ainda não rodou."}
           </p>
+          {/* Três à vista e o resto guardado: a comparação que interessa é
+              com a auditoria anterior, e ela já está na seção acima. O
+              histórico é arquivo - não precisa ocupar meia tela. */}
           <ul className="mt-3">
-            {audits.slice(0, 10).map((a) => (
+            {audits.slice(0, 3).map((a) => (
               <Linha key={a.id}>
                 <div className="flex items-baseline justify-between gap-4 text-sm">
                   <span className="min-w-0 truncate text-slate-600 dark:text-slate-400">
@@ -660,6 +663,34 @@ export function AuditBoard({
               </Linha>
             ))}
           </ul>
+
+          {audits.length > 3 && (
+            <details className="mt-2">
+              <summary className="cursor-pointer list-none text-sm text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100">
+                Ver as outras {audits.length - 3}
+              </summary>
+              <ul>
+                {audits.slice(3, 10).map((a) => (
+              <Linha key={a.id}>
+                <div className="flex items-baseline justify-between gap-4 text-sm">
+                  <span className="min-w-0 truncate text-slate-600 dark:text-slate-400">
+                    {dataCurta(a.created_at)} ·{" "}
+                    {a.site_url}
+                    {a.origem === "agendada" && " · automática"}
+                  </span>
+                  <span className="tabular shrink-0 font-display text-slate-900 dark:text-slate-100">
+                    {a.status === "done"
+                      ? `${a.score_google} · IA ${a.score_ai}`
+                      : a.status === "error"
+                        ? "falhou"
+                        : "rodando"}
+                  </span>
+                </div>
+              </Linha>
+            ))}
+              </ul>
+            </details>
+          )}
         </>
       )}
     </div>

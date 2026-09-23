@@ -81,19 +81,6 @@ export function Painel({
   );
 }
 
-/**
- * A bancada: os instrumentos de uma etapa num corpo só, separados por
- * filete de 1px (gap-px sobre o fundo da borda) em vez de flutuarem como
- * cards independentes.
- */
-export function Bancada({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="mt-4 grid gap-px overflow-hidden rounded-xl border border-slate-200 bg-slate-200 dark:border-slate-800 dark:bg-slate-800 lg:grid-cols-2">
-      {children}
-    </div>
-  );
-}
-
 /** Número grande com unidade, no tipo de display. */
 export function Numero({
   valor,

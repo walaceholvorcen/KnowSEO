@@ -5,7 +5,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronDown, ChevronRight, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Lede, NotaCard, Secao } from "@/components/lede";
+import { Bancada, Lede, NotaCard, Secao } from "@/components/lede";
 import type { GbpAuditRow, GbpFindingRow } from "./page";
 
 const SEVERITY_ORDER = ["critical", "high", "medium", "quick_win", "info"];
@@ -115,13 +115,13 @@ export function GbpBoard({
 
       {latest?.status === "done" && (
         <>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Bancada>
             <NotaCard
               label="Perfil no Google"
               score={latest.score}
               hint="Completude e reputação, com o que é público sem login"
             />
-            <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
+            <div className="h-full bg-white p-5 dark:bg-slate-900">
               <p className="text-sm text-slate-500 dark:text-slate-400">
                 Negócio encontrado
               </p>
@@ -139,7 +139,7 @@ export function GbpBoard({
                 </a>
               )}
             </div>
-          </div>
+          </Bancada>
 
           {counts.length > 0 && (
             <div className="mt-4 flex flex-wrap gap-2">

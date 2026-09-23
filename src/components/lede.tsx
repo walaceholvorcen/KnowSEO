@@ -34,7 +34,7 @@ export function Lede({
   // coisa lida, mas agora no tom de painel: sans, peso, ação à direita na
   // mesma faixa - "o que está acontecendo e o que fazer", lado a lado.
   return (
-    <header className="mb-8 flex flex-wrap items-start justify-between gap-x-8 gap-y-4 border-b border-slate-200 dark:border-slate-800 pb-6">
+    <header className="mb-6 flex flex-wrap items-start justify-between gap-x-8 gap-y-4 border-b border-slate-200 pb-5 dark:border-slate-800">
       <div className="min-w-0 max-w-[52ch]">
         {/* h1, não parágrafo: o veredito é o título da tela. Como <p>, a
             página inteira não tinha título para leitor de tela nem para a
@@ -77,9 +77,34 @@ export function Linha({
 // não decoração.
 export function Secao({ children }: { children: ReactNode }) {
   return (
-    <h2 className="mb-1 mt-10 text-sm font-semibold text-slate-900 dark:text-slate-100">
+    <h2 className="mb-1 mt-8 text-sm font-semibold text-slate-900 dark:text-slate-100">
       {children}
     </h2>
+  );
+}
+
+/**
+ * A bancada: instrumentos de uma etapa num corpo só, separados por filete de
+ * 1px (gap-px sobre o fundo da borda) em vez de flutuarem como cards
+ * independentes. Nasceu no Início (PROCESSO 55) e vale para toda fileira de
+ * leitura - a Auditoria abria com três cards soltos fazendo a mesma coisa.
+ */
+export function Bancada({
+  children,
+  colunas = 2,
+}: {
+  children: ReactNode;
+  colunas?: 2 | 3;
+}) {
+  return (
+    <div
+      className={cn(
+        "mt-4 grid gap-px overflow-hidden rounded-xl border border-slate-200 bg-slate-200 dark:border-slate-800 dark:bg-slate-800",
+        colunas === 3 ? "sm:grid-cols-3" : "lg:grid-cols-2",
+      )}
+    >
+      {children}
+    </div>
   );
 }
 
@@ -116,13 +141,13 @@ export function NotaCard({
 
   return (
     // h-full: em grade ou em flex, os cards irmãos terminam na mesma linha.
-    <div className="h-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
+    <div className="h-full bg-white p-4 dark:bg-slate-900">
       <p className="text-sm text-slate-500 dark:text-slate-400">{label}</p>
       {/* "de 100" nunca quebra: sozinho na linha de baixo, lia como outro
           número. Entre 640 e 1024px são três cards estreitos, e o número
           desce um passo para os dois caberem lado a lado. */}
       <p className="mt-2 flex items-baseline gap-1.5 font-display text-slate-900 dark:text-slate-100">
-        <span className="tabular text-5xl leading-none tracking-tight sm:text-4xl lg:text-5xl">
+        <span className="tabular text-4xl leading-none tracking-tight">
           {score === null ? "—" : score}
         </span>
         {score !== null && (
