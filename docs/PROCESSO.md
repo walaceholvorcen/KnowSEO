@@ -2496,3 +2496,50 @@ qualquer ferramenta de SEO.
 
 A honestidade obrigatória continua, reescrita: a régua conta tempo desde a
 primeira publicação, não mede indexação nem posição.
+
+
+## 62. O banco saiu do caminho de quem lê o blog
+
+Medição no blog do cliente, em produção, antes de mexer: `X-Vercel-Cache:
+MISS` em toda visita, `Cache-Control: private, no-cache, no-store`, e o
+primeiro byte chegando entre 0,9 e 2,0 segundos. Nada era guardado. Cada
+leitor pagava a construção inteira da página.
+
+O que pesava eram três idas ao banco por visita:
+
+1. qual blog mora neste endereço (layout, metadados e página pediam o mesmo,
+   e o `cache()` do React já juntava as três dentro de UMA visita - mas a
+   consulta voltava a acontecer para o próximo visitante);
+2. os metadados do artigo, para o `<head>`;
+3. o corpo do artigo.
+
+As duas últimas eram a mesma linha da tabela, buscada duas vezes com colunas
+diferentes. Viraram uma. E as duas consultas restantes passaram a ser
+guardadas por um minuto (`unstable_cache`), porque a resposta é a mesma para
+todo mundo e muda só quando alguém publica.
+
+Sitemap, feed, robots e llms.txt já diziam `Cache-Control: public,
+max-age=3600` e mesmo assim respondiam do zero. `max-age` sozinho é
+instrução para o navegador, e o rastreador do Google não tem navegador: quem
+guarda cópia na borda é `s-maxage`. Trocado por `max-age=0, s-maxage=3600,
+stale-while-revalidate=86400`.
+
+Resultado medido no mesmo artigo, logo depois do deploy:
+
+| | antes | depois |
+|---|---|---|
+| artigo, visita morna | 0,55 a 0,90s | 0,27 a 0,32s |
+| artigo, primeira visita | 2,0 a 2,5s | 1,3 a 1,5s |
+| sitemap.xml | 3,75s (MISS) | 0,20s (HIT) |
+| robots.txt | ~1s (MISS) | 0,16s (HIT) |
+
+Um minuto de validade é também o atraso máximo entre publicar e ver no ar -
+dito de propósito, porque é a única coisa que o operador pode estranhar.
+
+O que ficou de fora, e por quê: guardar o HTML da página na borda (que
+levaria a visita fria de 1,4s para ~0,05s) exige que o HTML não carregue
+nonce dentro dele, e hoje a CSP do blog usa nonce novo a cada pedido. Uma
+cópia guardada traria o nonce de ontem e o navegador recusaria os scripts.
+Trocar o nonce por `'unsafe-inline'` no blog é decisão do dono, não do
+código: a defesa que sobra ali é o `htmlSeguro`, que é lista do que entra.
+No painel nada disso se aplica - lá nada é guardado, e o nonce fica.
