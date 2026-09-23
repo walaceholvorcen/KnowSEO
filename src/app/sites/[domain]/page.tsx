@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -42,6 +43,22 @@ export async function generateMetadata({
   };
 }
 
+// A vitrine do blog, guardada por um minuto: a lista de artigos publicados
+// é a mesma para todo visitante e mudava só quando alguém publica.
+const artigosPublicados = unstable_cache(
+  async (blogId: string) => {
+    const { data } = await createAdminClient()
+      .from("articles")
+      .select("*")
+      .eq("blog_id", blogId)
+      .eq("status", "published")
+      .order("published_at", { ascending: false });
+    return data;
+  },
+  ["artigos-publicados"],
+  { revalidate: 60 },
+);
+
 export default async function TenantBlogHome({
   params,
 }: {
@@ -51,15 +68,7 @@ export default async function TenantBlogHome({
   const blog = await resolveBlogByHost(domain);
   if (!blog) notFound();
 
-  const admin = createAdminClient();
-  const { data: articles } = await admin
-    .from("articles")
-    .select("*")
-    .eq("blog_id", blog.id)
-    .eq("status", "published")
-    .order("published_at", { ascending: false });
-
-  const list = (articles as Article[]) ?? [];
+  const list = ((await artigosPublicados(blog.id)) as Article[]) ?? [];
   // Link relativo "/slug" em /b/<slug> caía na raiz do app (404): a base
   // precisa do caminho do tenant, e do host em que o visitante está.
   const base = await tenantOrigin(domain);

@@ -67,7 +67,7 @@ ${items}
   return new Response(xml, {
     headers: {
       "Content-Type": "application/rss+xml",
-      "Cache-Control": "public, max-age=3600",
+      "Cache-Control": "public, max-age=0, s-maxage=3600, stale-while-revalidate=86400",
     },
   });
 }

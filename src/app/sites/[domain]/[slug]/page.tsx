@@ -1,3 +1,5 @@
+import { cache } from "react";
+import { unstable_cache } from "next/cache";
 import { notFound } from "next/navigation";
 import { jsonParaScript } from "@/lib/html-seguro";
 import type { Metadata } from "next";
@@ -15,6 +17,31 @@ import { perguntasFrequentes } from "@/lib/artigo/faq";
 import { autorGravado } from "@/lib/autor";
 import { PageviewTracker } from "./pageview-tracker";
 
+// O artigo, buscado uma vez só.
+//
+// Eram duas consultas por visita (uma para os metadados do cabeçalho, outra
+// para o corpo) e as duas iam ao banco de novo a cada visitante. Agora é uma
+// só, guardada por um minuto: o leitor do blog do cliente deixa de esperar
+// o banco para ler um texto que já estava pronto. Um minuto também é o
+// atraso máximo entre publicar e ver no ar.
+const buscarArtigo = unstable_cache(
+  async (blogId: string, slug: string) => {
+    const { data } = await createAdminClient()
+      .from("articles")
+      .select("*")
+      .eq("blog_id", blogId)
+      .eq("slug", slug)
+      .eq("status", "published")
+      .maybeSingle();
+    return data;
+  },
+  ["artigo-publicado"],
+  { revalidate: 60 },
+);
+
+/** cache(): metadados e página pedem o mesmo artigo na mesma visita. */
+const artigoPublicado = cache(buscarArtigo);
+
 export async function generateMetadata({
   params,
 }: {
@@ -24,15 +51,7 @@ export async function generateMetadata({
   const blog = await resolveBlogByHost(domain);
   if (!blog) return {};
 
-  const admin = createAdminClient();
-  const { data: article } = await admin
-    .from("articles")
-    .select("id, title, seo_title, seo_description, excerpt, cover_image_url, published_at, updated_at")
-    .eq("blog_id", blog.id)
-    .eq("slug", slug)
-    .eq("status", "published")
-    .maybeSingle();
-
+  const article = await artigoPublicado(blog.id, slug);
   if (!article) return {};
 
   const title = article.seo_title || article.title;
@@ -79,15 +98,7 @@ export default async function TenantArticlePage({
   const blog = await resolveBlogByHost(domain);
   if (!blog) notFound();
 
-  const admin = createAdminClient();
-  const { data: article } = await admin
-    .from("articles")
-    .select("*")
-    .eq("blog_id", blog.id)
-    .eq("slug", slug)
-    .eq("status", "published")
-    .maybeSingle();
-
+  const article = await artigoPublicado(blog.id, slug);
   if (!article) notFound();
 
   const origin = urlPublicaDoBlog(blog).url;

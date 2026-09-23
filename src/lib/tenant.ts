@@ -1,4 +1,5 @@
 import { cache } from "react";
+import { unstable_cache } from "next/cache";
 import { headers } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isSafeCustomDomain } from "@/lib/dominio";
@@ -58,54 +59,69 @@ export async function blogPorPasta(
 // Aceita duas formas:
 //   - subdomínio puro ("demo")            -> rota de preview /b/demo
 //   - host completo ("demo.dominio.com")  -> subdomínio ou domínio próprio
+// Duas camadas de cache, porque são dois desperdícios diferentes:
+//
 // cache(): o layout, os metadados e a página pedem o mesmo blog na mesma
 // visita - eram três consultas iguais antes de a página começar a sair.
-export const resolveBlogByHost = cache(async function resolveBlogByHost(
-  host: string,
-): Promise<Blog | null> {
-  const admin = createAdminClient();
+//
+// unstable_cache(): a MESMA consulta se repetia a cada visitante do blog.
+// Quem lê um artigo do cliente esperava de 1 a 2 segundos pelo primeiro
+// byte, e a maior parte disso era ida e volta ao banco para responder algo
+// que quase nunca muda (qual blog mora neste endereço). Um minuto de
+// validade: trocar de domínio continua valendo quase na hora, e o visitante
+// deixa de pagar a consulta.
+const blogPorHost = unstable_cache(
+  async function blogPorHost(host: string): Promise<Blog | null> {
+    const admin = createAdminClient();
 
-  // A porta pode vir percent-encoded ("host.localhost%3A3000"); sem o
-  // decode o split(":") não separa a porta e o subdomínio nunca é extraído.
-  const decodedHost = decodeURIComponent(host);
-  const hostname = decodedHost.split(":")[0];
+    // A porta pode vir percent-encoded ("host.localhost%3A3000"); sem o
+    // decode o split(":") não separa a porta e o subdomínio nunca é extraído.
+    const decodedHost = decodeURIComponent(host);
+    const hostname = decodedHost.split(":")[0];
 
-  const bySubdomain = async (subdomain: string) => {
+    const bySubdomain = async (subdomain: string) => {
+      const { data } = await admin
+        .from("blogs")
+        .select("*")
+        .eq("subdomain", subdomain)
+        .maybeSingle();
+      return (data as Blog) ?? null;
+    };
+
+    // Caso 1: subdomínio puro (sem ponto) - vem da rota de preview
+    if (!hostname.includes(".")) {
+      return bySubdomain(hostname);
+    }
+
+    const rootDomain = (process.env.NEXT_PUBLIC_ROOT_DOMAIN || "localhost").split(
+      ":",
+    )[0];
+
+    // Caso 2: subdomínio nosso -> "cliente-x.nossodominio.com"
+    if (hostname.endsWith(`.${rootDomain}`)) {
+      const blog = await bySubdomain(hostname.slice(0, -(rootDomain.length + 1)));
+      if (blog) return blog;
+    }
+
+    // Caso 3: domínio próprio do cliente já conectado. Apex, www ou
+    // .vercel.app gravados por engano (antes da guarda no servidor) nunca são
+    // servidos: responder ali seria substituir o site do cliente pelo blog.
+    if (!isSafeCustomDomain(hostname)) return null;
     const { data } = await admin
       .from("blogs")
       .select("*")
-      .eq("subdomain", subdomain)
+      .eq("custom_domain", hostname)
       .maybeSingle();
+
     return (data as Blog) ?? null;
-  };
+  },
+  ["blog-por-host"],
+  { revalidate: 60 },
+);
 
-  // Caso 1: subdomínio puro (sem ponto) - vem da rota de preview
-  if (!hostname.includes(".")) {
-    return bySubdomain(hostname);
-  }
-
-  const rootDomain = (process.env.NEXT_PUBLIC_ROOT_DOMAIN || "localhost").split(
-    ":",
-  )[0];
-
-  // Caso 2: subdomínio nosso -> "cliente-x.nossodominio.com"
-  if (hostname.endsWith(`.${rootDomain}`)) {
-    const blog = await bySubdomain(hostname.slice(0, -(rootDomain.length + 1)));
-    if (blog) return blog;
-  }
-
-  // Caso 3: domínio próprio do cliente já conectado. Apex, www ou
-  // .vercel.app gravados por engano (antes da guarda no servidor) nunca são
-  // servidos: responder ali seria substituir o site do cliente pelo blog.
-  if (!isSafeCustomDomain(hostname)) return null;
-  const { data } = await admin
-    .from("blogs")
-    .select("*")
-    .eq("custom_domain", hostname)
-    .maybeSingle();
-
-  return (data as Blog) ?? null;
-});
+export const resolveBlogByHost = cache(
+  (host: string): Promise<Blog | null> => blogPorHost(host),
+);
 
 /**
  * Blog que usava este slug antes de ser renomeado - para o 301 de
