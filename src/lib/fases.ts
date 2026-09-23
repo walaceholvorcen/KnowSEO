@@ -23,35 +23,35 @@ export const FASES: Fase[] = [
     nome: "No ar",
     mes: 0,
     descricao:
-      "Os artigos estão publicados. O Google e as IAs ainda estão descobrindo o site, então é esperado que o resto fique zerado neste começo.",
+      "O artigo existe e já pode ser lido, mas ninguém sabe que ele existe. Aqui no painel, visitas e citações ficam em zero - e zero neste começo é o esperado, não defeito.",
   },
   {
     chave: "indexado",
     nome: "Indexado",
     mes: 1,
     descricao:
-      "As páginas entram no índice do Google e passam a poder ser citadas pelas IAs. As primeiras impressões começam a aparecer.",
+      "O Google leu a página e a guardou no índice; a partir daí as IAs também podem citá-la. É quando o Raio X pode devolver a primeira citação, quase sempre numa pergunta bem específica.",
   },
   {
     chave: "ranqueando",
     nome: "Ranqueando",
     mes: 2,
     descricao:
-      "Os artigos começam a disputar posição. O ranking oscila bastante aqui, enquanto o Google testa o conteúdo em posições diferentes. Oscilar é parte do processo.",
+      "A página entra na disputa e muda de posição de um dia para o outro, porque o Google está testando onde ela rende mais. Subir e cair nesta fase não significa nada ainda.",
   },
   {
     chave: "cliques",
     nome: "Gerando cliques",
     mes: 4,
     descricao:
-      "As posições estabilizam e os cliques começam a vir. É nesta fase que publicar com constância dá o retorno mais visível.",
+      "A posição para de balançar e as primeiras visitas de busca chegam. É aqui que publicar com constância começa a aparecer no gráfico de visitas do relatório.",
   },
   {
     chave: "primeira_pagina",
     nome: "Primeira página",
     mes: 6,
     descricao:
-      "O tráfego passa a compor sozinho: cada artigo novo soma autoridade ao domínio e ajuda a puxar os antigos junto.",
+      "O domínio já tem autoridade suficiente para um artigo novo nascer mais alto e puxar os antigos junto. O trabalho passa a render sobre o que já foi feito.",
   },
 ];
 

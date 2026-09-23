@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Linha, Secao } from "@/components/lede";
 import { FASES, faseAtual, mesesDesde } from "@/lib/fases";
 
 // Régua de expectativa: onde o blog está na linha do tempo de SEO/GEO.
@@ -25,13 +26,13 @@ export function EvolucaoDosArtigos({
   const progresso = (atual / (FASES.length - 1)) * 100;
 
   return (
-    <section className="mt-12">
-      <h2 className="text-lg font-medium text-slate-900 dark:text-slate-100">
-        Evolução dos artigos
-      </h2>
-      <p className="mt-1 text-slate-600 dark:text-slate-400">
+    <section>
+      <Secao>Evolução dos artigos</Secao>
+      <p className="text-sm text-slate-600 dark:text-slate-400">
+        {/* A explicação dos prazos mora dentro do bloco que abre; repetir
+            aqui em cima era a mesma frase duas vezes na mesma tela. */}
         {meses === 0
-          ? "Primeiro mês no ar. Cada fase abaixo tem um prazo típico, contado a partir da primeira publicação."
+          ? "Primeiro mês no ar, contado desde a primeira publicação."
           : `${meses} ${meses === 1 ? "mês" : "meses"} desde a primeira publicação.`}
       </p>
 
@@ -87,59 +88,65 @@ export function EvolucaoDosArtigos({
         className="mt-6 flex items-center gap-1.5 text-cobalto-700 dark:text-cobalto-300 hover:underline"
       >
         {aberta ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-        Por que os dados aparecem aos poucos
+        {aberta ? "Fechar" : "O que esperar em cada fase"}
       </button>
 
       {aberta && (
-        <div className="mt-4 border-l-2 border-slate-200 dark:border-slate-800 pl-5">
-          <p className="max-w-[62ch] text-slate-600 dark:text-slate-400">
-            SEO e GEO não são interruptor, são juros compostos. Cada fase
-            abaixo tem um prazo típico, contado a partir do seu primeiro
-            artigo publicado.
+        <div className="mt-3">
+          <p className="max-w-[68ch] text-slate-600 dark:text-slate-400">
+            Conteúdo não tem botão de ligar. Entre publicar e aparecer existe um
+            caminho que o Google percorre no ritmo dele, e cada fase abaixo tem
+            um prazo típico contado a partir do seu primeiro artigo.
           </p>
 
-          <dl className="mt-5">
+          <ul className="mt-4">
             {FASES.map((fase, i) => (
-              <div
-                key={fase.chave}
-                className="border-b border-slate-200 dark:border-slate-800 py-4 last:border-0"
-              >
-                <dt className="flex items-baseline justify-between gap-4">
+              <Linha key={fase.chave}>
+                <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
                   <span
-                    className={
+                    className={cn(
+                      "font-medium",
                       i <= atual
                         ? "text-slate-900 dark:text-slate-100"
-                        : "text-slate-500 dark:text-slate-400"
-                    }
+                        : "text-slate-500 dark:text-slate-400",
+                    )}
                   >
                     {fase.nome}
                     {i === atual && (
-                      <span className="ml-2 text-cobalto-700 dark:text-cobalto-300">
+                      <span className="ml-2 font-normal text-cobalto-700 dark:text-cobalto-300">
                         você está aqui
                       </span>
                     )}
                   </span>
-                  <span className="shrink-0 text-sm text-slate-500 dark:text-slate-400">
-                    {fase.mes === 0 ? "desde o 1º dia" : `mês ${fase.mes}`}
+                  <span className="tabular font-display shrink-0 text-sm text-slate-500 dark:text-slate-400">
+                    {fase.mes === 0 ? "1º dia" : `mês ${fase.mes}`}
                   </span>
-                </dt>
-                <dd className="mt-1 max-w-[62ch] text-slate-600 dark:text-slate-400">
+                </div>
+                <p
+                  className={cn(
+                    "mt-1 max-w-[68ch] text-sm",
+                    i <= atual
+                      ? "text-slate-600 dark:text-slate-400"
+                      : "text-slate-500 dark:text-slate-400",
+                  )}
+                >
                   {fase.descricao}
-                </dd>
-              </div>
+                </p>
+              </Linha>
             ))}
-          </dl>
+          </ul>
 
           {/* Honestidade obrigatória: a régua conta tempo, não mede
               indexação nem posição - não temos Search Console ligado. */}
-          <p className="mt-5 max-w-[62ch] text-slate-500 dark:text-slate-400">
-            Estes prazos são a expectativa realista, não uma trava, e nenhuma
-            fase é medida por aqui: a régua conta o tempo desde a sua
-            primeira publicação. Se o blog indexar ou ranquear antes, melhor
+          <p className="mt-4 max-w-[68ch] text-sm text-slate-500 dark:text-slate-400">
+            Nada disso é medido aqui: esta régua conta o tempo desde a sua
+            primeira publicação, não a posição nem a indexação. São prazos
+            típicos, não promessa - se o seu blog andar mais rápido, melhor
             para você.
           </p>
         </div>
       )}
+
     </section>
   );
 }

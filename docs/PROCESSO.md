@@ -2471,3 +2471,28 @@ artigo publicado o autosave não dispara; com rascunho dispara em ~2s, e
 como a vitrine não tem sessão a gravação falhou - a marca de não salvo
 continuou de pé e o erro apareceu na tela, que é exatamente o
 comportamento desejado. Rascunho apagado depois.
+
+## 61. A régua de expectativa deixou de ser texto de outra pessoa
+
+O dono avisou que o bloco "Por que os dados aparecem aos poucos" tinha sido
+copiado e colado de outro produto. Além do problema óbvio de usar texto
+alheio, o texto não falava do que o cliente vê **aqui** - servia para
+qualquer ferramenta de SEO.
+
+- **Cada fase passou a citar o que aparece neste painel**: "visitas e
+  citações ficam em zero" (No ar), "é quando o Raio X pode devolver a
+  primeira citação" (Indexado), "começa a aparecer no gráfico de visitas do
+  relatório" (Gerando cliques). Isso é o que só nós podemos escrever.
+- A abertura "SEO e GEO não são interruptor, são juros compostos" saiu:
+  "Conteúdo não tem botão de ligar. Entre publicar e aparecer existe um
+  caminho que o Google percorre no ritmo dele."
+- **Aparência no vocabulário da casa**: `Secao` no título, `Linha` em cada
+  fase (era `<dl>` dentro de uma caixa com filete lateral), mês em mono à
+  direita e a fase atual marcada em cobalto.
+- O rótulo do botão diz o que vem ("O que esperar em cada fase"), não uma
+  desculpa pelos números baixos.
+- A frase de prazo aparecia duas vezes na mesma tela; ficou só dentro do
+  bloco.
+
+A honestidade obrigatória continua, reescrita: a régua conta tempo desde a
+primeira publicação, não mede indexação nem posição.
