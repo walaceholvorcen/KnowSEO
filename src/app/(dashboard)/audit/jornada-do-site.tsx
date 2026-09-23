@@ -93,6 +93,17 @@ export function JornadaDoSite({ jornada, fuso }: { jornada: Jornada; fuso: strin
         {LEITURA_DA_ETAPA[atual]}
       </p>
 
+      {/* A frase acima fica sempre à vista: é a recompensa do trabalho ("a
+          nota subiu 33 pontos") e o motivo de o cliente voltar. O resto -
+          as quatro etapas, o gráfico e o que fazer agora - abre quando ele
+          quiser acompanhar. Quem chega para corrigir hoje não precisa
+          atravessar 400px de acompanhamento mensal. */}
+      <details className="group mt-3">
+        <summary className="inline-flex cursor-pointer list-none items-center gap-1 text-sm text-cobalto-700 hover:underline dark:text-cobalto-300">
+          <span className="group-open:hidden">Ver a jornada completa</span>
+          <span className="hidden group-open:inline">Fechar a jornada</span>
+        </summary>
+
       {/* Sequência real - uma etapa depende da anterior -, por isso ganha
           ordem e marcador. É a mesma linguagem da régua de expectativa do
           Início. */}
@@ -179,6 +190,7 @@ export function JornadaDoSite({ jornada, fuso }: { jornada: Jornada; fuso: strin
         </div>
       </div>
       )}
+      </details>
     </section>
   );
 }

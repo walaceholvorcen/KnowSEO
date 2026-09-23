@@ -2429,3 +2429,18 @@ Honestidade sobre o ganho: 7% de altura não é transformação. O que sobrou
 de comprimento na Auditoria é conteúdo real; o próximo ganho viria de tirar
 seção da tela (a jornada com o gráfico poderia abrir e fechar), não de
 espremer mais.
+
+### A jornada passou a abrir e fechar
+
+Item escolhido pelo dono depois da densidade aprovada. A frase de recompensa
+("Desde 09/09, a nota Google subiu 33 pontos, de 55 para 88") fica sempre à
+vista - é o motivo de o cliente voltar. As quatro etapas, o gráfico e o "o
+que fazer agora" ficam atrás de "Ver a jornada completa".
+
+Quem abre a Auditoria para corrigir hoje não atravessa mais o
+acompanhamento mensal: a página caiu de **1.724px para 1.410px** e a lista
+de achados começa em **634px** - primeira tela, sem rolar. Aberta, a jornada
+devolve os mesmos 1.760px de antes.
+
+Medida acumulada das três rodadas (seções 53, 59 e esta): de 2.839px, com os
+achados no fim, para 1.410px com os achados na primeira tela.
