@@ -1,102 +1,111 @@
-# Avaliação crítica do Know SEO — setembro/2026
+# Avaliação crítica do Know SEO — 24/setembro/2026
 
 Levantamento feito com dado real do banco de produção e do código, não com
 memória do que foi construído. Serve de base para priorizar.
 
+A avaliação anterior é de começo de setembro. O que mudou desde então está
+marcado, porque o que já foi corrigido vale tanto quanto o que falta.
+
 ## Números que sustentam esta avaliação
 
-| Evidência | Valor |
-|---|---|
-| Workspaces / blogs | 2 / 2 (nenhum cliente pagante) |
-| Artigos | 3 |
-| Auditorias concluídas | 6 (2 sites) |
-| Checagens de citação em IA | 25, num só motor (Claude) |
-| Eventos de analytics | 5 |
-| Código | ~16,5 mil linhas; 17 arquivos de teste, 228 testes |
-| Rotas de API | 17 |
-| Domínio próprio ativo | 0 (os dois blogs em `domain_status: pending`) |
+| Evidência | Hoje | Em setembro |
+|---|---|---|
+| Workspaces / blogs | 2 / 2 (nenhum cliente pagante) | 2 / 2 |
+| Blog em domínio próprio ativo | **1** (`blog.dataknow.es`) | 0 |
+| Artigos | 7 (4 publicados, 3 em rascunho) | 3 |
+| Auditorias concluídas | 15, com 56 achados | 6 |
+| Checagens de citação em IA | 75 — **todas no Claude** | 25 |
+| Citações encontradas | **0 de 75** | 0 |
+| Pautas com keyword | 62 | — |
+| Links internos mapeados | 16 | — |
+| Eventos de analytics | 17 | 5 |
+| Código | ~29 mil linhas; 35 arquivos de teste, 382 testes | ~16,5 mil; 17 arquivos, 228 testes |
+| Rotas de API | 28 | 17 |
 
 ## Nota por dimensão
 
-| Dimensão | Nota | Razão |
-|---|---|---|
-| Motor de auditoria | 8,5 | determinístico, testado, discrimina de verdade, agora com entidade |
-| Raio X - GEO (medição) | 8 | separa citação de busca, 3 motores previstos, honesto |
-| Design e acabamento | 8 | sistema de componentes, contraste medido, claro/escuro/celular |
-| Geração de conteúdo | 6 | estruturada, mas sem trava de qualidade e sem prova de resultado |
-| Mercado / Estratégia | 5 | o dado medido depende de credencial travada; resto é leitura de modelo |
-| Relatórios | 4 | conta visita, não conecta a resultado |
-| Pronto para vender | 3 | sem senha, sem cobrança, sem multi-cliente, sem limite de custo |
+| Dimensão | Hoje | Antes | Razão |
+|---|---|---|---|
+| Motor de auditoria | 8,5 | 8,5 | determinístico, testado, discrimina de verdade — mas ainda não mede velocidade nem link quebrado |
+| Raio X - GEO (medição) | 7,5 | 8 | o código ganhou 4 motores; a realidade continua sendo um só. A nota caiu porque agora a distância entre o prometido e o rodado é medível |
+| Design e acabamento | 8,7 | 8 | bancada única nas oito telas, contraste medido, tela de erro, autosave, login como face de instrumento |
+| Geração de conteúdo | 7,5 | 6 | trava de qualidade antes de publicar, formato que a IA cita, autor e datas. Falta prova de resultado |
+| SEO entregue ao cliente | 7,5 | — | estrutura completa e rápida; sem volume de busca e sem Search Console |
+| Mercado / Estratégia | 5 | 5 | o dado medido depende de credencial travada. Escondido do painel, que é a atitude honesta |
+| Relatórios | 7 | 4 | leitura escrita do período, corrente dos cinco elos, visitas e conversas por artigo |
+| Segurança | 8 | — | RLS, permissão por coluna, sem Supabase no navegador, HTML sanitizado, teto de uso. Falta CSP bloqueando e 2FA nas contas |
+| Pronto para vender | 5 | 3 | senha, multi-cliente e domínio automático resolvidos. Sem cobrança e sem landing page não há negócio |
 
 ## O que está bom
 
 1. **Honestidade do dado.** O produto distingue medição de opinião em todo
-   lugar ("Leitura da IA:", "artigos publicados, não volume de busca"). Isso
-   é raro e é o que sobrevive ao cliente conferir em outra ferramenta.
+   lugar ("Leitura da IA:", "artigos publicados, não volume de busca", "2 de
+   9 visitas" em vez de "22,2%"). É raro, e é o que sobrevive ao cliente
+   conferir em outra ferramenta.
 2. **Auditoria com poder de discriminação.** Penalidade proporcional,
-   `fetchComStatus`, regras de entidade. Duas notas de sites parecidos se
-   moveram em direções opostas — prova de que a nota significa algo.
-3. **Raio X - GEO mede o que ninguém pequeno mede.** Citação real, com a
-   separação entre "citou" e "só apareceu na busca", e o laço que
-   transforma pergunta perdida em pauta.
-4. **Acabamento.** Sistema de controles, régua, jornada, esqueleto de
-   carregamento, sessão validada localmente. O painel parece instrumento.
+   regras de entidade, histórico. Notas de sites parecidos já se moveram em
+   direções opostas — prova de que a nota significa algo.
+3. **O blog saiu do limbo.** Em setembro o conteúdo morava num host
+   separado do site do cliente, o que não transfere autoridade. Hoje existe
+   subdomínio no ar, modo pasta construído, e o domínio é liberado
+   automaticamente pela plataforma — sem mandar instrução de DNS para o
+   cliente.
+4. **Velocidade medida, não suposta.** Artigo em ~0,3s e arquivos de
+   rastreamento em ~0,2s, com número de antes e depois registrado.
+5. **Acabamento.** O painel parece instrumento de medição, não revista. Foi
+   decisão consciente, rejeitada duas vezes antes de acertar.
 
 ## O que está ruim, por gravidade
 
-### 1. O conteúdo não ajuda o site que o cliente quer ranquear
-O blog nasce em `cliente.knowseo` ou, com domínio próprio, em
-`blog.cliente.com` — **host separado do site institucional**. Autoridade
-não transfere entre hosts como transfere dentro do mesmo domínio. O produto
-vende "conteúdo que melhora seu posicionamento" e entrega conteúdo que
-ranqueia **outro** endereço. Nenhum cliente tem domínio próprio ativo hoje
-(`domain_status: pending` nos dois), então na prática o conteúdo mora fora.
-**Correção estrutural:** servir o blog em `cliente.com/blog` via proxy
-reverso (rewrite no provedor do cliente), ou assumir o blog como ativo
-próprio e parar de prometer efeito no site institucional.
+### 1. Não existe como cobrar
+`plan` e `credits` estão no banco desde o começo e continuam sem checkout.
+Tudo o mais que está nesta lista é melhoria; isto é a diferença entre
+produto e negócio. **É o próximo item, sem discussão.**
 
-### 2. Bloqueadores comerciais absolutos
-- **Sem recuperação de senha.** Nenhuma rota. Cliente trancado para fora
-  em semanas.
-- **Sem cobrança.** `plan` e `credits` no schema, zero checkout.
-- **Sem multi-cliente.** `blogs[0]` em 11 arquivos: o painel é
-  monocliente na prática, e o comprador é agência.
+### 2. O produto que vende SEO não tem SEO
+A raiz do site redireciona para o login. Nenhuma página nossa é indexável,
+e a descrição nos metadados ainda está em espanhol, de uma versão antiga.
+Somado ao rebrand para Ranknow, que ainda não começou, é a vitrine inteira
+por fazer.
 
-### 3. Economia unitária invertida
-Crédito só é debitado ao **gerar artigo** — a operação barata. A rodada do
-Raio X - GEO (até 30 buscas na web e 10 chamadas de modelo grande) e a
-auditoria não debitam nada. Com clientes reais, o uso mais caro é grátis.
+### 3. "A IA" continua sendo uma IA
+Quatro motores no código, 75 checagens no Claude e nenhuma em outro. O
+Gemini está instalado e devolve 429 por cota. Enquanto isso não virar, a
+tela diz "as IAs" e mede uma.
 
-### 4. O dado medido depende de credencial travada
-Search Console sem propriedade e Google Ads bloqueado. Sem eles, Mercado e
-Estratégia voltam a ser leitura de modelo — exatamente o que o produto
-critica. O Raio X - GEO roda com um motor só (Claude), então "a IA" é uma
-IA.
+### 4. O dado medido ainda depende de credencial travada
+Search Console sem propriedade verificada e Google Ads sem acesso Básico.
+Sem eles, a escolha de pauta é leitura de modelo — exatamente o que o
+produto critica no concorrente — e não conseguimos provar posição ao
+cliente, só contar as visitas que nós mesmos registramos.
 
-### 5. Conteúdo sem rede de segurança
-Não existe trava de qualidade antes de publicar. Artigo raso ou genérico
-vai ao ar com a marca do cliente — o risco mais caro do produto.
+### 5. Custo por cliente sem teto de plano
+O teto por hora entrou e resolve o abuso. O que continua aberto é o custo
+recorrente: uma rodada do Raio X custa de US$ 1,00 a 1,60 só com o Claude,
+não debita crédito e roda sozinha toda semana. Com quatro motores, de US$ 4
+a 20 por cliente por mês. **Adiado pelo dono (set/2026): limite e consumo
+dependem do plano contratado, e isso é conversa de cobrança** — ou seja,
+resolve junto com o item 1.
 
-### 6. Relatórios de vaidade
-Visitas e cliques soltos, sem ligar artigo → keyword → visita → conversa.
-O dado já está no banco.
+### 6. Testes cobrem o miolo, não as bordas
+382 testes, quase todos de função pura. Nenhuma rota de API testada, nenhum
+fluxo ponta a ponta. Os bugs caros deste projeto foram todos de integração:
+o blog do cliente redirecionando para o painel, o Gemini falhando calado, o
+CNAME dito inexistente. Nenhum deles seria pego pelos testes que existem.
 
-### 7. Testes cobrem só o miolo
-228 testes, todos de função pura. Nenhuma rota de API testada, nenhum fluxo
-ponta a ponta. Os bugs caros deste projeto foram de integração.
+### 7. O acervo não se mantém
+Nada revisita artigo antigo para atualizar dado ou reforçar link interno, e
+não existe agendamento nem piloto automático. SEO é frequência, e a
+frequência hoje depende de alguém clicar.
 
 ## Ordem que eu seguiria
 
-1. Decidir onde o conteúdo mora (proxy para `/blog` ou reposicionar a
-   promessa). Decisão de produto, não de código.
-2. Recuperação de senha + cobrança + multi-cliente: sem isso não há venda.
-3. ~~Débito de crédito no Raio X - GEO e na auditoria.~~ **Adiado pelo
-   dono (set/2026): limite e consumo dependem do plano que o cliente
-   contratar, e isso é conversa de cobrança.** Fica registrado o risco que
-   continua aberto: uma rodada do Raio X custa ~US$ 1,00 a 1,60 só com o
-   Claude (busca a US$ 10/mil + o que a busca traz lido a US$ 5/MTok), não
-   debita nada e ainda roda sozinha toda semana. Com três motores, de US$ 4
-   a 20 por cliente por mês, sem teto.
-4. Trava de qualidade antes de publicar.
-5. ROI por artigo nos Relatórios.
-6. Segundo motor de IA (Gemini, gratuito) para "a IA" deixar de ser uma só.
+1. **Cobrança.** Sem isso, nada do resto vira dinheiro.
+2. **Landing page com a marca Ranknow.** A vitrine e a prova de que
+   sabemos fazer o que vendemos.
+3. **Search Console.** Transforma "12 visitas" em posição e impressão —
+   é o que o cliente quer ver no relatório.
+4. **Um segundo motor de IA rodando de verdade.** Resolver a cota do
+   Gemini ou trocar de modelo.
+5. **Teste das rotas de API.** Onde moram os bugs que já custaram caro.
+6. **Agendamento e atualização de artigo antigo.**
