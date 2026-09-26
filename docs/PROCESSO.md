@@ -2594,3 +2594,40 @@ depois da primeira prova de resultado, não porta de entrada.
 
 Custo registrado: migrar de subdomínio para pasta depois exige 301 por
 artigo já indexado, e isso não está construído.
+
+## 64. O endereço antigo do blog passa a redirecionar
+
+Custo registrado no fim da 63: cliente que começa em `blog.cliente.com` e
+depois liga a pasta (`cliente.com/blog`) deixava os dois endereços
+respondendo 200 com o mesmo texto. A pasta tem precedência em
+`urlPublicaDoBlog`, então canonical e sitemap já apontavam para ela - mas o
+endereço antigo continuava servindo o artigo inteiro. O Google escolhe
+sozinho qual mostrar, e quem tem o link antigo nunca chega ao endereço que
+soma autoridade ao domínio do cliente.
+
+`enderecoNovoDoBlog()` (função pura, 6 testes) decide, e as duas páginas do
+blog obedecem. Três recusas, cada uma de propósito:
+
+- **Só o host do domínio próprio conta como endereço antigo.** A prévia
+  (`/b/slug`) chega com caminho e nunca redireciona: ela existe para a
+  agência conferir antes de o endereço do cliente estar de pé.
+- **Endereço novo que seja o caminho da plataforma não vale.** Se o domínio
+  do cliente deixar de ser verificado, o endereço público volta a ser o
+  nosso - e mandar a visita do domínio dele para cá é justamente o que a 63
+  proibiu.
+- Sem domínio próprio gravado não há endereço antigo.
+
+**308 e não 301**, ao contrário do slug renomeado (seção 40). O dado que
+decide isto é o blog, que a página já carregou e guardou em cache; decidir
+no proxy custaria uma consulta ao banco em toda visita ao blog - o oposto do
+que a 62 acabou de conquistar. Google e Bing tratam 308 como permanente; a
+diferença dos dois está no método da requisição, e aqui é sempre GET.
+
+Como foi verificado, e o que não deu para verificar: os seis testes cobrem
+os quatro caminhos da decisão. O caso real - pasta entrando no ar num blog
+que já tem subdomínio - **não foi encenado em produção de propósito**: para
+isso seria preciso marcar `pasta_status = active` no blog da DataKnow, e o
+Worker não está instalado no site dela. O blog do cliente passaria a
+redirecionar para uma pasta que não existe. Conferido o que importava: com o
+dado real de hoje, `blog.dataknow.es` continua respondendo 200, sem
+redirecionamento.

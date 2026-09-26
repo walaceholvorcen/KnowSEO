@@ -68,6 +68,38 @@ export function urlDoArtigo(
 }
 
 /**
+ * O blog mudou de endereço, e este pedido chegou no antigo? Devolve o
+ * endereço novo, ou null quando não há para onde mandar.
+ *
+ * Acontece quando o cliente começa em `blog.cliente.com` e depois liga a
+ * pasta (`cliente.com/blog`), que tem precedência por somar mais ao SEO
+ * dele. Sem redirecionamento, os dois endereços respondem 200 com o mesmo
+ * texto: o Google escolhe sozinho qual mostrar, e o link que alguém
+ * compartilhou fica no endereço que a gente deixou de considerar oficial.
+ *
+ * Três recusas, todas de propósito:
+ * - só o host do domínio próprio conta como endereço antigo. A prévia
+ *   (`/b/slug`) chega com caminho e nunca redireciona: ela existe para a
+ *   agência conferir o blog antes de o endereço do cliente estar de pé;
+ * - endereço novo que seja o caminho da plataforma não vale. Mandar a
+ *   visita do domínio do cliente para o nosso domínio é exatamente o que
+ *   não pode acontecer (PROCESSO 63);
+ * - sem domínio próprio gravado não há endereço antigo.
+ */
+export function enderecoNovoDoBlog(
+  blog: BlogEndereco,
+  servidoEm: string,
+  appDomain = dominioDoApp(),
+): string | null {
+  if (!blog.custom_domain) return null;
+  const antigo = `https://${blog.custom_domain}`;
+  if (servidoEm.replace(/\/$/, "") !== antigo) return null;
+  const atual = urlPublicaDoBlog(blog, appDomain);
+  if (atual.kind === "path" || atual.url === antigo) return null;
+  return atual.url;
+}
+
+/**
  * Onde o app mora, com esquema. Tudo o que o blog carrega do app - capa
  * gerada, contador de visitas - usa este endereço completo: com o blog
  * servido de dentro do site do cliente (cliente.com/blog), um "/api/og"

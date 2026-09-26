@@ -1,12 +1,17 @@
 import { unstable_cache } from "next/cache";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import type { Metadata } from "next";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { resolveBlogByHost, tenantOrigin } from "@/lib/tenant";
 import { textoSobre } from "@/lib/contrast";
-import { origemDoApp, urlPublicaDoBlog, versaoDaIdentidade } from "@/lib/blog-endereco";
+import {
+  enderecoNovoDoBlog,
+  origemDoApp,
+  urlPublicaDoBlog,
+  versaoDaIdentidade,
+} from "@/lib/blog-endereco";
 import { LinkDoSite, RodapeDoBlog } from "@/components/blog-publico";
 import { formatarData, fusoDoPais } from "@/lib/datas";
 import { idiomaDoBlog, localeDoBlog } from "@/lib/idioma";
@@ -72,10 +77,15 @@ export default async function TenantBlogHome({
   const blog = await resolveBlogByHost(domain);
   if (!blog) notFound();
 
-  const list = ((await artigosPublicados(blog.id)) as Article[]) ?? [];
   // Link relativo "/slug" em /b/<slug> caía na raiz do app (404): a base
   // precisa do caminho do tenant, e do host em que o visitante está.
   const base = await tenantOrigin(domain);
+  // Endereço antigo (o subdomínio, depois de a pasta entrar no ar): manda
+  // para o novo em vez de servir a mesma vitrine em dois lugares.
+  const enderecoNovo = enderecoNovoDoBlog(blog, base);
+  if (enderecoNovo) permanentRedirect(enderecoNovo);
+
+  const list = ((await artigosPublicados(blog.id)) as Article[]) ?? [];
   // Quem lê o blog é o mercado do cliente, não quem opera o painel: a data
   // sai no fuso do país do domínio (dataknow.es → Madri). Sem domínio de
   // país, UTC - o cookie do operador nem chega a este visitante.

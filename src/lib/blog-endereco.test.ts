@@ -1,6 +1,7 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
 import {
+  enderecoNovoDoBlog,
   erroNoSlug,
   origemDoApp,
   siteDoCliente,
@@ -157,5 +158,57 @@ describe("origem do app e site do cliente", () => {
   test("sem nada cadastrado, sem link", () => {
     assert.equal(siteDoCliente({ custom_domain: null, brand_domains: [] }), null);
     assert.equal(siteDoCliente({ custom_domain: null, brand_domains: ["não é domínio"] }), null);
+  });
+});
+
+describe("endereço novo depois da migração", () => {
+  const app = "know-seo.vercel.app";
+  const base = {
+    subdomain: "dataknow",
+    custom_domain: "blog.dataknow.es",
+    domain_status: "active" as const,
+  };
+
+  test("pasta no ar: o subdomínio antigo manda para ela", () => {
+    const blog = { ...base, pasta_url: "https://dataknow.es/blog", pasta_status: "active" as const };
+    assert.equal(
+      enderecoNovoDoBlog(blog, "https://blog.dataknow.es", app),
+      "https://dataknow.es/blog",
+    );
+  });
+
+  test("barra no fim do endereço servido não engana a comparação", () => {
+    const blog = { ...base, pasta_url: "https://dataknow.es/blog", pasta_status: "active" as const };
+    assert.equal(
+      enderecoNovoDoBlog(blog, "https://blog.dataknow.es/", app),
+      "https://dataknow.es/blog",
+    );
+  });
+
+  test("servido no próprio endereço público não redireciona", () => {
+    assert.equal(enderecoNovoDoBlog(base, "https://blog.dataknow.es", app), null);
+  });
+
+  test("a prévia da agência nunca redireciona", () => {
+    const blog = { ...base, pasta_url: "https://dataknow.es/blog", pasta_status: "active" as const };
+    assert.equal(
+      enderecoNovoDoBlog(blog, `https://${app}/b/dataknow`, app),
+      null,
+    );
+  });
+
+  test("domínio que deixou de ser verificado não manda a visita para o nosso endereço", () => {
+    // Sem pasta e com o domínio fora do ar, o endereço público volta a ser
+    // o caminho da plataforma - e mandar o visitante do domínio do cliente
+    // para cá é justamente o que não pode acontecer (PROCESSO 63).
+    const blog = { ...base, domain_status: "pending" as const };
+    assert.equal(enderecoNovoDoBlog(blog, "https://blog.dataknow.es", app), null);
+  });
+
+  test("sem domínio próprio não há endereço antigo", () => {
+    assert.equal(
+      enderecoNovoDoBlog({ ...base, custom_domain: null }, "https://blog.dataknow.es", app),
+      null,
+    );
   });
 });

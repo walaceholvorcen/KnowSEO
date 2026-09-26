@@ -1,12 +1,13 @@
 import { cache } from "react";
 import { unstable_cache } from "next/cache";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { jsonParaScript } from "@/lib/html-seguro";
 import type { Metadata } from "next";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { resolveBlogByHost, tenantOrigin } from "@/lib/tenant";
 import { ArticleView } from "@/components/article-view";
 import {
+  enderecoNovoDoBlog,
   origemDoApp,
   siteDoCliente,
   urlDoArtigo,
@@ -107,6 +108,16 @@ export default async function TenantArticlePage({
   const article = await artigoPublicado(blog.id, slug);
   if (!article) notFound();
 
+  // Endereço antigo do blog (o subdomínio, depois de a pasta entrar no ar):
+  // manda o visitante e o buscador para o endereço novo, em vez de servir o
+  // mesmo texto em dois lugares. 308 e não 301 porque o dado que decide isto
+  // mora aqui, já carregado e em cache - decidir no proxy custaria uma
+  // consulta ao banco em toda visita ao blog. O Google trata os dois como
+  // permanente.
+  const inicio = await tenantOrigin(domain);
+  const enderecoNovo = enderecoNovoDoBlog(blog, inicio);
+  if (enderecoNovo) permanentRedirect(`${enderecoNovo}/${slug}`);
+
   const origin = urlPublicaDoBlog(blog).url;
   const app = origemDoApp();
   const autor = autorGravado(blog.autor);
@@ -175,7 +186,7 @@ export default async function TenantArticlePage({
         />
       )}
       <PageviewTracker blogId={blog.id} articleId={article.id} rastreio={`${app}/api/track`} />
-      <ArticleView blog={blog} article={article} inicio={await tenantOrigin(domain)} />
+      <ArticleView blog={blog} article={article} inicio={inicio} />
     </div>
   );
 }
