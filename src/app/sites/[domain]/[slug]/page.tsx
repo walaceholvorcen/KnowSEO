@@ -63,8 +63,14 @@ export async function generateMetadata({
     article.cover_image_url ||
     `${origemDoApp()}/api/og/${article.id}?v=${versaoDaIdentidade(blog)}`;
 
+  const publica = urlPublicaDoBlog(blog);
+
   return {
-    metadataBase: new URL(urlPublicaDoBlog(blog).url),
+    metadataBase: new URL(publica.url),
+    // Sem endereço do cliente, o artigo só existe no caminho da plataforma:
+    // é prévia para a agência conferir, e fica fora do Google. Nada do
+    // cliente é indexado embaixo do nosso domínio.
+    robots: publica.kind === "path" ? { index: false, follow: false } : undefined,
     title,
     description,
     // Evita conteúdo duplicado quando o mesmo artigo é servido pelo

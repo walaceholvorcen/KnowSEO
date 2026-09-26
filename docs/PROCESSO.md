@@ -2543,3 +2543,54 @@ cópia guardada traria o nonce de ontem e o navegador recusaria os scripts.
 Trocar o nonce por `'unsafe-inline'` no blog é decisão do dono, não do
 código: a defesa que sobra ali é o `htmlSeguro`, que é lista do que entra.
 No painel nada disso se aplica - lá nada é guardado, e o nonce fica.
+
+## 63. Nada do cliente embaixo do nosso domínio
+
+Decisão do dono, 26/09: o conteúdo do cliente fica sempre atrelado ao
+domínio DELE. Nada de blog em `cliente.ranknow.es`.
+
+Isso derruba a necessidade de curinga no domínio próprio - e com ela a
+necessidade de apontar os nameservers do ranknow.es para a Vercel. Fica um
+registro só, para `app.ranknow.es`.
+
+Fui conferir se a regra já valia, e não valia:
+
+- `know-seo.vercel.app/robots.txt` respondia **404**: o app nunca teve
+  robots.txt. Só os blogs tinham, cada um o seu
+- `/b/<cliente>` respondia 200 para qualquer rastreador, sem `noindex`
+- Com domínio do cliente ativo, o canonical protege (aponta para o endereço
+  dele). Sem domínio, o canonical apontava para NÓS
+
+Ou seja: havia conteúdo de cliente indexável embaixo da nossa marca, e cada
+artigo publicado antes de o domínio ficar pronto nascia apontando para cá.
+
+Três correções:
+
+1. `src/app/robots.ts` - robots.txt do app, bloqueando `/b/` e `/api/`. Num
+   host de cliente o proxy manda o `/robots.txt` para o robots daquele blog,
+   que segue liberado
+2. `noindex, nofollow` nas páginas do blog quando o endereço público ainda é
+   o caminho da plataforma (`kind === "path"`). Com endereço do cliente
+   ativo, nada muda: ali o canonical já resolve, e `noindex` seria errado
+3. `/b/` passa a ser dito pelo que é - prévia para a agência, fora do
+   Google - em vez de "o blog está no ar em..."
+
+Conferido no navegador: `/b/testando` (sem domínio) sai com
+`noindex, nofollow`; `/b/dataknow` (com `blog.dataknow.es` ativo) sai sem
+`noindex`, com canonical no domínio do cliente. É o comportamento certo nos
+dois casos.
+
+**E a ordem da tela mudou.** Configurações do blog abria com "Publicar numa
+pasta do site do cliente", que é o caminho MAIS DIFÍCIL: a pasta exige um
+Worker do Cloudflare, o que só existe se o domínio do cliente já estiver lá
+- e se não estiver, o pré-requisito é migrar nameservers, a operação mais
+arriscada que existe num domínio (derruba site e e-mail se sair errado).
+
+Agora abre com o subdomínio (`blog.cliente.com`): um registro CNAME, dois
+minutos, funciona em qualquer registrador, risco zero para o site dele. A
+pasta virou `<details>` marcado como avançado, com o pré-requisito dito na
+primeira linha. Ela continua sendo o melhor formato de SEO - é upgrade para
+depois da primeira prova de resultado, não porta de entrada.
+
+Custo registrado: migrar de subdomínio para pasta depois exige 301 por
+artigo já indexado, e isso não está construído.

@@ -26,7 +26,7 @@ export default async function BlogSettingsPage() {
   const noAr = semEsquema(publica.url);
 
   const veredito = !blog.custom_domain
-    ? `O blog está no ar em ${noAr}.`
+    ? "Este blog ainda não está no domínio do cliente."
     : publica.verified
       ? `O blog responde em ${noAr}.`
       : blog.domain_status === "error"
@@ -57,8 +57,9 @@ export default async function BlogSettingsPage() {
           apoioPendente ||
           (!blog.custom_domain && (
             <>
-              Você pode continuar usando este endereço, ou publicar o blog
-              no site do cliente abaixo.
+              Este é o endereço de prévia, para você conferir antes de
+              publicar: ele fica fora do Google de propósito. O blog do
+              cliente vive no domínio dele — configure abaixo.
             </>
           ))
         }
@@ -73,22 +74,38 @@ export default async function BlogSettingsPage() {
         ).slice(0, -blog.subdomain.length)}
       />
 
-      <Secao>Publicar numa pasta do site do cliente</Secao>
-      <div className="mt-4">
-        <PublicarNaPasta
-          enderecoInicial={blog.pasta_url ?? null}
-          statusInicial={blog.pasta_status ?? "pending"}
-          appOrigin={origemDoApp()}
-        />
-      </div>
-
-      <Secao>Ou num subdomínio do cliente</Secao>
+      {/* O subdomínio vem primeiro porque é o caminho de todo cliente: um
+          registro no DNS, dois minutos, funciona em qualquer registrador.
+          A pasta ganha mais SEO, mas exige um Worker do Cloudflare - o que
+          só existe se o domínio do cliente já estiver lá. Apresentar a
+          pasta primeiro, como estava, era abrir com a porta mais difícil. */}
+      <Secao>Publicar no domínio do cliente</Secao>
       <div className="mt-4">
         <PublicarNoDominio
           dominio={blog.custom_domain}
           statusInicial={blog.domain_status}
         />
       </div>
+
+      <details className="mt-8 group">
+        <summary className="cursor-pointer text-sm font-medium text-slate-700 marker:text-slate-400 dark:text-slate-300">
+          Publicar numa pasta do site do cliente (avançado)
+        </summary>
+        <p className="mt-3 max-w-[68ch] text-sm text-slate-600 dark:text-slate-400">
+          <strong>cliente.com/blog</strong> é o formato que mais ajuda o SEO
+          dele: o Google trata a pasta como parte do site, então cada artigo
+          soma autoridade ao domínio inteiro. O preço é o pré-requisito — o
+          domínio do cliente precisa estar na Cloudflare, porque a pasta é
+          encaminhada por um Worker de lá. Sem isso, use o subdomínio acima.
+        </p>
+        <div className="mt-4">
+          <PublicarNaPasta
+            enderecoInicial={blog.pasta_url ?? null}
+            statusInicial={blog.pasta_status ?? "pending"}
+            appOrigin={origemDoApp()}
+          />
+        </div>
+      </details>
 
       <Secao>Linkagem interna</Secao>
       <p className="text-sm text-slate-600 dark:text-slate-400">

@@ -26,10 +26,14 @@ export async function generateMetadata({
 
   // Canonical pela mesma precedência do painel: o blog aberto por um host
   // não confirmado aponta para o endereço que de fato está no ar.
-  const publica = urlPublicaDoBlog(blog).url;
+  const publica = urlPublicaDoBlog(blog);
   return {
-    metadataBase: new URL(publica),
-    alternates: { canonical: publica },
+    metadataBase: new URL(publica.url),
+    alternates: { canonical: publica.url },
+    // Enquanto o blog não tem endereço do cliente, ele só existe no caminho
+    // da plataforma - e aí é prévia, não publicação. Fora do Google: nada do
+    // cliente é indexado embaixo do nosso domínio.
+    robots: publica.kind === "path" ? { index: false, follow: false } : undefined,
     // Marca de fábrica, e é ela que a checagem de domínio procura para saber
     // se quem responde naquele endereço é o blog ou a página antiga do site.
     generator: "Know SEO",
