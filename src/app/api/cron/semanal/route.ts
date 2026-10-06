@@ -10,6 +10,7 @@ import {
 } from "@/lib/ai-visibility/runner";
 import type { AiQuery, Blog } from "@/types";
 import { resultadoDaTarefa } from "@/lib/cron/resultado";
+import { obterAccessToken } from "@/lib/google/oauth";
 import { abrirExecucao, fecharExecucao } from "./execucoes";
 
 // O acompanhamento semanal: reaudita o site e refaz o Raio X - GEO de cada
@@ -144,6 +145,17 @@ export async function GET(request: Request) {
 
     feito.push(registro);
   }
+
+  // Encosta na conexão com o Google de cada workspace do lote. Não é para
+  // usar o token: é para a morte dele ser percebida. Em modo de teste no
+  // Google Cloud o Google derruba o acesso a cada 7 dias, e se ninguém abrir
+  // o Mercado nesse período a conexão fica morta em silêncio. Quem anota é
+  // o próprio obterAccessToken; aqui só provocamos a tentativa.
+  //
+  // allSettled e fora da lista de tarefas: falhar aqui é o resultado
+  // esperado quando a conexão morreu, e não deve contar como falha do cron.
+  const workspaces = [...new Set(lote.map((b) => b.workspace_id))];
+  await Promise.allSettled(workspaces.map((id) => obterAccessToken(id)));
 
   // Tudo em paralelo: cada blog é independente, e em sequência cinco blogs
   // estourariam o limite de cinco minutos da função.

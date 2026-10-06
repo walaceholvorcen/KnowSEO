@@ -2631,3 +2631,58 @@ Worker não está instalado no site dela. O blog do cliente passaria a
 redirecionar para uma pasta que não existe. Conferido o que importava: com o
 dado real de hoje, `blog.dataknow.es` continua respondendo 200, sem
 redirecionamento.
+
+## 65. A conexão com o Google parou de morrer calada (migração 0020)
+
+Contexto: o app OAuth está **em modo de teste** no Google Cloud, e nesse
+modo o Google derruba o acesso **a cada 7 dias**, sempre, sem nada de
+errado do nosso lado. Somado ao que a seção 18 já registrava - "se o token
+do Google falhar, o erro é engolido e a análise de cobertura ainda vale" -
+o resultado era o pior possível: a conexão morria toda semana e o produto
+não contava a ninguém. Um piloto de 90 dias poderia passar inteiro sem
+dado do Google.
+
+O que entrou:
+
+- **`conexaoGoogleMorreu(status, corpo)`** (função pura, 4 testes).
+  `invalid_grant` é a única resposta que significa "este acesso não vale
+  mais". 500, 502, 503 e 504 são soluço do lado deles: marcar a conexão
+  como morta neles mandaria a agência reconectar sem precisar - e ensinaria
+  a ignorar o aviso, que é como um aviso morre.
+- **`google_integration.quebrada_em`**, escrita dentro de
+  `obterAccessToken`. É o único lugar por onde toda leitura do Google passa
+  (Search Console, GA4, Planejador), então o estado se mantém verdadeiro
+  **sem uma única chamada nova em lugar nenhum**. Guarda a data da PRIMEIRA
+  falha: o que a tela precisa dizer é há quanto tempo o dado parou de
+  chegar. Volta a null na primeira renovação que funcionar, e na reconexão.
+- **Aviso no painel, não só em Integrações.** Ninguém abre Integrações para
+  conferir algo que não sabe que quebrou. O aviso mora no layout do painel,
+  cobrindo as nove telas, ao lado do de conta em liberação. Custo: uma
+  consulta pela chave primária, em paralelo com o blog ativo, para não
+  somar tempo ao clique (PROCESSO 26).
+- **Integrações diz a causa**, em ordem de probabilidade: app em modo de
+  teste (e que reconectar resolve por 7 dias, não para sempre), acesso
+  revogado em myaccount.google.com/permissions, senha trocada.
+- **O cron semanal encosta na conexão** de cada workspace do lote. Não é
+  para usar o token: é para a morte dele ser percebida mesmo que ninguém
+  abra o Mercado naquela semana. Fora da lista de tarefas e em
+  `allSettled`, porque falhar ali é o resultado esperado quando a conexão
+  morreu e não deve contar como falha do cron.
+
+Duas tolerâncias deliberadas, pelo padrão da casa (`liberado !== false`,
+colunas de pasta opcionais): `select("*")` em vez do nome da coluna, e a
+escrita de `quebrada_em` dentro de try/catch. Com o deploy antes da
+migração a coluna não existe - e perder o Search Console por causa do aviso
+seria pior que ficar sem o aviso. Na reconexão a limpeza é uma escrita
+separada pelo mesmo motivo: juntá-la ao upsert faria a reconexão falhar
+justamente para quem está tentando consertar a conexão.
+
+`oauth.ts` passou a importar o client admin por caminho relativo com
+extensão (`../supabase/admin.ts`): o atalho `@/` não é resolvido pelo node
+que roda os testes, e o módulo agora tem função pura para testar.
+
+**O que não deu para verificar:** o aviso na tela. Não existe nenhuma
+conexão Google no banco - a tabela está vazia, e essa é a própria origem
+desta rodada. Plantar um refresh_token falso em produção para ver o aviso
+não se justifica. Conferido o que dava: os 4 testes da decisão, tipo, lint
+e build limpos, e 392 testes no total.

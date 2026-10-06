@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
   requireUserAndWorkspace,
@@ -7,6 +8,8 @@ import {
 import { Sidebar } from "@/components/sidebar";
 import { urlPublicaDoBlog } from "@/lib/blog-endereco";
 import { DetectarFuso } from "@/components/detectar-fuso";
+import { buscarConexao } from "@/lib/google/oauth";
+import { formatarData } from "@/lib/datas";
 
 // Canal de vendas da plataforma, o mesmo do Google Meu Negócio bloqueado.
 const contato = process.env.NEXT_PUBLIC_CONTATO_VENDAS;
@@ -23,7 +26,17 @@ export default async function DashboardLayout({
     redirect("/onboarding");
   }
 
-  const blog = (await getBlogAtivo(supabase, workspace.id))!;
+  // A conexão com o Google morre sozinha - app em modo de teste no Google
+  // Cloud perde o acesso a cada 7 dias - e morria calada: o Mercado engolia
+  // o erro e o relatório saía sem o dado. O aviso mora aqui, e não só em
+  // Integrações, porque ninguém abre Integrações para conferir uma coisa que
+  // não sabe que quebrou. Uma consulta pela chave primária, em paralelo com
+  // o blog ativo, para não somar tempo ao clique (PROCESSO 26).
+  const [blogAtivo, google] = await Promise.all([
+    getBlogAtivo(supabase, workspace.id),
+    buscarConexao(workspace.id).catch(() => null),
+  ]);
+  const blog = blogAtivo!;
 
   return (
     // Coluna no celular (barra no topo), linha a partir de telas largas
@@ -62,6 +75,22 @@ export default async function DashboardLayout({
                 </a>
               </>
             )}
+          </p>
+        )}
+        {google?.quebradaEm && (
+          <p
+            role="status"
+            className="border-b border-slate-200 border-l-2 border-l-nota-critico bg-white px-5 py-2.5 text-sm text-slate-700 dark:border-slate-800 dark:border-l-nota-critico dark:bg-slate-900 dark:text-slate-300 sm:px-8 lg:px-10"
+          >
+            A conexão com o Google caiu{" "}
+            {formatarData(google.quebradaEm, "UTC", "curta")} e desde então Search
+            Console, GA4 e volume de busca não chegam.{" "}
+            <Link
+              href="/settings/integrations"
+              className="font-medium text-cobalto-700 hover:underline dark:text-cobalto-300"
+            >
+              Reconectar
+            </Link>
           </p>
         )}
         {children}

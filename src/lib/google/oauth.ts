@@ -1,4 +1,7 @@
-import { createAdminClient } from "@/lib/supabase/admin";
+// Import relativo com extensão, como o resto do lib: o atalho "@/" não é
+// resolvido pelo node que roda os testes, e este módulo passou a ter uma
+// função pura para testar (conexaoGoogleMorreu).
+import { createAdminClient } from "../supabase/admin.ts";
 
 // Conexão única por workspace com Search Console + GA4, autorizada pela
 // conta Google da agência - não uma por cliente. Ver a migration
@@ -95,20 +98,60 @@ export async function buscarEmailDaConta(accessToken: string): Promise<string> {
   return data.email ?? "(desconhecido)";
 }
 
+export const CONEXAO_GOOGLE_MORREU =
+  "A conexão com o Google expirou. Reconecte a conta em Configurações > Integrações.";
+
+/**
+ * O Google recusou o refresh_token em definitivo?
+ *
+ * `invalid_grant` é a única resposta que significa "este acesso não vale
+ * mais": app em modo de teste no Google Cloud (ali o Google derruba a
+ * conexão a cada 7 dias), acesso revogado em
+ * myaccount.google.com/permissions, senha da conta trocada.
+ *
+ * Qualquer outro erro - 500, 503, rede - é soluço do lado deles. Marcar a
+ * conexão como morta nesse caso mandaria a agência reconectar sem precisar,
+ * e ensinaria a ignorar o aviso.
+ */
+export function conexaoGoogleMorreu(status: number, corpo: string): boolean {
+  return status === 400 && corpo.includes("invalid_grant");
+}
+
 // Token de acesso de curta duração (1h), a partir do refresh_token salvo.
 // Chamado antes de toda leitura no Search Console/GA4 - nunca guardamos
 // access_token, ele expira rápido demais para valer a pena persistir.
+//
+// É também o único lugar por onde toda leitura do Google passa, então é aqui
+// que a morte da conexão é percebida e anotada - sem nenhuma chamada nova
+// em nenhum outro lugar.
 export async function obterAccessToken(workspaceId: string): Promise<string> {
   const admin = createAdminClient();
+  // select("*") e não o nome das colunas: `quebrada_em` só existe depois da
+  // migração 0020, e pedi-la pelo nome derrubaria a consulta inteira num
+  // deploy que chegasse antes dela.
   const { data } = await admin
     .from("google_integration")
-    .select("refresh_token")
+    .select("*")
     .eq("workspace_id", workspaceId)
     .maybeSingle();
 
   if (!data) {
     throw new Error("Nenhuma conta Google conectada neste workspace.");
   }
+
+  // Anotar o estado nunca pode derrubar a leitura: antes da migração a
+  // coluna não existe, e perder o Search Console por causa do aviso seria
+  // pior que ficar sem o aviso.
+  const anotar = async (quebrada_em: string | null) => {
+    try {
+      await admin
+        .from("google_integration")
+        .update({ quebrada_em })
+        .eq("workspace_id", workspaceId);
+    } catch {
+      /* coluna ainda não existe neste banco */
+    }
+  };
 
   const res = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
@@ -122,10 +165,21 @@ export async function obterAccessToken(workspaceId: string): Promise<string> {
   });
 
   if (!res.ok) {
+    const corpo = await res.text();
+    if (conexaoGoogleMorreu(res.status, corpo)) {
+      // Guarda a data da PRIMEIRA falha: o que a tela precisa dizer é há
+      // quanto tempo o dado do Google parou de chegar, não quando foi a
+      // última tentativa.
+      if (!data.quebrada_em) await anotar(new Date().toISOString());
+      throw new Error(CONEXAO_GOOGLE_MORREU);
+    }
     throw new Error(
       `Não foi possível renovar o acesso ao Google: ${res.status}`,
     );
   }
+  // Voltou a responder: ou alguém reconectou, ou a falha anterior era
+  // soluço do lado deles. O aviso sai da tela sozinho.
+  if (data.quebrada_em) await anotar(null);
   const tokens = (await res.json()) as TokenResponse;
   return tokens.access_token;
 }
@@ -143,19 +197,40 @@ export async function salvarConexao(params: {
     refresh_token: params.refreshToken,
     connected_at: new Date().toISOString(),
   });
+
+  // Reconectar é o conserto, então a marca de quebrada sai junto - mas numa
+  // escrita separada e tolerante: com o deploy antes da migração 0020, a
+  // coluna não existe, e juntar os dois campos faria a reconexão falhar
+  // justamente para quem está tentando consertar a conexão.
+  try {
+    await admin
+      .from("google_integration")
+      .update({ quebrada_em: null })
+      .eq("workspace_id", params.workspaceId);
+  } catch {
+    /* coluna ainda não existe neste banco */
+  }
 }
 
-export async function buscarConexao(
-  workspaceId: string,
-): Promise<{ email: string; conectadoEm: string } | null> {
+export async function buscarConexao(workspaceId: string): Promise<{
+  email: string;
+  conectadoEm: string;
+  /** Desde quando o Google parou de aceitar o acesso. Null = viva. */
+  quebradaEm: string | null;
+} | null> {
   const admin = createAdminClient();
+  // select("*") pelo mesmo motivo de obterAccessToken: a coluna é nova.
   const { data } = await admin
     .from("google_integration")
-    .select("connected_email, connected_at")
+    .select("*")
     .eq("workspace_id", workspaceId)
     .maybeSingle();
 
   return data
-    ? { email: data.connected_email, conectadoEm: data.connected_at }
+    ? {
+        email: data.connected_email,
+        conectadoEm: data.connected_at,
+        quebradaEm: data.quebrada_em ?? null,
+      }
     : null;
 }

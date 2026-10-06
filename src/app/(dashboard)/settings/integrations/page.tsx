@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
-import { pagina } from "@/components/ui";
+import { folha, pagina } from "@/components/ui";
+import { formatarData } from "@/lib/datas";
 import { requireUserAndWorkspace, getBlogAtivo } from "@/lib/workspace";
 import { SettingsNav } from "../settings-nav";
 import { Lede, Secao } from "@/components/lede";
@@ -29,9 +30,11 @@ export default async function IntegrationsPage({
 
   const veredito = !isGoogleIntegrationConfigured()
     ? "Integração com o Google ainda não está configurada no ambiente."
-    : conexao
-      ? `Conectado como ${conexao.email}.`
-      : "Nenhuma conta Google conectada ainda.";
+    : conexao?.quebradaEm
+      ? "A conexão com o Google caiu."
+      : conexao
+        ? `Conectado como ${conexao.email}.`
+        : "Nenhuma conta Google conectada ainda.";
 
   return (
     <div className={pagina("estreita")}>
@@ -51,6 +54,49 @@ export default async function IntegrationsPage({
       )}
       {conectado && (
         <p className="mb-6 text-nota-excelente">Conta conectada.</p>
+      )}
+
+      {/* Conexão morta: o Google parou de aceitar o acesso guardado. Dizer o
+          motivo importa porque o mais comum não é culpa de ninguém - é o
+          próprio Google derrubando apps em modo de teste a cada 7 dias, e
+          nesse caso reconectar resolve por mais 7 dias, não para sempre. */}
+      {conexao?.quebradaEm && (
+        <div className={folha()}>
+          <p className="text-sm text-slate-700 dark:text-slate-300">
+            Desde{" "}
+            <strong>{formatarData(conexao.quebradaEm, "UTC", "longa")}</strong>{" "}
+            o Google recusa o acesso de <strong>{conexao.email}</strong>.
+            Enquanto isso, Search Console, GA4 e volume de busca na Estratégia
+            não recebem dado nenhum.
+          </p>
+          <p className="mt-3 text-sm text-slate-600 dark:text-slate-400">
+            Três causas possíveis, em ordem de probabilidade:
+          </p>
+          <ol className="mt-2 space-y-1.5 text-sm text-slate-600 dark:text-slate-400">
+            <li>
+              1. O app está <strong>em modo de teste</strong> no Google Cloud.
+              Nesse modo o Google derruba a conexão a cada 7 dias, sempre.
+              Reconectar resolve por mais 7 dias; publicar o app, ou marcá-lo
+              como interno de uma organização, resolve de vez.
+            </li>
+            <li>
+              2. Alguém revogou o acesso em{" "}
+              <a
+                href="https://myaccount.google.com/permissions"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium text-cobalto-700 hover:underline dark:text-cobalto-300"
+              >
+                myaccount.google.com/permissions
+              </a>
+              .
+            </li>
+            <li>3. A senha dessa conta Google foi trocada.</li>
+          </ol>
+          <p className="mt-3 text-sm text-slate-600 dark:text-slate-400">
+            Em qualquer dos casos, o conserto é reconectar abaixo.
+          </p>
+        </div>
       )}
 
       {isGoogleIntegrationConfigured() && (
