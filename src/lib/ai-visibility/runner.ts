@@ -5,6 +5,7 @@ import { OpenAiProvider } from "./openai-provider";
 import { PerplexityProvider } from "./perplexity-provider";
 import { GeminiProvider } from "./gemini-provider";
 import type { AiProvider } from "./provider";
+import { MOTORES_DESLIGADOS } from "@/lib/modulos";
 import type { AiQuery, Blog } from "@/types";
 
 // Gera perguntas e responde à checagem de "a IA está configurada?" das
@@ -17,6 +18,12 @@ export function getProvider(): AiProvider {
 // Todos os motores com chave configurada, na ordem em que aparecem para o
 // cliente. Cada chave nova (OPENAI_API_KEY, PERPLEXITY_API_KEY) liga um motor
 // sem mexer em código: a rodada seguinte já pergunta a ele também.
+//
+// MOTORES_DESLIGADOS vem depois da chave de propósito: é o desligamento
+// explícito de um motor que TEM chave e não entrega (hoje o Gemini, barrado
+// pela cota do Google). Esta função é o único lugar que decide quem mede,
+// então filtrar aqui tira o motor da rodada e da tela ao mesmo tempo - o
+// placar recebe exatamente esta lista.
 export function getProviders(): AiProvider[] {
   return [
     new OpenAiProvider(),
@@ -24,7 +31,8 @@ export function getProviders(): AiProvider[] {
     new PerplexityProvider(),
     new ClaudeProvider(),
   ]
-    .filter((p) => p.isConfigured());
+    .filter((p) => p.isConfigured())
+    .filter((p) => !MOTORES_DESLIGADOS.includes(p.name));
 }
 
 // Dez, não quinze: pedido do cliente, e a conta fecha. Com quatro motores são

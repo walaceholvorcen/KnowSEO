@@ -2686,3 +2686,37 @@ conexão Google no banco - a tabela está vazia, e essa é a própria origem
 desta rodada. Plantar um refresh_token falso em produção para ver o aviso
 não se justifica. Conferido o que dava: os 4 testes da decisão, tipo, lint
 e build limpos, e 392 testes no total.
+
+## 66. O Gemini sai da rodada e da tela (a chave fica)
+
+Decisão do dono ao fechar os planos de venda: o material só pode prometer o
+que o app entrega. O Gemini tinha chave instalada e **a cota do Google
+devolve 429 desde o primeiro dia** - então ele aparecia como coluna no
+placar, consumia uma consulta por pergunta e errava em todas.
+
+Coluna que nunca tem número é pior que coluna que não existe, e um motor
+que não mede não pode entrar numa tabela de preços.
+
+`MOTORES_DESLIGADOS` em `src/lib/modulos.ts`, ao lado de
+`MODULOS_VISIVEIS` e pelo mesmo princípio da seção 51: o código continua
+inteiro, só sai do que se vê. O filtro mora em `getProviders()`, que é o
+único lugar que decide quem mede - então tira o motor **da rodada e da
+tela ao mesmo tempo**, porque o placar recebe exatamente essa lista.
+
+Duas escolhas que valem registro:
+
+- **A chave continua no ambiente, intocada.** Apagar a variável na Vercel
+  teria o mesmo efeito visual e seria irreversível: o valor não volta a ser
+  legível depois de salvo, então consertar a cota exigiria pedir a chave de
+  novo. Desligar por código é reversível em uma linha.
+- **O filtro não entrou em `motoresNaTela`**, que lista também motor com
+  dado gravado. Isso é de propósito (seção 33: rodada antiga continua
+  legível) e hoje é inócuo - as 85 checagens do banco são todas do Claude,
+  nenhuma do Gemini. Se algum dia houver dado gravado de um motor
+  desligado, a rodada antiga continua contando a verdade do dia em que
+  rodou.
+
+Sem teste novo: é um filtro de uma linha sobre uma lista literal, e
+`runner.ts` importa por atalho `@/` (que o node dos testes não resolve).
+A prova é o placar receber a mesma lista que a rodada - o que o tipo
+garante.
