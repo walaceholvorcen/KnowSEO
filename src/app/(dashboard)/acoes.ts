@@ -5,6 +5,12 @@ import { htmlSeguro } from "@/lib/html-seguro";
 import { slugify } from "@/lib/utils";
 import type { InternalLink } from "@/types";
 import { normalizarAutor, type Autor } from "@/lib/autor";
+import {
+  diaUTC,
+  distribuirDatas,
+  doInput,
+  limitesDoMes,
+} from "@/lib/calendario";
 
 // As gravações que antes o navegador fazia direto no Supabase.
 //
@@ -64,6 +70,76 @@ export async function salvarArtigo(dados: {
   }
   if (!data?.length) return { erro: NADA_MUDOU };
   return { erro: null, slug };
+}
+
+/**
+ * Marca (ou desmarca) a data em que um rascunho vai ao ar.
+ *
+ * Só rascunho: agendar artigo publicado não quer dizer nada, e republicar na
+ * data o devolveria ao topo do blog como se fosse novo. O `.eq("status",
+ * "draft")` é o que garante isso no banco, não na tela.
+ */
+export async function agendarArtigo(
+  id: string,
+  dia: string | null,
+): Promise<Resultado> {
+  const quando = dia ? doInput(dia) : null;
+  if (dia && !quando) return { erro: "Data inválida." };
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("articles")
+    .update({ scheduled_at: quando, updated_at: new Date().toISOString() })
+    .eq("id", id)
+    .eq("status", "draft")
+    .select("id");
+
+  if (error) return { erro: error.message };
+  if (!data?.length) return { erro: NADA_MUDOU };
+  return { erro: null };
+}
+
+/**
+ * Espalha os rascunhos pelos dias úteis do mês - o botão que transforma um
+ * dia de trabalho num mês de cadência.
+ *
+ * As datas saem de `distribuirDatas` (função pura, testada), e não daqui: a
+ * tela mostra o mesmo cálculo antes de salvar. Começa em hoje, nunca no dia
+ * 1 de um mês que já passou - agendar para ontem publicaria tudo de uma vez
+ * no disparo seguinte do robô.
+ */
+export async function distribuirNoMes(
+  ids: string[],
+  mes: string,
+): Promise<Resultado & { agendados?: number }> {
+  if (!ids.length) return { erro: "Nenhum rascunho para distribuir." };
+
+  const { inicio, fim } = limitesDoMes(mes);
+  const hoje = diaUTC(new Date());
+  const de = hoje > inicio ? hoje : inicio;
+  if (de > fim) return { erro: "Esse mês já passou." };
+
+  const datas = distribuirDatas(ids.length, de, fim);
+  if (!datas.length) return { erro: "Não sobrou dia útil neste mês." };
+
+  const supabase = await createClient();
+  let agendados = 0;
+  for (const [i, data] of datas.entries()) {
+    const { data: linha } = await supabase
+      .from("articles")
+      .update({
+        scheduled_at: data.toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", ids[i])
+      .eq("status", "draft")
+      .select("id");
+    if (linha?.length) agendados++;
+  }
+
+  // Menos datas que rascunhos é o caso de "mais artigos que dias úteis": os
+  // que sobraram ficam sem data, à vista na tela, em vez de dois no mesmo dia.
+  return { erro: null, agendados };
 }
 
 export async function adicionarLinkInterno(

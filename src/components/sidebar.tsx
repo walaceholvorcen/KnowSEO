@@ -21,6 +21,7 @@ import {
   MapPin,
   Lock,
   Radar,
+  CalendarDays,
   ExternalLink,
   Menu,
   Plus,
@@ -65,6 +66,8 @@ const GRUPOS: { rotulo: string | null; itens: Item[] }[] = [
     itens: [
       { href: "/strategy", label: "Estratégia", icon: Search },
       { href: "/contents", label: "Conteúdos", icon: FileText },
+      // Depois de Conteúdos: primeiro o artigo existe, depois ele ganha data.
+      { href: "/calendar", label: "Calendário", icon: CalendarDays },
     ],
   },
   {

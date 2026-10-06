@@ -2720,3 +2720,66 @@ Sem teste novo: é um filtro de uma linha sobre uma lista literal, e
 `runner.ts` importa por atalho `@/` (que o node dos testes não resolve).
 A prova é o placar receber a mesma lista que a rodada - o que o tipo
 garante.
+
+## 67. Calendário de publicação: um dia de trabalho, um mês de cadência
+
+Pedido do dono: "uma pessoa pegar 1 dia pra fazer um calendário para o mês
+inteiro". A evidência de que fazia falta estava no banco: `scheduled_at`
+existe desde a migração 0001, **nunca foi usado por nada**, e três rascunhos
+estavam prontos, sem data, esperando alguém lembrar deles.
+
+Escolha do dono entre as duas formas: **(A) o robô publica o que uma pessoa
+já escreveu e revisou**, não (B) gerar e publicar sozinho. O ganho que ele
+pediu - concentrar o trabalho num dia - está inteiro no A, e sem estrear no
+blog do cliente um texto que ninguém leu. O B fica como chave por cliente,
+para depois.
+
+### A decisão que organiza o módulo
+
+**`scheduled_at` é a única verdade; artigo agendado continua rascunho.** O
+esquema até aceita `status = 'scheduled'`, mas um terceiro estado teria de
+ser tratado em seis lugares que hoje perguntam "é rascunho?" - o autosave do
+editor, a contagem de pendências no Início, a lista de Conteúdos - em troca
+de nada que a tela não resolva com uma data.
+
+### As peças
+
+- **`src/lib/calendario.ts`** (função pura, 12 testes): as semanas do mês, a
+  distribuição das datas e a regra do robô. Tudo em UTC, com a data gravada
+  à meia-noite e o robô rodando às 8h - um fuso não empurra a publicação
+  para a véspera.
+- **"Distribuir N no mês"** é a peça que responde ao pedido. Em vez de
+  escolher doze datas à mão, espalha os rascunhos pelos dias úteis que
+  **ainda restam** (nunca no dia 1 de um mês já começado, senão o disparo
+  seguinte publicaria tudo de uma vez). Espaçamento parelho de ponta a
+  ponta: seis artigos em outubro caem em 1, 7, 13, 20, 26 e 30.
+- **Fim de semana fica fora**, e a tela diz isso sem legenda - sábado e
+  domingo têm o mesmo tom dos dias do mês vizinho.
+- **Mais artigos que dias úteis**: um por dia e o resto fica sem data, à
+  vista. Dois no mesmo dia desperdiçaria a cadência que se está montando.
+- **`/api/cron/diario`**, 8h UTC (`vercel.json`). Publica o que venceu e
+  **roda a trava de qualidade antes** - é neste disparo que ninguém está
+  olhando, e trava que não vale no caminho automático é decoração. Artigo
+  reprovado não publica e **mantém a data**: ele aparece como "atrasado" no
+  calendário, que é o que ele é. Limpar a data esconderia o problema.
+- **`published_at` é a hora real**, não a data agendada: é ela que ordena o
+  blog e entra no sitemap.
+
+### Como foi verificado
+
+Na vitrine, com os três rascunhos reais do blog de teste e datas gravadas à
+mão (02/10 no passado, 13 e 20/10 no futuro), depois revertidas:
+
+- 02/10 saiu em vermelho ("atrasado"), 13 e 20 em cobalto ("agendado"), hoje
+  marcado com a pastilha
+- a 375px a grade de sete colunas vira agenda, só com os dias que têm algo -
+  zero rolagem lateral
+- "Distribuir 3 no mês" aparece com os três rascunhos reais
+
+O que **não** deu para verificar: a gravação pela ação de servidor. A vitrine
+não tem sessão, e as ações usam o client do usuário com RLS - o update não
+casa linha nenhuma, igual ao que aconteceu com o autosave (seção 60). O
+caminho de escrita é o mesmo `update().eq(id).eq(status).select()` das outras
+sete ações do arquivo, e o cálculo das datas está coberto pelos 12 testes.
+
+Sem migração: a coluna já existia.
