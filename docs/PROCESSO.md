@@ -2796,15 +2796,28 @@ A causa, batendo na API da Anthropic com a chave do ambiente:
 Your credit balance is too low to access the Anthropic API.
 ```
 
-**A conta ficou sem saldo.** Tudo que passa por IA caiu junto: artigo,
-pauta, perguntas e o Raio X semanal. O que não usa IA - auditoria, blog,
-relatório, calendário - continuou de pé, que é exatamente o que a decisão
-fundadora da seção 2 comprou.
+**Correção do diagnóstico, feita depois.** Essa chave é a do
+`.env.local` - a que o `npm run dev` usa. O projeto tem **duas** chaves
+Anthropic cadastradas na Vercel, uma marcada `development` e outra
+`production,preview`, e o valor da segunda não é legível pela API (é
+cifrado). Então o que está provado é: **a chave local está sem saldo**. Se
+a produção caiu pelo mesmo motivo, não deu para confirmar daqui - a API da
+Vercel não expõe log de execução, e a última chamada ao Claude em produção
+que o banco registra é de 05/10, bem-sucedida.
+
+Lição que vale mais que o diagnóstico: **chave de ambiente local não prova
+nada sobre produção**, e eu afirmei antes de separar as duas. É a mesma
+regra da seção 28 (credencial se verifica chamando) com um detalhe a mais -
+chamando **a credencial certa**.
+
+Quando acontece de verdade, tudo que passa por IA cai junto: artigo, pauta,
+perguntas e o Raio X semanal. O que não usa IA - auditoria, blog, relatório,
+calendário - continua de pé, que é exatamente o que a decisão fundadora da
+seção 2 comprou.
 
 A linha do tempo saiu do banco: as duas últimas pautas foram criadas às
 11:54 e os dois últimos artigos às 11:58 e 12:02, os dois com corpo de 10
-mil caracteres e `generation_status: done`. O saldo acabou **entre 12:02 e
-a hora em que o dono clicou**. Nada quebrou no código.
+mil caracteres e `generation_status: done`. Nada quebrou no código.
 
 ### O defeito que era nosso
 
