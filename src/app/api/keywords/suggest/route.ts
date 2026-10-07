@@ -9,7 +9,11 @@ import {
 import { buscarVolumeDeBusca } from "@/lib/google/ads";
 import { buscarConexao } from "@/lib/google/oauth";
 import { enriquecer, type MetricaReal } from "@/lib/keywords/metricas";
-import { isAiConfigured, AI_NOT_CONFIGURED_MESSAGE } from "@/lib/ai-config";
+import {
+  isAiConfigured,
+  AI_NOT_CONFIGURED_MESSAGE,
+  mensagemDeFalhaDaIA,
+} from "@/lib/ai-config";
 import type { Blog, BrandDna, Keyword } from "@/types";
 
 export async function POST(request: Request) {
@@ -127,7 +131,12 @@ export async function POST(request: Request) {
   } catch (err) {
     console.error("[keywords/suggest] falha na IA", err);
     return NextResponse.json(
-      { error: "Não foi possível gerar sugestões agora. Tente de novo em instantes." },
+      {
+        error: mensagemDeFalhaDaIA(
+          err,
+          "Não foi possível gerar sugestões agora. Tente de novo em instantes.",
+        ),
+      },
       { status: 502 },
     );
   }

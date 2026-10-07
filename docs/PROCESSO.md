@@ -2783,3 +2783,48 @@ caminho de escrita é o mesmo `update().eq(id).eq(status).select()` das outras
 sete ações do arquivo, e o cálculo das datas está coberto pelos 12 testes.
 
 Sem migração: a coluna já existia.
+
+## 68. "Tente de novo em instantes" numa parede que não cai sozinha
+
+07/10: a Estratégia parou de gerar pauta e a tela respondeu *"Não foi
+possível gerar sugestões agora. Tente de novo em instantes."*
+
+A causa, batendo na API da Anthropic com a chave do ambiente:
+
+```
+400 invalid_request_error
+Your credit balance is too low to access the Anthropic API.
+```
+
+**A conta ficou sem saldo.** Tudo que passa por IA caiu junto: artigo,
+pauta, perguntas e o Raio X semanal. O que não usa IA - auditoria, blog,
+relatório, calendário - continuou de pé, que é exatamente o que a decisão
+fundadora da seção 2 comprou.
+
+A linha do tempo saiu do banco: as duas últimas pautas foram criadas às
+11:54 e os dois últimos artigos às 11:58 e 12:02, os dois com corpo de 10
+mil caracteres e `generation_status: done`. O saldo acabou **entre 12:02 e
+a hora em que o dono clicou**. Nada quebrou no código.
+
+### O defeito que era nosso
+
+A mensagem. "Tente de novo em instantes" manda insistir num botão que não
+vai funcionar nunca - só quem paga a conta resolve. O operador ficaria
+clicando, e depois concluiria que o produto está quebrado.
+
+`mensagemDeFalhaDaIA(err, generica)` em `src/lib/ai-config.ts` (função
+pura, 4 testes) dá nome às três causas que têm conserto conhecido:
+
+| Resposta da IA | O que a tela passa a dizer |
+|---|---|
+| `credit balance` | a conta está sem saldo, com o endereço do console |
+| `rate limit` / 429 | excesso de pedidos no minuto, espere |
+| `authentication` | a chave foi recusada, confira no console |
+| qualquer outra | continua a frase genérica - para falha passageira, "tente de novo" é a orientação certa |
+
+Ligada em `keywords/suggest`, `articles/generate` e `carousel/generate`.
+
+**Regra que fica, irmã da seção 50:** erro de terceiro que tem causa
+conhecida merece nome próprio na tela. Repassar "falhou, tente de novo"
+para uma parede que não cai sozinha é pior que não dizer nada, porque
+custa o tempo de quem opera.

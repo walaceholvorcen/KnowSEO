@@ -3,7 +3,9 @@ import { requireUserAndWorkspace } from "@/lib/workspace";
 import { barrarSemLiberacao } from "@/lib/limite-de-uso";
 import { generateCarouselSlides } from "@/lib/anthropic";
 import { htmlParaTexto } from "@/lib/utils";
-import { isAiConfigured, AI_NOT_CONFIGURED_MESSAGE } from "@/lib/ai-config";
+import { isAiConfigured, AI_NOT_CONFIGURED_MESSAGE,
+  mensagemDeFalhaDaIA,
+} from "@/lib/ai-config";
 import type { Blog, BrandDna } from "@/types";
 
 export async function POST(request: Request) {
@@ -64,7 +66,12 @@ export async function POST(request: Request) {
   } catch (err) {
     console.error("[carousel/generate] falha na IA", err);
     return NextResponse.json(
-      { error: "Não foi possível gerar o carrossel agora. Tente de novo." },
+      {
+        error: mensagemDeFalhaDaIA(
+          err,
+          "Não foi possível gerar o carrossel agora. Tente de novo.",
+        ),
+      },
       { status: 502 },
     );
   }

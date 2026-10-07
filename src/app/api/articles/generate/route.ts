@@ -4,7 +4,9 @@ import { barrarSemLiberacao, barrarSeEstourou, LIMITES } from "@/lib/limite-de-u
 import { createClient } from "@/lib/supabase/server";
 import { generateArticle } from "@/lib/anthropic";
 import { slugify } from "@/lib/utils";
-import { isAiConfigured, AI_NOT_CONFIGURED_MESSAGE } from "@/lib/ai-config";
+import { isAiConfigured, AI_NOT_CONFIGURED_MESSAGE,
+  mensagemDeFalhaDaIA,
+} from "@/lib/ai-config";
 import { avaliarArtigo } from "@/lib/artigo/qualidade";
 import { urlDoArtigo } from "@/lib/blog-endereco";
 import { htmlSeguro } from "@/lib/html-seguro";
@@ -199,8 +201,10 @@ export async function POST(request: Request) {
     console.error("[articles/generate] failed", err);
     return NextResponse.json(
       {
-        error:
+        error: mensagemDeFalhaDaIA(
+          err,
           "A geração falhou. O rascunho foi salvo - tente gerar de novo.",
+        ),
         articleId: draft.id,
       },
       { status: 500 },
