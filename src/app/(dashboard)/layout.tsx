@@ -9,6 +9,8 @@ import { Sidebar } from "@/components/sidebar";
 import { urlPublicaDoBlog } from "@/lib/blog-endereco";
 import { DetectarFuso } from "@/components/detectar-fuso";
 import { buscarConexao } from "@/lib/google/oauth";
+import { artigosUsados } from "@/lib/limite-de-uso";
+import { cotaDeArtigos, textoDaCota } from "@/lib/plano";
 import { formatarData } from "@/lib/datas";
 
 // Canal de vendas da plataforma, o mesmo do Google Meu Negócio bloqueado.
@@ -32,9 +34,14 @@ export default async function DashboardLayout({
   // Integrações, porque ninguém abre Integrações para conferir uma coisa que
   // não sabe que quebrou. Uma consulta pela chave primária, em paralelo com
   // o blog ativo, para não somar tempo ao clique (PROCESSO 26).
-  const [blogAtivo, google] = await Promise.all([
+  // A cota do plano (migração 0021) entra no mesmo lote: é uma contagem
+  // com `head: true`, que não traz linha nenhuma. Falha vira null e o
+  // contador some da barra - número errado ali seria pior que nenhum.
+  const cotaDoPlano = cotaDeArtigos(workspace);
+  const [blogAtivo, google, usados] = await Promise.all([
     getBlogAtivo(supabase, workspace.id),
     buscarConexao(workspace.id).catch(() => null),
+    artigosUsados(supabase, workspace.id, cotaDoPlano.desde).catch(() => null),
   ]);
   const blog = blogAtivo!;
 
@@ -46,6 +53,11 @@ export default async function DashboardLayout({
       <DetectarFuso />
       <Sidebar
         blogAtivoId={blog.id}
+        cota={
+          usados === null || cotaDoPlano.indefinida
+            ? null
+            : textoDaCota(usados, cotaDoPlano)
+        }
         blogs={blogs.map((b) => ({
           id: b.id,
           nome: b.name,

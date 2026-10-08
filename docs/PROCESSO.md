@@ -2939,3 +2939,83 @@ blog. Separar os dois lados num deploy quebraria a checagem de domínio.
 Nota de paleta: o âmbar do logotipo é o mesmo espectro que o painel usa
 para "atenção" (seção 15). Convivem porque o logotipo mora sempre no mesmo
 lugar, onde ninguém procura leitura de instrumento.
+
+## 70. A cota do plano, do jeito que o site vende (migração 0021)
+
+Com a landing page no ar, o produto passou a ter uma fonte de verdade
+externa: **ranknow.es/planes**. E o que ela vende não é o que eu tinha
+proposto na tabela de preços de setembro.
+
+| O site cobra por | Degraus |
+|---|---|
+| **volume de publicação** | 4, 12, 30 ou 90 artigos **por mês** |
+| prova grátis | **5 artigos no total**, sem cartão |
+
+Não é por cliente nem por blog. E está certo: artigo é exatamente o que
+custa IA do nosso lado.
+
+### Onde a cota mora
+
+`workspaces.plan` estava parado desde que os créditos saíram do painel
+(seção 35) e volta a ter uso: `'pro'` é quem paga. Entra
+`artigos_por_mes` com o degrau contratado, nulo na prova.
+
+Sem grant novo: desde a 0016 o usuário só escreve `name` e
+`onboarding_steps` em `workspaces`, então coluna nova nasce fora do alcance
+dele. Quem vai escrever ali é o webhook da cobrança, quando existir.
+
+### A regra, e o lado para o qual ela erra
+
+`cotaDeArtigos()` (função pura, 7 testes) decide, e **a trava da rota e o
+contador da barra lateral leem a mesma função** - divergir seria pior que
+não ter contador: o cliente veria "faltam 3" e levaria recusa.
+
+Duas tolerâncias, para lados opostos, e as duas deliberadas:
+
+- **Valor inesperado erra para baixo.** Plano desconhecido, degrau zero ou
+  negativo: cai na prova de 5. Errar cobrando a menos custa dinheiro; errar
+  para o outro lado entrega o produto de graça sem ninguém perceber.
+- **Coluna ausente não barra ninguém.** Com `select *`, a coluna que ainda
+  não existe chega como `undefined` - diferente de `null`, que é a coluna
+  existindo vazia. A diferença não é cosmética: sem ela, no instante do
+  deploy toda conta cairia na prova de 5, e as duas contas do dono, com 17
+  artigos no banco, perderiam o botão de escrever até alguém rodar o SQL.
+  Mesma família do `liberado !== false` (seção 43).
+
+### Onde a trava roda
+
+Só em `/api/articles/generate`. É a única rota que consome cota - é a
+geração que o site vende por volume. Fica **depois** de "conta em
+liberação" e do teto por hora: quando os três valeriam, os outros dois
+explicam melhor a recusa.
+
+Conta artigo **criado**, não publicado: rascunho descartado já gastou IA. A
+segunda tentativa da trava de qualidade (seção 30) reaproveita o mesmo
+rascunho, então um clique continua valendo um artigo.
+
+Resposta **402**, não 429: não é excesso de velocidade, é fim de plano. E a
+mensagem diz a saída certa para cada caso - "a cota volta no dia 1" para
+quem paga, "escolha um plano" para quem está na prova.
+
+### O contador voltou para a barra lateral
+
+No mesmo lugar onde os créditos ficavam até a seção 35, agora com outro
+sentido: "8 de 30 artigos este mês". Sem ele o cliente descobre o limite
+batendo nele, que é a pior hora. Em mono, pela regra da seção 15: número
+lido como instrumento.
+
+Custo: uma contagem com `head: true` (que não traz linha) no mesmo
+`Promise.all` do blog ativo. Falha de leitura some o contador em vez de
+mostrar número errado.
+
+### O que esta rodada NÃO resolve
+
+O site promete quatro coisas que o produto não tem - publicação para
+LinkedIn, ebook, gestão de equipes e integração com plataformas de blog - e
+o "painel com dados reais do Google" depende de um Search Console que ainda
+não foi conectado. Travar cota não aproxima nada disso; é conversa de
+produto, não de código.
+
+E duas perguntas de negócio ficaram abertas: **quantos blogs por conta**
+(o site diz "1 blog", o produto deixa adicionar clientes sem limite) e **o
+que exatamente a prova grátis não pode**.

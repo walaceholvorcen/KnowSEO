@@ -32,6 +32,9 @@ export interface Workspace {
   onboarding_steps: OnboardingSteps;
   /** Pode usar o que gasta IA. Conta nova nasce false (migração 0016). */
   liberado?: boolean;
+  /** Artigos por mês do plano contratado (migração 0021). Nulo na prova
+   *  grátis, que são 5 no total - ver `cotaDeArtigos`. */
+  artigos_por_mes?: number | null;
   created_at: string;
 }
 

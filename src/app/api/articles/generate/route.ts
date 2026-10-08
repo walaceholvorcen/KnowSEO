@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import { requireUserAndWorkspace } from "@/lib/workspace";
-import { barrarSemLiberacao, barrarSeEstourou, LIMITES } from "@/lib/limite-de-uso";
+import {
+  barrarSemLiberacao,
+  barrarSeEstourou,
+  barrarSemCota,
+  LIMITES,
+} from "@/lib/limite-de-uso";
 import { createClient } from "@/lib/supabase/server";
 import { generateArticle } from "@/lib/anthropic";
 import { slugify } from "@/lib/utils";
@@ -18,6 +23,12 @@ export async function POST(request: Request) {
   const semLiberacao = barrarSemLiberacao(workspace);
   if (semLiberacao) return semLiberacao;
   if (barrado) return barrado;
+  // A cota do plano vem depois das outras duas de propósito: "sua conta
+  // está em liberação" e "limite por hora" explicam melhor a recusa quando
+  // os três valeriam ao mesmo tempo. Esta é a única rota que consome cota -
+  // é a geração de artigo que o site vende por volume.
+  const semCota = await barrarSemCota(supabase, workspace);
+  if (semCota) return semCota;
   const { keywordId } = await request.json();
 
   if (!isAiConfigured()) {

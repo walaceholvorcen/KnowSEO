@@ -107,9 +107,14 @@ export interface BlogDaBarra {
 export function Sidebar({
   blogs,
   blogAtivoId,
+  cota,
 }: {
   blogs: BlogDaBarra[];
   blogAtivoId: string;
+  /** "8 de 30 artigos este mês" - a cota do plano, já escrita pelo
+   *  servidor. Nula quando a leitura falhou: some da tela em vez de
+   *  mostrar número errado. */
+  cota?: string | null;
 }) {
   const blog = blogs.find((b) => b.id === blogAtivoId) ?? blogs[0];
   const pathname = usePathname();
@@ -328,6 +333,15 @@ export function Sidebar({
         </nav>
 
         <div className="border-t border-slate-200 px-3 pb-4 pt-3 dark:border-slate-800">
+          {/* A cota do plano, no lugar onde os créditos ficavam até a
+              seção 35. Sem contador, o cliente descobre o limite batendo
+              nele - que é a pior hora. Mono porque é número lido como
+              instrumento, a mesma regra da nota. */}
+          {cota && (
+            <p className="tabular font-display mb-3 px-3 text-xs text-slate-500 dark:text-slate-400">
+              {cota}
+            </p>
+          )}
           <ul>{renderItem(CONFIGURACOES)}</ul>
 
           <button
