@@ -3019,3 +3019,56 @@ produto, não de código.
 E duas perguntas de negócio ficaram abertas: **quantos blogs por conta**
 (o site diz "1 blog", o produto deixa adicionar clientes sem limite) e **o
 que exatamente a prova grátis não pode**.
+
+## 71. O robô publicou zero de três — e a trava não estava errada, estava cega
+
+Primeiro agendamento real do calendário: 13 artigos distribuídos por
+outubro, três deles para 07/10. O robô rodou em 08/10 às 08:54, achou os
+três e **reprovou os três**, com o mesmo motivo:
+
+```
+tarefas: 3 | falhas: 3
+reprovados: "Nenhum link para o site do cliente" (×3)
+```
+
+Os artigos tinham **quatro e seis links** para o site do cliente, todos
+para páginas que o produto conhece (`internal_links`). Conferido no banco.
+
+### A causa, que é minha
+
+`avaliarArtigo` conta link interno de duas formas: `href` relativo, **ou**
+endereço que esteja na lista de páginas conhecidas do cliente. O gerador
+escreve link absoluto (`https://dataknow.es/metodologia`). Sem a lista, só
+a primeira forma vale - e nenhum artigo passa.
+
+A primeira versão do robô não passava a lista, e o comentário que escrevi
+na época diz o raciocínio errado em voz alta: *"as regras que dependem
+delas já foram conferidas quando uma pessoa publicou... ou não publicou"*.
+Pois é: **não publicou**. Ninguém publicou nada por aquele caminho, então
+nada tinha sido conferido, e o caminho automático aplicou uma regra que não
+tinha material para julgar.
+
+Economizei a consulta errada. A trava fez exatamente o que devia - barrou o
+que, pelo material que recebeu, não tinha link interno.
+
+### O conserto
+
+As páginas do cliente e a pauta de cada artigo, buscadas **uma vez para a
+fila inteira** (duas consultas no total, não duas por artigo): um `in` em
+`internal_links` pelos blogs da fila e outro em `keywords` pelos
+`keyword_id`. O robô passa a conferir com o mesmo material que o editor.
+
+Provado contra os dois artigos reais que ficaram presos, rodando
+`avaliarArtigo` dos dois jeitos: "Nenhum link para o site do cliente" antes,
+**passa** depois.
+
+### A regra que fica
+
+**Trava que roda em dois caminhos precisa do mesmo material nos dois.** Se
+um lado julga com menos informação, ele não fica mais permissivo - fica
+mais severo, e reprova o que é válido. O barato de uma consulta a menos
+custou três artigos não publicados e um robô que parecia quebrado.
+
+Um detalhe que salvou o diagnóstico: o robô **mantém a data** do artigo
+reprovado e grava o motivo em `cron_execucoes`. Sem esse registro, o
+sintoma seria "o calendário não publica" e a causa estaria invisível.

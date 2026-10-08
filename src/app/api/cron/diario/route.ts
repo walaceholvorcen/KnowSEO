@@ -43,6 +43,33 @@ export async function GET(request: Request) {
     venceu(a.scheduled_at, agora),
   );
 
+  // As páginas do cliente e a pauta de cada artigo, buscadas UMA vez para a
+  // fila inteira - não uma consulta por artigo.
+  //
+  // Isto existe porque a primeira versão não passava nada disso, e a trava
+  // reprovou os três primeiros agendamentos reais com "nenhum link para o
+  // site do cliente" - em artigos que tinham seis. Sem a lista de páginas
+  // conhecidas, `avaliarArtigo` só reconhece link relativo, e o gerador
+  // escreve link absoluto. A trava não estava errada: estava cega, porque
+  // eu economizei a consulta errada.
+  const blogIds = [...new Set(fila.map((a) => a.blog_id))];
+  const keywordIds = fila.map((a) => a.keyword_id).filter(Boolean) as string[];
+
+  const [{ data: paginas }, { data: pautas }] = await Promise.all([
+    admin.from("internal_links").select("blog_id,url").in("blog_id", blogIds),
+    keywordIds.length
+      ? admin.from("keywords").select("id,keyword").in("id", keywordIds)
+      : Promise.resolve({ data: [] as { id: string; keyword: string }[] }),
+  ]);
+
+  const paginasPorBlog = new Map<string, string[]>();
+  for (const l of (paginas as { blog_id: string; url: string }[]) ?? []) {
+    paginasPorBlog.set(l.blog_id, [...(paginasPorBlog.get(l.blog_id) ?? []), l.url]);
+  }
+  const pautaPorId = new Map(
+    ((pautas as { id: string; keyword: string }[]) ?? []).map((k) => [k.id, k.keyword]),
+  );
+
   const publicados: string[] = [];
   const reprovados: { artigo: string; motivo: string }[] = [];
 
@@ -51,15 +78,15 @@ export async function GET(request: Request) {
     // revisão, mas é neste disparo que ninguém está olhando - e uma trava
     // que não vale no caminho automático é decoração.
     //
-    // Sem `keyword` nem `linksConhecidos`: as duas exigiriam uma consulta por
-    // artigo e as regras que dependem delas já foram conferidas quando uma
-    // pessoa publicou... ou não publicou. O que importa aqui é o
-    // indefensável: texto raso, sem H2, markdown vazado.
+    // A mesma conferência que o editor faz, com o mesmo material: sem a
+    // pauta e sem as páginas do cliente, duas regras julgam no escuro.
     const avaliacao = avaliarArtigo({
       titulo: artigo.title,
       seoTitle: artigo.seo_title,
       seoDescription: artigo.seo_description,
       html: artigo.content_html ?? "",
+      keyword: artigo.keyword_id ? pautaPorId.get(artigo.keyword_id) : null,
+      linksConhecidos: paginasPorBlog.get(artigo.blog_id) ?? [],
     });
 
     if (avaliacao.travas.length) {
