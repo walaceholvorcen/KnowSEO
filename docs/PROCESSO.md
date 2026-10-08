@@ -3105,3 +3105,29 @@ código novo não volta no tempo.
 testes passavam. Nenhum deles chamava a função duas vezes. Teste de
 função pura prova a regra que você escreveu; o uso real é que descobre a
 pergunta que você não fez.
+
+## 73. Remarcar e desmarcar: a metade que faltava no calendário
+
+O calendário sabia marcar data e não sabia trocar nem tirar. Faltava a
+metade que todo mundo usa depois da primeira semana: o cliente pediu para
+adiar, o artigo precisa de revisão, a data saiu errada.
+
+A ação do servidor já aceitava `null` desde o primeiro dia — era só tela
+que faltava. Onde colocar foi a única decisão real. Dentro da célula da
+grade não cabe: a célula tem 24px de altura útil e um campo de data viraria
+popover, peça nova para um botão que se usa de vez em quando. Virou uma
+lista "Agendados", acima de "Esperando data", com o mesmo formato do bloco
+que a pessoa já sabe usar — título, campo de data, e um jeito de desfazer.
+
+A lista sai de `porDia`, a mesma estrutura que desenha a grade, filtrando
+publicado (que não volta atrás). Buscar uma segunda lista no servidor seria
+duas fontes para a mesma pergunta, e elas divergem.
+
+Um detalhe de React que custou um minuto: `defaultValue` não se atualiza
+quando o servidor devolve a data nova, então o campo mostrava a antiga até
+recarregar a página. A chave do campo é a própria data — muda a data, nasce
+um campo novo.
+
+"Tirar data" não apaga nada: o rascunho volta para a lista de baixo com o
+texto inteiro. A tela diz isso, porque um botão que parecia apagar artigo
+ninguém clicaria.

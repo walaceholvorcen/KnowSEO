@@ -63,6 +63,13 @@ export function CalendarioBoard({
   const semanas = semanasDoMes(mes, new Date(`${hoje}T00:00:00.000Z`));
   const comAlgo = Object.entries(porDia).sort(([a], [b]) => a.localeCompare(b));
 
+  // O que ainda dá para remarcar: publicado não volta atrás. Sai da mesma
+  // estrutura que desenha a grade - um artigo agendado já está lá, com a
+  // data como chave, e uma segunda lista vinda do servidor podia divergir.
+  const agendados = comAlgo.flatMap(([dia, itens]) =>
+    itens.filter((i) => i.estado !== "publicado").map((i) => ({ ...i, dia })),
+  );
+
   async function chamar(acao: () => Promise<{ erro: string | null }>) {
     if (ocupado) return;
     setOcupado(true);
@@ -223,6 +230,68 @@ export function CalendarioBoard({
           </ul>
         )}
       </div>
+
+      {/* Remarcar e desmarcar. Não vai dentro da célula da grade: a célula
+          tem 24px de altura útil e um campo de data não caberia sem virar
+          popover - peça nova, para um botão que se usa de vez em quando.
+          Lista com o mesmo formato do bloco de baixo, que a pessoa já sabe
+          usar: título, campo de data, e um jeito de desfazer. */}
+      {agendados.length > 0 && (
+        <>
+          <Secao>Agendados ({agendados.length})</Secao>
+          <div className={folha()}>
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              Trocar a data é mudar o campo. &quot;Tirar data&quot; devolve o
+              rascunho para a lista de baixo - o texto fica inteiro, só deixa
+              de ter dia marcado.
+            </p>
+            <ul className="mt-4 divide-y divide-slate-100 dark:divide-slate-800">
+              {agendados.map((item) => (
+                <li
+                  key={item.id}
+                  className="flex flex-wrap items-center justify-between gap-3 py-3"
+                >
+                  <Link
+                    href={`/contents/${item.id}`}
+                    className={cn(
+                      "min-w-0 flex-1 truncate text-sm hover:underline",
+                      COR[item.estado],
+                    )}
+                  >
+                    {item.titulo}
+                  </Link>
+                  <div className="flex items-center gap-2">
+                    <input
+                      // A chave carrega a data: depois de salvar, o campo
+                      // precisa nascer de novo com o valor novo, e um
+                      // defaultValue não se atualiza sozinho.
+                      key={item.dia}
+                      type="date"
+                      defaultValue={item.dia}
+                      min={hoje}
+                      disabled={ocupado}
+                      aria-label={`Data de publicação de ${item.titulo}`}
+                      className={cn(campo(), "w-40")}
+                      onChange={(e) =>
+                        e.target.value &&
+                        chamar(() => agendarArtigo(item.id, e.target.value))
+                      }
+                    />
+                    <button
+                      type="button"
+                      disabled={ocupado}
+                      className={botao("fantasma", "sm")}
+                      onClick={() => chamar(() => agendarArtigo(item.id, null))}
+                    >
+                      Tirar data
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </>
+      )}
 
       <Secao>Esperando data ({semData.length})</Secao>
       {semData.length === 0 ? (
