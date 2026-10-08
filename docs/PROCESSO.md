@@ -3072,3 +3072,36 @@ custou três artigos não publicados e um robô que parecia quebrado.
 Um detalhe que salvou o diagnóstico: o robô **mantém a data** do artigo
 reprovado e grava o motivo em `cron_execucoes`. Sem esse registro, o
 sintoma seria "o calendário não publica" e a causa estaria invisível.
+
+## 72. Distribuir duas vezes no mesmo mês empilhava tudo no mesmo dia
+
+`distribuirDatas` nasceu com uma regra explícita: nunca dois artigos no
+mesmo dia, porque publicar dois no mesmo dia desperdiça a cadência que o
+módulo existe para construir. E foi exatamente isso que ela fez no
+primeiro uso real — três artigos no dia 20 de outubro e três no dia 30.
+
+O defeito não estava na matemática do espaçamento, estava no que a função
+enxergava. Ela recebia só os rascunhos daquela chamada e o intervalo do
+mês. Quem usa o calendário não distribui uma vez: escreve cinco, clica,
+escreve mais cinco na semana seguinte, clica de novo. A segunda chamada
+recalculava o espaçamento do zero sobre o mês inteiro e caía nas mesmas
+datas da primeira, que ela não sabia que existiam.
+
+A correção é um parâmetro `ocupadas` e um `filter` antes da conta: os dias
+já tomados saem da lista de candidatos, e o espaçamento se refaz no que
+sobrou. A ação carrega essas datas do banco — só do blog dos rascunhos que
+vão receber data, não do workspace, porque dia cheio no blog de um cliente
+não é motivo para não publicar no de outro. Quando não sobra dia nenhum, a
+mensagem diz o que fazer ("escolha as datas uma a uma ou use o mês
+seguinte") em vez do "não sobrou dia útil neste mês", que era mentira: dia
+útil sobrava, livre é que não.
+
+As treze linhas que já estavam no banco foram desempilhadas à mão (dois
+artigos movidos, 20→16 e 30→23). Vale registrar por que foi à mão: a
+função corrigida resolve o próximo clique, não o que já está gravado —
+código novo não volta no tempo.
+
+**A lição que vale além deste bug:** a função era pura, testada, e os doze
+testes passavam. Nenhum deles chamava a função duas vezes. Teste de
+função pura prova a regra que você escreveu; o uso real é que descobre a
+pergunta que você não fez.

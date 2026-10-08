@@ -102,3 +102,30 @@ describe("calendário de publicação", () => {
     assert.equal(doInput(""), null);
   });
 });
+
+describe("distribuir sem empilhar no que já tem data", () => {
+  test("dia ocupado não recebe um segundo artigo", () => {
+    // O defeito real: a primeira distribuição marcou 7, 13, 20, 26 e 30 de
+    // outubro, e a segunda - sem saber disso - marcou as mesmas datas.
+    const primeira = distribuirDatas(5, d("2026-10-01"), d("2026-10-31")).map(paraInput);
+    const segunda = distribuirDatas(5, d("2026-10-01"), d("2026-10-31"), primeira).map(paraInput);
+    for (const d of segunda) assert.ok(!primeira.includes(d), d);
+  });
+
+  test("o espaçamento é refeito só nos dias que sobraram", () => {
+    const livres = distribuirDatas(3, d("2026-10-01"), d("2026-10-31"), ["2026-10-01", "2026-10-02"]);
+    assert.equal(paraInput(livres[0]), "2026-10-05");
+    assert.equal(livres.length, 3);
+  });
+
+  test("mês inteiro tomado não devolve data nenhuma", () => {
+    const todos = diasUteis(d("2026-10-01"), d("2026-10-31")).map(paraInput);
+    assert.deepEqual(distribuirDatas(2, d("2026-10-01"), d("2026-10-31"), todos), []);
+  });
+
+  test("dia ocupado fora do intervalo não atrapalha", () => {
+    const sem = distribuirDatas(2, d("2026-10-01"), d("2026-10-31"));
+    const com = distribuirDatas(2, d("2026-10-01"), d("2026-10-31"), ["2026-09-30", "2026-11-02"]);
+    assert.deepEqual(com.map(paraInput), sem.map(paraInput));
+  });
+});

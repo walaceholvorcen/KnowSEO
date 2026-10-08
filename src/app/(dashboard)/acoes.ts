@@ -10,6 +10,7 @@ import {
   distribuirDatas,
   doInput,
   limitesDoMes,
+  paraInput,
 } from "@/lib/calendario";
 
 // As gravações que antes o navegador fazia direto no Supabase.
@@ -119,10 +120,42 @@ export async function distribuirNoMes(
   const de = hoje > inicio ? hoje : inicio;
   if (de > fim) return { erro: "Esse mês já passou." };
 
-  const datas = distribuirDatas(ids.length, de, fim);
-  if (!datas.length) return { erro: "Não sobrou dia útil neste mês." };
-
   const supabase = await createClient();
+
+  // De que blog são estes rascunhos, e que dias deste mês já estão tomados
+  // lá. Sem isto, distribuir duas vezes no mesmo mês empilha: a segunda
+  // chamada recalcula o espaçamento do zero e cai nas mesmas datas da
+  // primeira. Foi o que aconteceu no primeiro uso real - três artigos no
+  // dia 20 e três no dia 30.
+  const { data: alvos } = await supabase
+    .from("articles")
+    .select("blog_id")
+    .in("id", ids)
+    .eq("status", "draft");
+  if (!alvos?.length) return { erro: "Nenhum rascunho para distribuir." };
+
+  const { data: tomados } = await supabase
+    .from("articles")
+    .select("scheduled_at")
+    .in("blog_id", [...new Set(alvos.map((a) => a.blog_id))])
+    .neq("status", "published")
+    .not("scheduled_at", "is", null)
+    .gte("scheduled_at", inicio.toISOString())
+    .lte("scheduled_at", fim.toISOString());
+
+  const ocupadas = ((tomados as { scheduled_at: string }[]) ?? []).map((a) =>
+    paraInput(a.scheduled_at),
+  );
+
+  const datas = distribuirDatas(ids.length, de, fim, ocupadas);
+  if (!datas.length) {
+    return {
+      erro: ocupadas.length
+        ? "Todos os dias úteis que sobraram neste mês já têm artigo. Escolha as datas uma a uma ou use o mês seguinte."
+        : "Não sobrou dia útil neste mês.",
+    };
+  }
+
   let agendados = 0;
   for (const [i, data] of datas.entries()) {
     const { data: linha } = await supabase

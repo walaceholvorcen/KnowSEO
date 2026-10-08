@@ -65,13 +65,21 @@ export function diasUteis(de: Date, ate: Date): Date[] {
  * Mais artigos que dias úteis: cada dia recebe um e o resto fica sem data,
  * em vez de dois no mesmo dia. Publicar dois artigos no mesmo dia desperdiça
  * cadência, que é justamente o que se está tentando construir.
+ *
+ * `ocupadas` são os dias que já têm artigo agendado neste blog ("2026-10-20").
+ * Existe porque distribuir duas vezes no mesmo mês empilhava: a primeira
+ * chamada só enxergava os rascunhos que recebia, e a segunda caía em cima
+ * das mesmas datas. Aconteceu no primeiro uso real - três artigos no dia 20
+ * e três no 30, exatamente o que esta função foi escrita para evitar.
  */
 export function distribuirDatas(
   quantidade: number,
   de: Date,
   ate: Date,
+  ocupadas: Iterable<string> = [],
 ): Date[] {
-  const dias = diasUteis(de, ate);
+  const tomados = new Set(ocupadas);
+  const dias = diasUteis(de, ate).filter((d) => !tomados.has(paraInput(d)));
   if (quantidade < 1 || dias.length === 0) return [];
   if (quantidade === 1) return [dias[0]];
   if (quantidade >= dias.length) return dias;
