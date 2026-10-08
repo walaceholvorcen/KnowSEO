@@ -147,8 +147,9 @@ export function IntegrationsForm({
         </select>
         {!carregandoPropriedades && ga4Opcoes.length === 0 && (
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            Nenhuma propriedade visível. Peça para o cliente adicionar a
-            conta conectada em Administrador → Acesso à propriedade, no GA4.
+            Nenhuma propriedade visível. Se o GA4 for de outra pessoa, ela
+            precisa adicionar a conta conectada aqui em Administrador →
+            Acesso à propriedade.
           </p>
         )}
       </div>

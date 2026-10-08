@@ -39,7 +39,7 @@ export default async function IntegrationsPage({
   return (
     <div className={pagina("estreita")}>
       <SettingsNav />
-      <Lede apoio="Uma conta só, da agência. Cada cliente adiciona esse e-mail como usuário no Search Console e no GA4 dele - sem senha compartilhada, sem login por cliente.">
+      <Lede apoio="Uma conexão por conta. A conta Google que você ligar aqui precisa enxergar as propriedades que vai ler: se o site é seu, as suas já aparecem na lista; se você atende clientes, cada um adiciona esse e-mail como usuário no Search Console e no GA4 dele - sem senha compartilhada.">
         {veredito}
       </Lede>
 
