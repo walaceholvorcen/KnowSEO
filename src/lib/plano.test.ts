@@ -1,6 +1,13 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
-import { cotaDeArtigos, mensagemDeCotaCheia, textoDaCota } from "./plano.ts";
+import {
+  BLOGS_POR_CONTA,
+  cotaDeArtigos,
+  MENSAGEM_LIMITE_DE_BLOGS,
+  mensagemDeCotaCheia,
+  podeAdicionarBlog,
+  textoDaCota,
+} from "./plano.ts";
 
 const AGORA = new Date("2026-10-07T21:00:00.000Z");
 
@@ -69,5 +76,25 @@ describe("cota de artigos do plano", () => {
     const prova = mensagemDeCotaCheia(cotaDeArtigos({ plan: "free", artigos_por_mes: null }, AGORA));
     assert.match(prova, /prova grátis/);
     assert.match(prova, /ranknow\.es\/planes/);
+  });
+});
+
+describe("limite de blogs do plano", () => {
+  test("conta vazia pode criar o primeiro", () => {
+    assert.equal(podeAdicionarBlog(0), true);
+  });
+
+  test("com o limite atingido, não cria mais", () => {
+    assert.equal(podeAdicionarBlog(BLOGS_POR_CONTA), false);
+  });
+
+  test("conta que já passou do limite também não cria", () => {
+    // Acontece com quem criou antes da trava existir: o que já está no ar
+    // continua, mas não nasce mais nenhum.
+    assert.equal(podeAdicionarBlog(BLOGS_POR_CONTA + 3), false);
+  });
+
+  test("a mensagem manda para onde resolve", () => {
+    assert.match(MENSAGEM_LIMITE_DE_BLOGS, /ranknow\.es\/contacto/);
   });
 });

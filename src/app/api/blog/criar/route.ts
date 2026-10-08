@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireUserAndWorkspace } from "@/lib/workspace";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { erroNoSlug } from "@/lib/blog-endereco";
+import { MENSAGEM_LIMITE_DE_BLOGS, podeAdicionarBlog } from "@/lib/plano";
 
 // Criação de blog (onboarding). Antes o INSERT saía do navegador, e o
 // navegador não enxerga (RLS) os slugs antigos de outros blogs: dava para
@@ -20,6 +21,16 @@ export async function POST(req: Request) {
   if (!name) return NextResponse.json({ error: "Informe o nome do blog." }, { status: 400 });
   const erro = erroNoSlug(subdomain);
   if (erro) return NextResponse.json({ error: erro }, { status: 400 });
+
+  // Limite de blogs do plano. Conferido aqui, no servidor, e não só pelo
+  // botão escondido na barra: a rota é o que de fato cria.
+  const { count: quantos } = await supabase
+    .from("blogs")
+    .select("id", { count: "exact", head: true })
+    .eq("workspace_id", workspace.id);
+  if (!podeAdicionarBlog(quantos ?? 0)) {
+    return NextResponse.json({ error: MENSAGEM_LIMITE_DE_BLOGS }, { status: 402 });
+  }
 
   const { data: colisao, error: erroColisao } = await createAdminClient()
     .from("blogs")

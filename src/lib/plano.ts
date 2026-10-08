@@ -76,3 +76,24 @@ export function mensagemDeCotaCheia(cota: Cota): string {
     ? `Os ${cota.limite} artigos deste mês acabaram. A cota volta no dia 1; para escrever antes disso, troque de plano em ranknow.es/planes.`
     : `A prova grátis são ${cota.limite} artigos, e eles acabaram. Escolha um plano em ranknow.es/planes para continuar publicando.`;
 }
+
+/**
+ * Blogs por conta. O site (ranknow.es/planes) vende "1 blog con tu marca",
+ * e o painel deixava adicionar cliente sem limite nenhum - o produto
+ * entregava mais do que a página cobrava.
+ *
+ * Constante e não coluna: enquanto houver um número só para todo mundo,
+ * uma coluna seria configuração sem ninguém para configurar. No dia em que
+ * existir plano de agência, isto vira `blogs_permitidos` em `workspaces`,
+ * ao lado de `artigos_por_mes`.
+ */
+export const BLOGS_POR_CONTA = 1;
+
+export function podeAdicionarBlog(quantos: number): boolean {
+  return quantos < BLOGS_POR_CONTA;
+}
+
+export const MENSAGEM_LIMITE_DE_BLOGS =
+  BLOGS_POR_CONTA === 1
+    ? "Seu plano inclui um blog. Para atender outro cliente, ele precisa da própria conta - fale com a gente em ranknow.es/contacto."
+    : `Seu plano inclui ${BLOGS_POR_CONTA} blogs. Fale com a gente em ranknow.es/contacto para ampliar.`;

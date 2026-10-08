@@ -9,6 +9,7 @@ import { semEsquema } from "@/lib/blog-endereco";
 import { BLOG_COOKIE } from "@/lib/blog-cookie";
 import { MODULOS_VISIVEIS } from "@/lib/modulos";
 import { Logotipo } from "@/components/marca";
+import { podeAdicionarBlog } from "@/lib/plano";
 import {
   LayoutGrid,
   FileText,
@@ -306,14 +307,18 @@ export function Sidebar({
             <ExternalLink size={12} aria-hidden="true" />
             Abrir blog
           </a>
-          <Link
-            href="/onboarding?novo=1"
-            onClick={() => setAberto(false)}
-            className="flex items-center gap-1.5 pointer-coarse:min-h-11 pointer-coarse:py-2 hover:text-cobalto-600 dark:hover:text-cobalto-400"
-          >
-            <Plus size={12} aria-hidden="true" />
-            Adicionar cliente
-          </Link>
+          {/* Some quando o plano já está no limite - oferecer um botão que
+              a rota vai recusar é pior que não oferecer. */}
+          {podeAdicionarBlog(blogs.length) && (
+            <Link
+              href="/onboarding?novo=1"
+              onClick={() => setAberto(false)}
+              className="flex items-center gap-1.5 pointer-coarse:min-h-11 pointer-coarse:py-2 hover:text-cobalto-600 dark:hover:text-cobalto-400"
+            >
+              <Plus size={12} aria-hidden="true" />
+              Adicionar cliente
+            </Link>
+          )}
         </div>
 
         <nav
