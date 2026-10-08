@@ -8,7 +8,7 @@ import {
 
 const STATE_COOKIE = "google_oauth_state";
 
-// Início do fluxo: exige sessão (só quem já está logado no Know SEO pode
+// Início do fluxo: exige sessão (só quem já está logado no Ranknow pode
 // disparar isto), gera um nonce contra CSRF e manda para o Google.
 export async function GET() {
   await requireUserAndWorkspace();

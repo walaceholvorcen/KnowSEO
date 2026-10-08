@@ -5,7 +5,7 @@ import { Lede } from "@/components/lede";
 // A auditoria de verdade (src/lib/gbp) está pronta e testada - guardada
 // como upsell futuro, não removida. Trocar este componente pelo
 // <GbpBoard /> real é o único passo para reativar o módulo.
-// Canal de vendas da PLATAFORMA (Know SEO), nunca do tenant: é quem libera
+// Canal de vendas da PLATAFORMA (Ranknow), nunca do tenant: é quem libera
 // o recurso no plano. O nome antigo (NEXT_PUBLIC_CONTATO) foi preenchido em
 // produção com o WhatsApp de um cliente, e o botão "fale com a gente" de
 // todas as agências mandava para ele. Dado de contato do cliente mora em

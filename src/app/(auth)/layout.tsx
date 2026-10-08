@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Logotipo } from "@/components/marca";
 
 export const metadata: Metadata = {
-  title: "Know SEO",
+  title: "Ranknow",
 };
 
 // A porta de entrada é a única tela que promete antes de provar. A versão
@@ -99,7 +99,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           className="pointer-events-none absolute inset-x-0 bottom-0 h-64 bg-[linear-gradient(to_top,rgb(3_6_16/0.9),transparent)]"
         />
 
-        <Logotipo className="relative text-xl text-white" />
+        <Logotipo claro className="relative text-xl" />
 
         <div className="relative flex flex-1 flex-col justify-center">
           <div className="w-full max-w-lg">
@@ -165,7 +165,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
               formulário solto no branco. Esta faixa traz a marca e a mesma
               leitura, no tamanho que cabe. */}
           <div className="mb-10 overflow-hidden rounded-2xl bg-[#070c1b] px-6 py-5 lg:hidden">
-            <Logotipo className="text-lg text-white" />
+            <Logotipo claro className="text-lg" />
             <p className="mt-3 text-balance text-[15px] font-medium leading-snug text-white">
               Quando a IA responde pelo seu mercado, ela cita a sua marca?
             </p>

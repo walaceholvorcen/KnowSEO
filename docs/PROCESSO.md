@@ -2841,3 +2841,101 @@ Ligada em `keywords/suggest`, `articles/generate` e `carousel/generate`.
 conhecida merece nome próprio na tela. Repassar "falhou, tente de novo"
 para uma parede que não cai sozinha é pior que não dizer nada, porque
 custa o tempo de quem opera.
+
+## 69. Know SEO vira Ranknow, e o app muda de endereço
+
+Dois movimentos no mesmo dia: o painel sai de `know-seo.vercel.app` para
+`app.ranknow.es`, e o produto passa a se chamar Ranknow.
+
+### O endereço
+
+A landing page do Ranknow **já existia e está no ar** (ranknow.es, em
+espanhol, com `/planes`, `/metodologia`, `/contacto` e páginas por
+segmento). Ou seja, a raiz do domínio tem dono.
+
+O dono pediu o painel em `ranknow.es/login`. Levantei o que isso exigiria -
+um Worker da Cloudflare na frente do site inteiro, desviando a lista de
+caminhos do app - e o código está escrito em `docs/worker-ranknow.js`, com
+as três armadilhas tratadas (origem que não pode ser o endereço antigo sob
+pena de laço infinito, HSTS removido, Set-Cookie repassado).
+
+**Mas o plano caiu por um fato medido:** o DNS do ranknow.es está na
+**GoDaddy** (`ns61/ns62.domaincontrol.com`), não na Cloudflare. O
+"cloudflare" que aparece no cabeçalho é de quem hospeda a landing page.
+Instalar o Worker exigiria migrar o domínio inteiro - a operação que esta
+casa recusa desde a seção 63, e que aqui derrubaria o site e o e-mail da
+própria empresa.
+
+Ficou `app.ranknow.es`: um CNAME na GoDaddy, risco zero para a LP.
+
+Sequência do que foi feito, nesta ordem:
+
+1. Domínio adicionado ao projeto na Vercel **pela API, antes do DNS** - é
+   ela que devolve o registro exato daquele projeto
+   (`d433667938f5b093.vercel-dns-017.com`), e não o genérico
+   `cname.vercel-dns.com` que estava na minha cabeça. Mesma lição da 49
+2. CNAME criado na GoDaddy
+3. Certificado: demorou ~20 minutos. No meio do caminho o http respondia
+   404 e depois 308 - **o 308 é o sinal de que a Vercel já reconheceu o
+   domínio** e só falta o TLS. Forçar a emissão pela API devolveu 403: o
+   token do projeto não tem essa permissão
+4. Variáveis trocadas pela API (`NEXT_PUBLIC_APP_DOMAIN`,
+   `NEXT_PUBLIC_ROOT_DOMAIN`, `DOMINIO_ANTIGO`) e **commit vazio** para
+   republicar - variável na Vercel só vale depois de deploy (seção 6)
+
+Conferido em produção: `app.ranknow.es/login` 200, `know-seo.vercel.app`
+301 preservando o caminho, `blog.dataknow.es` 200 intacto, e os artigos do
+cliente já apontando para `app.ranknow.es/api/og` e `/api/track`.
+
+### O Google saiu do modo de teste
+
+Descoberta que corrige uma suposição minha: **os clientes conectam a
+própria conta Google**, cada workspace a sua. A tela de Integrações diz
+"uma conta só, da agência" - texto que não corresponde ao uso real e
+precisa ser corrigido.
+
+Por isso o modo de teste barrava todo mundo. Publicar o app (um botão) tira
+o bloqueio; o botão só libera depois de a página Branding ter nome,
+e-mail de suporte, domínio autorizado e as URLs de página inicial e
+política de privacidade. **As três URLs já existiam no site** -
+`ranknow.es`, `/privacidad`, `/terminos`.
+
+O endereço de retorno novo foi conferido de fora, montando uma autorização
+de verdade: o Google respondeu 302 em vez de erro de correspondência.
+
+Falta a **verificação** (tira a tela amarela "app não verificado" e o teto
+de 100 contas). Falta só gravar o vídeo demonstrativo. **Não subir
+logotipo na tela de consentimento antes disso**: logotipo obriga
+verificação mesmo com o app publicado.
+
+### O nome
+
+`src/components/marca.tsx` deixou de desenhar o logotipo e passou a servir
+o **arquivo oficial** do site (`public/marca/ranknow.png` e
+`ranknow-branco.png`, 632×111). Redesenhar marca é como se acaba com duas
+marcas parecidas e nenhuma certa.
+
+Efeito colateral bom: o logotipo antigo carregava **Montserrat Black
+itálica em toda página** só para escrever "NOW SEO". Essa fonte saiu do
+produto - uma requisição a menos por página.
+
+Duas versões porque PNG não herda cor: a escura para fundo claro, a branca
+para fundo escuro. A prop `claro` força a branca, para a coluna do login,
+que é escura por identidade e não por tema.
+
+**O que NÃO foi renomeado, de propósito:**
+
+| Nome interno | Por quê |
+|---|---|
+| `x-knowseo-pasta` | é o cabeçalho que o Worker instalado no site do cliente envia. Renomear quebraria quem já instalou |
+| `know-seo-theme` | chave no navegador com a escolha de tema. Renomear zeraria a preferência de todo mundo, sem ganho |
+| `knowseo:preview` | mensagem entre o editor e o iframe de prévia, interna |
+| `/knowseo-404-<aleatório>` | caminho inventado que a auditoria pede para detectar soft 404 |
+
+**O marcador do blog mudou junto nos quatro lugares**: quem escreve
+(`generator`) e os três que conferem se o endereço já responde com o nosso
+blog. Separar os dois lados num deploy quebraria a checagem de domínio.
+
+Nota de paleta: o âmbar do logotipo é o mesmo espectro que o painel usa
+para "atenção" (seção 15). Convivem porque o logotipo mora sempre no mesmo
+lugar, onde ninguém procura leitura de instrumento.

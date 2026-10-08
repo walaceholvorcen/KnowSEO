@@ -24,8 +24,9 @@ const mono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Know SEO",
-  description: "Generación y publicación automática de contenido SEO",
+  title: "Ranknow",
+  description:
+    "Auditoria de SEO, radar de citação em IA e conteúdo publicado no domínio do cliente.",
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {

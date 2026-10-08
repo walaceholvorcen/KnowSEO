@@ -65,7 +65,7 @@ export function isPublicHttpUrl(raw: string): boolean {
   return true;
 }
 
-const USER_AGENT = `KnowSEO-Crawler/1.0 (+https://${
+const USER_AGENT = `Ranknow-Crawler/1.0 (+https://${
   process.env.NEXT_PUBLIC_APP_DOMAIN || "know-seo.vercel.app"
 }; auditoria de SEO)`;
 

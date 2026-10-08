@@ -1,84 +1,76 @@
-"use client";
-
-import { Montserrat } from "next/font/google";
-import { useId } from "react";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 
-// A marca em vetor, reconstruída a partir do logotipo oficial (SEO / KNOW
-// empilhados, itálico pesado, K azul com uma lâmina diagonal atravessando a
-// haste). Vetor em vez de PNG: fica nítido em qualquer tamanho, herda a cor
-// do texto ao redor (funciona no painel azul-marinho e no fundo claro) e
-// pesa menos que uma imagem.
+// O logotipo oficial do Ranknow: a palavra inteira, com o "o" de Now virando
+// um círculo âmbar. São os arquivos do site institucional (ranknow.es), não
+// uma reconstrução nossa - redesenhar marca é como se acaba com duas marcas
+// parecidas e nenhuma certa.
 //
-// A Montserrat Black itálica é a voz exclusiva do logotipo - não entra em
-// nenhum outro texto da interface, que segue na IBM Plex.
-const fonteMarca = Montserrat({
-  subsets: ["latin"],
-  weight: "900",
-  style: "italic",
-  display: "swap",
-});
+// Isto substitui o logotipo anterior, que era vetor desenhado à mão (o "K" de
+// Know com uma lâmina atravessando a haste) e vinha com a Montserrat Black
+// itálica carregada em TODA página só para escrever "NOW SEO". Com a imagem,
+// essa fonte saiu do produto: uma requisição a menos por página.
+//
+// Duas versões, porque o fundo mudar de cor não muda a tinta de um PNG:
+// - `ranknow.png`         tinta escura, para fundo claro
+// - `ranknow-branco.png`  branca, para fundo escuro
+//
+// Nota sobre a paleta (PROCESSO 15): o âmbar do logotipo é o mesmo espectro
+// que o painel usa para dizer "atenção" num dado. Convivem porque o logotipo
+// mora sempre no mesmo lugar (topo da barra e da porta de entrada), onde
+// ninguém procura leitura de instrumento.
 
-// O K da marca: haste + dois braços, cortados por uma lâmina diagonal que
-// atravessa a haste e escapa pelo canto inferior esquerdo. O corte é feito
-// com máscara (fica transparente, não pintado), então o glifo assenta sobre
-// qualquer fundo.
-function MarcaK({ className }: { className?: string }) {
-  // A marca aparece mais de uma vez na mesma página (painel + celular).
-  // Sem id único por instância, url(#...) resolve para a primeira - que
-  // pode estar num container display:none, e aí o navegador não pinta nada.
-  const uid = useId();
-  const grad = `marca-k-grad-${uid}`;
-  const corte = `marca-k-corte-${uid}`;
-  return (
-    <svg
-      viewBox="-48 0 148 100"
-      className={className}
-      aria-hidden="true"
-      focusable="false"
-    >
-      <defs>
-        <linearGradient id={grad} x1="0.1" y1="0" x2="0.5" y2="1">
-          <stop offset="0" stopColor="#5FB2FF" />
-          <stop offset="1" stopColor="#0E47C9" />
-        </linearGradient>
-        <mask id={corte}>
-          <rect x="-120" y="-20" width="300" height="140" fill="#fff" />
-          {/* fenda paralela aos braços, cruzando a haste abaixo do cotovelo */}
-          <polygon points="-42,110 45,-10 60,-10 -27,110" fill="#000" />
-        </mask>
-      </defs>
-      <g transform="translate(10 0) skewX(-12)">
-        <g fill={`url(#${grad})`} mask={`url(#${corte})`}>
-          <path d="M0,0 H22 V100 H0 Z" />
-          <path d="M22,58 L64,0 H86 L44,58 Z" />
-          <path d="M22,58 H44 L80,100 H58 Z" />
-        </g>
-        {/* a lâmina viaja dentro da fenda e escapa pela base */}
-        <polygon points="-33,100 14,35 23,35 -24,100" fill={`url(#${grad})`} />
-      </g>
-    </svg>
-  );
-}
+/** Proporção do arquivo oficial: 632 × 111. */
+const LARGURA = 632;
+const ALTURA = 111;
 
-// Logotipo completo, numa linha: "Know SEO" com o K da marca. O tamanho vem
-// do font-size do container (text-lg, text-xl...), a cor das letras vem de
-// text-*; o K é sempre azul.
-export function Logotipo({ className }: { className?: string }) {
-  return (
-    <span
-      role="img"
-      aria-label="Know SEO"
-      className={cn(
-        fonteMarca.className,
-        "block select-none whitespace-nowrap uppercase leading-none tracking-[0.015em]",
-        className,
-      )}
-    >
-      <span aria-hidden="true">
-        <MarcaK className="-ml-[0.26em] inline-block h-[0.715em] w-auto" />
-        NOW SEO
+export function Logotipo({
+  className,
+  claro = false,
+}: {
+  className?: string;
+  /** Força a versão branca. Use em superfície escura nos dois temas - é o
+   *  caso da coluna da marca no login, que é escura por identidade e não
+   *  por tema. */
+  claro?: boolean;
+}) {
+  // A altura vem do font-size do container (text-base, text-xl...), como no
+  // logotipo antigo - quem usa continua escrevendo `className="text-xl"`.
+  const medida = "h-[1.15em] w-auto";
+
+  if (claro) {
+    return (
+      <span role="img" aria-label="Ranknow" className={cn("block", className)}>
+        <Image
+          src="/marca/ranknow-branco.png"
+          alt=""
+          width={LARGURA}
+          height={ALTURA}
+          priority
+          className={medida}
+        />
       </span>
+    );
+  }
+
+  return (
+    <span role="img" aria-label="Ranknow" className={cn("block", className)}>
+      <Image
+        src="/marca/ranknow.png"
+        alt=""
+        width={LARGURA}
+        height={ALTURA}
+        priority
+        className={cn(medida, "dark:hidden")}
+      />
+      <Image
+        src="/marca/ranknow-branco.png"
+        alt=""
+        width={LARGURA}
+        height={ALTURA}
+        priority
+        className={cn(medida, "hidden dark:block")}
+      />
     </span>
   );
 }

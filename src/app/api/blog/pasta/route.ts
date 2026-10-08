@@ -75,7 +75,7 @@ export async function POST() {
   // é o blog - e não pode virar 'active' por tabela.
   const resposta = await fetchComStatus(blog.pasta_url, "manual");
   const html = resposta?.res.ok ? await resposta.res.text() : "";
-  const nosso = html.includes('name="generator" content="Know SEO"');
+  const nosso = html.includes('name="generator" content="Ranknow"');
   const status = nosso ? "active" : resposta ? "error" : "pending";
 
   const { error } = await createAdminClient()

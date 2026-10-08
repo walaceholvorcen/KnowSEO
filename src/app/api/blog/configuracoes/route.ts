@@ -65,7 +65,7 @@ export async function PATCH(req: Request) {
         const resposta = await fetchComStatus(`https://${dominio}/`, "manual");
         const salto = !!resposta && resposta.status >= 300 && resposta.status < 400;
         const html = resposta?.res.ok ? await resposta.res.text() : "";
-        if (salto || (resposta?.res.ok && !html.includes('name="generator" content="Know SEO"'))) {
+        if (salto || (resposta?.res.ok && !html.includes('name="generator" content="Ranknow"'))) {
           aviso = `${dominio} já responde com outro site. Ao apontar o CNAME, o que está lá hoje deixa de aparecer nesse endereço.`;
         }
       }

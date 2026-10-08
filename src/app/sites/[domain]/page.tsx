@@ -18,7 +18,7 @@ import { idiomaDoBlog, localeDoBlog } from "@/lib/idioma";
 import { paisDoBlog } from "@/lib/keywords/metricas";
 import type { Article } from "@/types";
 
-// Sem isto o blog do cliente herdaria o título do app ("Know SEO"), o que
+// Sem isto o blog do cliente herdaria o título do app ("Ranknow"), o que
 // seria péssimo para o SEO e a marca dele.
 export async function generateMetadata({
   params,
@@ -41,7 +41,7 @@ export async function generateMetadata({
     robots: publica.kind === "path" ? { index: false, follow: false } : undefined,
     // Marca de fábrica, e é ela que a checagem de domínio procura para saber
     // se quem responde naquele endereço é o blog ou a página antiga do site.
-    generator: "Know SEO",
+    generator: "Ranknow",
     title: blog.name,
     description: blog.theme.tagline ?? undefined,
     openGraph: {

@@ -86,7 +86,7 @@ export function codigoDoWorker(pastaUrl: string, appOrigin: string): string {
   const caminho = new URL(pastaUrl).pathname;
   const destino = `${appOrigin}${ROTA_DA_PASTA}`;
   return [
-    `// Blog na pasta ${caminho} deste site - Know SEO.`,
+    `// Blog na pasta ${caminho} deste site - Ranknow.`,
     `// Só responde dentro de ${caminho}. Qualquer outro endereço do site segue`,
     `// para o servidor de sempre, sem passar por aqui.`,
     `const ENDERECO = ${JSON.stringify(pastaUrl)};`,
@@ -132,7 +132,7 @@ export function passosDaPasta(pastaUrl: string): string[] {
   const zona = getDomain(host) ?? host;
   return [
     `Entre no Cloudflare (dash.cloudflare.com) com a conta onde está o domínio ${zona}. O registro do site precisa estar com a nuvem laranja ligada (Proxied) - é assim que o Cloudflare passa a atender o site.`,
-    `No menu da esquerda, abra Workers & Pages, clique em Create e depois em Create Worker. Dê o nome knowseo-blog e clique em Deploy.`,
+    `No menu da esquerda, abra Workers & Pages, clique em Create e depois em Create Worker. Dê o nome ranknow-blog e clique em Deploy.`,
     `Clique em Edit code, apague tudo o que estiver lá, cole o código abaixo e clique em Deploy de novo.`,
     `Volte ao Worker, abra Settings, depois Domains & Routes, e clique em Add e em Route. Em Zone escolha ${zona}; em Route escreva ${host}${pathname}* e salve.`,
     `Pronto. ${pastaUrl} passa a mostrar o blog em poucos minutos. O resto do site continua exatamente como está: o código só responde dentro de ${pathname}.`,

@@ -39,7 +39,7 @@ export async function POST() {
   // blog por conta própria e não pode virar "active" por tabela.
   const resposta = await fetchComStatus(`https://${dominio}/`, "manual");
   const html = resposta?.res.ok ? await resposta.res.text() : "";
-  if (html.includes('name="generator" content="Know SEO"')) {
+  if (html.includes('name="generator" content="Ranknow"')) {
     await gravar("active");
     return NextResponse.json({ status: "active" });
   }
