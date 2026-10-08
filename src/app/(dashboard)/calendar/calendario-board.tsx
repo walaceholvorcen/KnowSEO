@@ -254,7 +254,7 @@ export function CalendarioBoard({
                   <Link
                     href={`/contents/${item.id}`}
                     className={cn(
-                      "min-w-0 flex-1 truncate text-sm hover:underline",
+                      "w-full min-w-0 truncate text-sm hover:underline sm:w-auto sm:flex-1",
                       COR[item.estado],
                     )}
                   >
@@ -314,7 +314,7 @@ export function CalendarioBoard({
               >
                 <Link
                   href={`/contents/${rascunho.id}`}
-                  className="min-w-0 flex-1 truncate text-sm text-slate-700 hover:underline dark:text-slate-300"
+                  className="w-full min-w-0 truncate text-sm text-slate-700 hover:underline sm:w-auto sm:flex-1 dark:text-slate-300"
                 >
                   {rascunho.titulo}
                 </Link>

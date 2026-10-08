@@ -3131,3 +3131,27 @@ um campo novo.
 "Tirar data" não apaga nada: o rascunho volta para a lista de baixo com o
 texto inteiro. A tela diz isso, porque um botão que parecia apagar artigo
 ninguém clicaria.
+
+### 73b. Conferir a tela sem poder entrar nela
+
+A tela do calendário exige login, e eu não entro na conta de ninguém. A
+saída foi uma página temporária fora do grupo `(dashboard)` — portanto sem
+a trava de sessão — passando ao componente os mesmos props que o servidor
+passaria, com os títulos reais de outubro. Rodou em localhost, serviu para
+olhar, foi apagada antes do commit.
+
+Valeu o trabalho: achou um defeito que nenhum teste pegaria. No celular, a
+linha de "Agendados" é `flex-wrap`, com o título em `flex-1 truncate` e,
+do lado, o campo de data (160px) mais o botão. Como `min-w-0` deixa o
+título encolher até zero, os dois couberam na mesma linha e o título saiu
+como "M..", "G..", "F..". `flex-wrap` só quebra quando não cabe, e cabia.
+
+`w-full sm:w-auto sm:flex-1` resolve: no celular o título toma a linha
+inteira e os controles descem; de tablet para cima nada muda. O mesmo
+aperto existia, menor, no bloco "Esperando data" — corrigido junto, porque
+guardar um defeito conhecido para outro dia é como não tê-lo achado.
+
+O clique também foi testado de verdade: "Tirar data" chamou a ação do
+servidor e trouxe de volta o erro do Postgres (os ids da prévia eram
+pedaços, não uuid). Prova chata, mas é prova — o caminho botão → ação →
+banco → mensagem na tela está ligado.
