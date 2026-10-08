@@ -1,8 +1,10 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
 import {
+  artigosDoPagamento,
   BLOGS_POR_CONTA,
   cotaDeArtigos,
+  DEGRAUS,
   MENSAGEM_LIMITE_DE_BLOGS,
   mensagemDeCotaCheia,
   podeAdicionarBlog,
@@ -96,5 +98,24 @@ describe("limite de blogs do plano", () => {
 
   test("a mensagem manda para onde resolve", () => {
     assert.match(MENSAGEM_LIMITE_DE_BLOGS, /ranknow\.es\/contacto/);
+  });
+});
+
+describe("o que o pagamento manda vira cota", () => {
+  test("os quatro degraus do site passam", () => {
+    for (const n of DEGRAUS) assert.equal(artigosDoPagamento(n), n);
+  });
+
+  test('"otra cantidad" também passa, inclusive como texto', () => {
+    assert.equal(artigosDoPagamento(7), 7);
+    assert.equal(artigosDoPagamento("45"), 45);
+  });
+
+  test("o que não dá para honrar é recusado, não gravado", () => {
+    // Plano com cota errada é pior que pagamento que falhou: ninguém
+    // percebe, e o cliente escreve de menos ou de mais a mês inteiro.
+    for (const v of [0, -1, 1.5, "abc", "", null, undefined, {}, 10_001]) {
+      assert.equal(artigosDoPagamento(v), null, JSON.stringify(v));
+    }
   });
 });

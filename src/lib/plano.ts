@@ -97,3 +97,28 @@ export const MENSAGEM_LIMITE_DE_BLOGS =
   BLOGS_POR_CONTA === 1
     ? "Seu plano inclui um blog. Para atender outro cliente, ele precisa da própria conta - fale com a gente em ranknow.es/contacto."
     : `Seu plano inclui ${BLOGS_POR_CONTA} blogs. Fale com a gente em ranknow.es/contacto para ampliar.`;
+
+/**
+ * Os degraus que o site vende, em artigos por mês.
+ *
+ * Ficam aqui, e não espalhados, porque três coisas precisam concordar: o
+ * que a página cobra, o que o pagamento libera e o que a trava confere. A
+ * página oferece "otra cantidad", então número fora da lista é aceito -
+ * esta lista é o que se reconhece, não o que se permite.
+ */
+export const DEGRAUS = [4, 12, 30, 90] as const;
+
+/**
+ * Converte o que veio do pagamento em cota mensal.
+ *
+ * Recusa o que não dá para honrar - zero, negativo, texto, quebrado - em
+ * vez de gravar lixo na conta: plano com cota errada é pior que pagamento
+ * que falhou, porque ninguém percebe.
+ */
+export function artigosDoPagamento(valor: unknown): number | null {
+  const n = typeof valor === "string" ? Number(valor) : valor;
+  if (typeof n !== "number" || !Number.isInteger(n) || n < 1 || n > 10_000) {
+    return null;
+  }
+  return n;
+}
