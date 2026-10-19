@@ -3155,3 +3155,36 @@ O clique também foi testado de verdade: "Tirar data" chamou a ação do
 servidor e trouxe de volta o erro do Postgres (os ids da prévia eram
 pedaços, não uuid). Prova chata, mas é prova — o caminho botão → ação →
 banco → mensagem na tela está ligado.
+
+## 74. A migração 0021 teria dado o plano mais caro de graça ao primeiro cliente
+
+No dia 18/10 entrou a primeira conta que não é do dono: Mibolsillo. No dia
+19 ela apareceu travada na tela de Estratégia — comportamento correto da
+0016, que faz conta nova nascer em liberação para ninguém gerar artigo na
+conta da Anthropic do dono sem passar por ele.
+
+O travamento era o sintoma. Olhando por causa dele, apareceu o defeito de
+verdade, que ainda não tinha acontecido porque ninguém rodou o SQL:
+
+```sql
+update workspaces set plan = 'pro', artigos_por_mes = 90
+ where plan is distinct from 'pro';
+```
+
+Quando escrevi isso, as únicas contas do banco eram as duas do dono, e
+"todas as contas que existem" queria dizer "as minhas". Uma semana depois
+passou a querer dizer outra coisa. Rodar a migração hoje daria a um cliente
+que não pagou nada o degrau de 90 artigos/mês — de graça, em silêncio, e
+descoberto só na primeira fatura da Anthropic.
+
+O recorte virou `created_at < '2026-10-01'`. Data, e não lista de nomes:
+diz na própria linha qual era o mundo quando a migração foi escrita.
+
+**A lição:** migração com `where` que significa "o que existe agora" é uma
+bomba de efeito retardado. Ela é escrita num dia e roda noutro, e entre os
+dois o banco muda. O recorte tem que ser verdade nos dois dias — por isso
+data fixa, nunca "todos".
+
+E uma segunda, operacional: a liberação manual da 0016 depende de alguém
+reparar que um cliente se cadastrou. Ninguém reparou por um dia inteiro.
+A trava funcionou; o aviso de que ela disparou não existe.

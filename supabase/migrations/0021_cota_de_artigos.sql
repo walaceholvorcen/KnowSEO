@@ -15,10 +15,20 @@ alter table workspaces
 comment on column workspaces.artigos_por_mes is
   'Artigos por mês do plano contratado (4, 12, 30, 90 ou outro). Nulo na prova grátis, que tem 5 artigos no total, não por mês.';
 
--- As contas que já existem são do dono, com 17 artigos no banco. Deixá-las
--- cair na prova de 5 travaria a geração no primeiro clique. Mesma decisão
--- da 0016, que marcou `liberado` nas contas existentes.
-update workspaces set plan = 'pro', artigos_por_mes = 90 where plan is distinct from 'pro';
+-- As contas do DONO, com 17 artigos no banco, não podem cair na prova de 5:
+-- travaria a geração no primeiro clique. Mesma decisão da 0016, que marcou
+-- `liberado` nas contas existentes.
+--
+-- O recorte é a data, e não "todas as contas que existem": quando esta
+-- migração foi escrita só havia as duas do dono, e no dia 18/10 entrou o
+-- primeiro cliente de verdade (Mibolsillo). Rodar o `update` sem recorte
+-- daria a ele, de graça e sem ninguém perceber, o degrau mais caro que o
+-- site vende. Conta criada em outubro ou depois começa na prova, que é o
+-- que ranknow.es/planes promete.
+update workspaces
+   set plan = 'pro', artigos_por_mes = 90
+ where created_at < '2026-10-01'
+   and plan is distinct from 'pro';
 
 -- Sem grant novo, de propósito: desde a 0016 o usuário só pode escrever
 -- `name` e `onboarding_steps` em workspaces. Coluna nova nasce fora disso,
