@@ -3221,3 +3221,35 @@ aqui" já descreve.
 **A lição:** uma trava manual é um empréstimo, não uma solução. Ela cobra
 juros em atenção humana todo dia, e o dia em que ninguém paga é o dia em
 que o cliente fica olhando para a parede. Trava boa é a que confere sozinha.
+
+## 76. Todo mundo no degrau cheio (migração 0023)
+
+Decisão do dono, pela mesma razão da 0022: a plataforma hoje é ferramenta
+de trabalho. Quem entra foi cadastrado por ele para usar de verdade, e a
+prova de 5 artigos — feita para quem chega sozinho pelo site — só
+atrapalhava quem já estava dentro. Toda conta passa a nascer com
+`plan = 'pro'` e `artigos_por_mes = 90`.
+
+A cota **não** foi desligada, e a diferença importa: `barrarSemCota`
+continua conferindo a cada clique, 90 continua sendo teto, e o número volta
+a ser 4, 12 ou 30 quando a cobrança entrar. Mudou o valor inicial, não a
+existência do freio.
+
+A prova de que o freio é real apareceu no mesmo minuto. Mibolsillo foi
+liberado ontem e, ao conferir hoje, estava em **5 de 5**: tinha escrito
+cinco artigos e batido no teto da prova. A trava funcionou sem ninguém
+olhando — e sem este pedido, o cliente estaria travado de novo amanhã.
+
+Um detalhe de como se escreve isso: o `update` saiu com `where`, e não
+solto. `update workspaces set ...;` sem filtro foi recusado pela trava que
+vigia escrita em produção, com razão — é indistinguível de um acidente.
+Com `where plan is distinct from 'pro' or artigos_por_mes is distinct from
+90` a linha diz o que faz, toca só em quem precisa e pode rodar de novo.
+Não foi obstáculo contornado: era SQL melhor.
+
+**O preço, dito em voz alta ao dono:** o cadastro em app.ranknow.es é
+público. Com portão aberto (0022) e degrau cheio (0023), uma conta criada
+por um desconhecido nasce com 90 artigos/mês na conta da Anthropic do dono.
+O conserto certo não é diminuir o número — é fechar o cadastro e criar
+conta por convite, que é exatamente o que "nós montamos aqui, quem usa é
+outra pessoa" já descreve.
