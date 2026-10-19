@@ -3188,3 +3188,36 @@ data fixa, nunca "todos".
 E uma segunda, operacional: a liberação manual da 0016 depende de alguém
 reparar que um cliente se cadastrou. Ninguém reparou por um dia inteiro.
 A trava funcionou; o aviso de que ela disparou não existe.
+
+## 75. O freio deixou de ser uma pessoa e virou um número (migração 0022)
+
+A 0016 fez conta nova nascer travada porque era o único freio que existia:
+sem cota, uma conta solta gerava artigo sem limite na conta da Anthropic do
+dono. A trava funcionou — e no dia 18/10 cobrou o preço dela. Um cliente de
+verdade se cadastrou e ficou um dia inteiro olhando um aviso amarelo,
+porque a trava disparou e ninguém foi avisado.
+
+A 0021 mudou o terreno: agora existe cota, e `barrarSemCota` confere na
+rota que escreve. Conta sem plano tem 5 artigos no total, que é o que o
+site vende. O freio virou um número conferido a cada clique, em vez de uma
+pessoa lembrando de clicar.
+
+O que decidiu a troca não foi técnico, foi o uso real: a plataforma hoje é
+ferramenta de trabalho, não produto de prateleira. A conta é montada aqui
+dentro e entregue pronta a quem vai usar. A aprovação manual não estava
+protegendo de estranho nenhum — estava atrasando o próprio dono.
+
+A mudança é uma linha (`alter column liberado set default true`) e nenhuma
+linha de código. A coluna fica, o aviso na tela fica: `liberado = false`
+continua pausando uma conta específica à mão. Deixou de ser o estado
+inicial de todo mundo e virou exceção.
+
+**O que continua aberto, e foi dito ao dono:** o cadastro é público. Com o
+portão aberto, quem achar o endereço cria conta e ganha os 5 artigos da
+prova. Se um dia isso incomodar, o conserto não é voltar a aprovar na mão —
+é fechar o cadastro e criar conta por convite, que é o que "nós montamos
+aqui" já descreve.
+
+**A lição:** uma trava manual é um empréstimo, não uma solução. Ela cobra
+juros em atenção humana todo dia, e o dia em que ninguém paga é o dia em
+que o cliente fica olhando para a parede. Trava boa é a que confere sozinha.
