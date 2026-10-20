@@ -3253,3 +3253,30 @@ por um desconhecido nasce com 90 artigos/mês na conta da Anthropic do dono.
 O conserto certo não é diminuir o número — é fechar o cadastro e criar
 conta por convite, que é exatamente o que "nós montamos aqui, quem usa é
 outra pessoa" já descreve.
+
+## 77. A vitrine entrou no controle de versão
+
+A pasta `src/app/vitrine/` — uma página que desenha todas as telas do
+painel lado a lado com dado real, e três rotas que rodam auditoria e Raio X
+sem passar pelo app — existia só neste computador. Não estava no
+`.gitignore`, e sim no `.git/info/exclude`, que é um arquivo local: nem o
+GitHub nem outra máquina jamais souberam que ela existe. Um `format C:`
+teria levado 455 linhas de código embora sem aviso.
+
+Antes de subir, li os quatro arquivos, e a leitura era obrigatória: todos
+usam `createAdminClient()`, que é a chave de administrador do banco. Se um
+deles não tivesse trava, publicar seria expor dado de cliente a qualquer
+pessoa com o endereço. Os quatro começam com a mesma linha:
+
+```ts
+if (process.env.NODE_ENV === "production") notFound();
+```
+
+Em produção são 404 — conferido ao vivo antes do commit. Valem só com
+`npm run dev`.
+
+**A lição:** `.git/info/exclude` é o esconderijo mais perigoso que um
+projeto tem, justamente por ser invisível. `.gitignore` todo mundo lê num
+diff; o exclude não aparece em lugar nenhum, não viaja com o repositório, e
+quem herdar a máquina não vai descobrir. Se é para esconder, que seja no
+`.gitignore`, onde a decisão fica à vista.
