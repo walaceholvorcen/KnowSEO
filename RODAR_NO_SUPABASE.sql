@@ -1,21 +1,56 @@
 -- ============================================================================
--- COLE NO SQL EDITOR DO SUPABASE E CLIQUE EM RUN.
+-- COLE NO SQL EDITOR DO SUPABASE (projeto SEO, organização DataKnow) E
+-- CLIQUE EM RUN. Pode rodar duas vezes sem estragar nada.
 --
--- Migração 0022: conta nova passa a nascer liberada.
--- O freio deixa de ser a sua aprovação manual e passa a ser a cota de 5
--- artigos da prova, que já está ligada desde o SQL de ontem.
---
--- A coluna continua existindo: para pausar uma conta específica, basta
---   update workspaces set liberado = false where name = 'Fulano';
+-- Migração 0024: o painel da agência.
+-- Você e o Renan passam a enxergar todas as subcontas (clientes) e a poder
+-- criar novas. Cliente continua vendo só a conta dele.
 -- ============================================================================
 
-alter table workspaces
-  alter column liberado set default true;
+create table if not exists agencia_admins (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  created_at timestamptz not null default now()
+);
 
-comment on column workspaces.liberado is
-  'true = pode usar as operações que gastam IA. Nasce true desde a 0022; false é pausa manual de uma conta específica. Só o dono muda (service role).';
+alter table agencia_admins enable row level security;
+revoke all on agencia_admins from anon, authenticated;
 
--- Confere: a coluna tem que aparecer com default "true".
-select column_name, column_default
-  from information_schema.columns
- where table_name = 'workspaces' and column_name = 'liberado';
+create or replace function eh_admin_da_agencia()
+returns boolean
+language sql
+security definer
+stable
+set search_path = public
+as $$
+  select exists (select 1 from agencia_admins where user_id = auth.uid());
+$$;
+
+revoke all on function eh_admin_da_agencia() from public;
+grant execute on function eh_admin_da_agencia() to authenticated;
+
+create or replace function auth_workspace_ids()
+returns setof uuid
+language sql
+security definer
+stable
+set search_path = public
+as $$
+  select workspace_id from workspace_members where user_id = auth.uid()
+  union
+  select id from workspaces where eh_admin_da_agencia();
+$$;
+
+-- Os administradores: os donos das duas contas que existiam antes de
+-- outubro (a sua e a do Renan).
+insert into agencia_admins (user_id)
+select m.user_id
+  from workspace_members m
+  join workspaces w on w.id = m.workspace_id
+ where w.created_at < '2026-10-01'
+on conflict do nothing;
+
+-- Confere: tem que aparecer exatamente dois e-mails, o seu e o do Renan.
+select u.email as administrador
+  from agencia_admins a
+  join auth.users u on u.id = a.user_id
+ order by u.email;

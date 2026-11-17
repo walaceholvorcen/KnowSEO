@@ -3,10 +3,12 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import type { Blog, Workspace } from "@/types";
-import { BLOG_COOKIE } from "@/lib/blog-cookie";
+import { BLOG_COOKIE, SUBCONTA_COOKIE } from "@/lib/blog-cookie";
 
-// MVP: 1 usuário -> 1 workspace principal (o schema já suporta N workspaces
-// e N membros por workspace para quando entrarmos no caso de uso de agência).
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// Cliente: 1 usuário -> a conta dele. Administrador da agência (migração
+// 0024): enxerga todas e trabalha na subconta que escolheu em /agencia.
 //
 // Isto roda antes de qualquer tela do painel mostrar alguma coisa, então
 // cada ida ao banco aqui é espera que o cliente sente como "travou":
@@ -32,23 +34,47 @@ export const requireUserAndWorkspace = cache(async () => {
     email: typeof claims.email === "string" ? claims.email : null,
   };
 
-  const { data: membership } = await supabase
-    .from("workspace_members")
-    .select("workspace:workspaces(*)")
-    .eq("user_id", user.id)
-    .limit(1)
-    .maybeSingle();
+  // Três perguntas de uma vez, para o painel da agência não somar espera:
+  // de que conta a pessoa é, se ela é administradora da agência, e - quando
+  // há uma subconta escolhida no cookie - se essa subconta existe para ela.
+  //
+  // O cookie é editável pelo visitante, então quem decide é o banco: a
+  // leitura passa pela RLS, que só devolve a linha a quem é membro ou
+  // administrador. Um id de outro cliente posto à mão volta vazio e cai na
+  // conta da própria pessoa, sem erro na cara.
+  const escolhida = (await cookies()).get(SUBCONTA_COOKIE)?.value;
+  const [{ data: membership }, { data: ehAdmin }, daSubconta] = await Promise.all([
+    supabase
+      .from("workspace_members")
+      .select("workspace:workspaces(*)")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .maybeSingle(),
+    // Antes da migração 0024 a função não existe: o erro vira "não é
+    // administrador" e o painel segue como sempre foi.
+    supabase.rpc("eh_admin_da_agencia"),
+    escolhida && UUID.test(escolhida)
+      ? supabase.from("workspaces").select("*").eq("id", escolhida).maybeSingle()
+      : null,
+  ]);
 
-  const workspace = (membership as { workspace: Workspace | null } | null)
+  const admin = ehAdmin === true;
+  const propria = (membership as { workspace: Workspace | null } | null)
     ?.workspace;
+  // Administrador sem subconta escolhida não cai numa conta qualquer das
+  // várias que enxerga: volta ao painel central para escolher.
+  const workspace =
+    (daSubconta?.data as Workspace | null) ?? (admin ? null : propria);
 
   if (!workspace) {
+    if (admin) redirect("/agencia");
     // Usuário autenticado mas sem workspace ainda (edge case raro - o
     // signup normalmente já cria um). Manda para o fluxo de criação.
     redirect("/onboarding/workspace");
   }
 
-  return { supabase, user, workspace };
+  return { supabase, user, workspace, admin };
 });
 
 export const getWorkspaceBlogs = cache(

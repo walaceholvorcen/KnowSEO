@@ -3280,3 +3280,98 @@ projeto tem, justamente por ser invisível. `.gitignore` todo mundo lê num
 diff; o exclude não aparece em lugar nenhum, não viaja com o repositório, e
 quem herdar a máquina não vai descobrir. Se é para esconder, que seja no
 `.gitignore`, onde a decisão fica à vista.
+
+## 78. O painel da agência: subcontas, e dois administradores (migração 0024)
+
+Pedido do dono: "um painel central que será o da agência, com subcontas
+dentro; o meu usuário e o do Renan como admin, com acesso às subcontas e
+podendo adicionar novos clientes".
+
+Até aqui cada pessoa via só a própria conta. Três clientes eram três
+logins, ou a senha do cliente emprestada.
+
+### A decisão que definiu o desenho: cliente é workspace, não blog
+
+O esquema da 0001 previa "workspace = agência, blogs = clientes". Não foi
+esse o caminho, por três fatos que já estavam de pé: a cota é por workspace
+(0021), o site vende um blog por conta (seção 70), e o primeiro cliente de
+verdade entrou com login próprio e conta própria. Juntar todo mundo num
+workspace só tiraria do cliente o login que vê apenas o que é dele, e
+obrigaria a migrar dado de produção. Cada cliente continua sendo um
+workspace - a tela chama de subconta - e o que entra de novo é uma lista
+curta de administradores.
+
+### A mudança inteira cabe numa função
+
+Todas as policies do banco perguntam a mesma coisa a
+`auth_workspace_ids()`: "de quais workspaces esta pessoa é?". Para quem
+está em `agencia_admins`, a resposta passa a ser "todos". Nenhuma das vinte
+e tantas policies foi tocada, e subconta que nascer amanhã já entra na
+resposta sem ninguém lembrar de vincular nada.
+
+`agencia_admins` tem RLS ligada e **nenhuma policy**: pelo navegador
+ninguém lê nem escreve. Quem pudesse inserir uma linha ali viraria dono de
+todos os clientes.
+
+Os dois administradores entram por data (donos das contas anteriores a
+outubro, o mesmo recorte da 0021), não por e-mail: endereço de pessoa não
+mora em repositório.
+
+### A auditoria que veio antes de ligar
+
+"Admin enxerga tudo" tem um efeito colateral que só aparece depois: toda
+consulta que confiava **só** na RLS para separar cliente passaria a
+devolver o dado de todos misturado na tela de um. A seção 4.1 deste
+arquivo diz justamente que "o código não filtra workspace na mão".
+
+Um script varreu as 150 e poucas consultas do app atrás das que não têm
+filtro explícito de blog, workspace ou id. Sobraram doze: as três novas do
+painel da agência (que querem tudo, de propósito), checagens de slug
+único, e rotas de robô que já usam o client de serviço. Nenhuma tela de
+cliente dependia só da RLS - o multi-cliente da seção 29 já tinha posto
+`blog_id` em tudo. Sem essa conferência, a migração seria um vazamento
+entre clientes com cara de recurso novo.
+
+### As peças
+
+- **`requireUserAndWorkspace`** faz três perguntas em paralelo: de que
+  conta a pessoa é, se é administradora, e se a subconta do cookie
+  `subconta_ativa` existe para ela. O cookie é editável pelo visitante,
+  então quem decide é o banco - a leitura passa pela RLS. Administrador sem
+  subconta escolhida não cai numa conta qualquer: vai para `/agencia`.
+- **`/agencia`** fora do grupo do painel, de propósito: lá não existe
+  subconta ativa, e chamar `requireUserAndWorkspace` dali fecharia um laço
+  de redirecionamento.
+- **`src/lib/agencia.ts`** (função pura, 6 testes). O estado que a tela
+  destaca não é número de artigo, é **fila vazia**: em outubro o calendário
+  de dois clientes ficou parado duas semanas e ninguém viu, porque para ver
+  era preciso entrar em cada conta. A frase de abertura conta isso - "3
+  subcontas: 2 sem nada agendado".
+- **Criar subconta reusa `criarWorkspace`**, o caminho do cadastro: a conta
+  nasce e quem criou entra como dono. Não é detalhe - subconta sem dono
+  ficaria aberta à regra "entre num workspace que ainda não tem ninguém"
+  (0015).
+- **"Todas as subcontas"** no topo da barra lateral, só para administrador.
+
+### Tolerância ao deploy antes do SQL
+
+Sem a função no banco, `rpc("eh_admin_da_agencia")` devolve erro, o erro
+vira "não é administrador" e o painel segue exatamente como era. O código
+pode ir ao ar antes da migração.
+
+### Como foi verificado, e o que ficou para depois do SQL
+
+Na vitrine (`?tela=agencia`), com o dado real de produção: três subcontas,
+"2 sem nada agendado", Mibolsillo com 4 agendados e próximo em 18/11; a
+1280px e a 375px, claro e escuro, zero rolagem lateral, alvos de 40 e 44px.
+
+O que a vitrine não prova é o que depende de sessão: a troca de subconta e
+o administrador enxergando o que antes não via. Isso só se confere com a
+0024 aplicada.
+
+### O que este painel ainda não faz
+
+Dar login ao cliente de uma subconta criada pela agência. Hoje o cliente
+tem login quando ele mesmo se cadastra (e a conta dele aparece no painel).
+O convite por e-mail é o passo seguinte, e depende de SMTP próprio: o
+remetente padrão do Supabase manda poucos e-mails por hora.

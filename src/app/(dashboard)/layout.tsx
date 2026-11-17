@@ -21,7 +21,7 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { supabase, workspace } = await requireUserAndWorkspace();
+  const { supabase, workspace, admin } = await requireUserAndWorkspace();
   const blogs = await getWorkspaceBlogs(supabase, workspace.id);
 
   if (blogs.length === 0) {
@@ -53,6 +53,7 @@ export default async function DashboardLayout({
       <DetectarFuso />
       <Sidebar
         blogAtivoId={blog.id}
+        agencia={admin}
         cota={
           usados === null || cotaDoPlano.indefinida
             ? null

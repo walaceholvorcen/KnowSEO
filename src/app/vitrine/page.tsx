@@ -28,6 +28,8 @@ import { SettingsNav } from "@/app/(dashboard)/settings/settings-nav";
 import { CreateBlogForm } from "@/app/onboarding/create-blog-form";
 import { pagina } from "@/components/ui";
 import { lerFuso } from "@/lib/datas";
+import { AgenciaPainel } from "@/app/agencia/painel";
+import { carregarSubcontas } from "@/app/agencia/dados";
 import { lerPeriodo } from "@/lib/relatorio";
 import { carregarRelatorio } from "@/app/(dashboard)/reports/dados";
 import { Relatorio } from "@/app/(dashboard)/reports/relatorio";
@@ -54,6 +56,12 @@ export default async function Vitrine({
     lista.find((b) => b.subdomain === pedido) ??
     lista.find((b) => b.custom_domain) ??
     lista[0];
+
+  // O painel da agência tem moldura própria, sem a barra lateral: sai antes
+  // do invólucro das outras telas.
+  if (tela === "agencia") {
+    return <AgenciaPainel subcontas={await carregarSubcontas(admin)} fuso={fuso} />;
+  }
 
   let conteudo: React.ReactNode = null;
 
@@ -377,6 +385,7 @@ export default async function Vitrine({
     <div className="flex h-screen flex-col overflow-hidden bg-slate-50 dark:bg-background lg:flex-row">
       <Sidebar
         blogAtivoId={blog.id}
+        agencia
         blogs={lista.map((b) => ({
           id: b.id,
           nome: b.name,

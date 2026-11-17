@@ -24,6 +24,7 @@ import {
   Radar,
   CalendarDays,
   ExternalLink,
+  ArrowLeft,
   Menu,
   Plus,
   X,
@@ -109,9 +110,13 @@ export function Sidebar({
   blogs,
   blogAtivoId,
   cota,
+  agencia = false,
 }: {
   blogs: BlogDaBarra[];
   blogAtivoId: string;
+  /** Quem opera é administrador da agência: ganha o caminho de volta ao
+   *  painel central, de onde se troca de subconta. */
+  agencia?: boolean;
   /** "8 de 30 artigos este mês" - a cota do plano, já escrita pelo
    *  servidor. Nula quando a leitura falhou: some da tela em vez de
    *  mostrar número errado. */
@@ -257,6 +262,19 @@ export function Sidebar({
             {marca}
           </Link>
         </div>
+
+        {/* Acima do cliente em operação, porque é o nível de cima: primeiro
+            a agência, depois a subconta, depois as telas dela. */}
+        {agencia && (
+          <Link
+            href="/agencia"
+            onClick={() => setAberto(false)}
+            className="mx-3 mb-2 flex items-center gap-1.5 px-1 text-xs text-slate-500 pointer-coarse:min-h-11 hover:text-cobalto-600 dark:text-slate-400 dark:hover:text-cobalto-400"
+          >
+            <ArrowLeft size={12} aria-hidden="true" />
+            Todas as subcontas
+          </Link>
+        )}
 
         {/* Qual blog está sendo operado. Toda ferramenta séria mostra o
             contexto em que a pessoa está mexendo - sem isto, nada na tela

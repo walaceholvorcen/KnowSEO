@@ -58,7 +58,9 @@ export async function cadastrar(
 // O dono do workspace é quem está na sessão, não um id vindo do formulário:
 // o formulário antigo mandava o userId como prop, e a RLS era a única coisa
 // impedindo alguém de se vincular ao workspace com o id de outra pessoa.
-export async function criarWorkspace(nome: string): Promise<Resultado> {
+export async function criarWorkspace(
+  nome: string,
+): Promise<Resultado & { id?: string }> {
   const supabase = await createClient();
   const { data: claims } = await supabase.auth.getClaims();
   const userId = claims?.claims.sub;
@@ -79,7 +81,8 @@ export async function criarWorkspace(nome: string): Promise<Resultado> {
   const { error: erroMembro } = await supabase
     .from("workspace_members")
     .insert({ workspace_id: workspaceId, user_id: userId, role: "owner" });
-  return { erro: erroMembro?.message ?? null };
+  if (erroMembro) return { erro: erroMembro.message };
+  return { erro: null, id: workspaceId };
 }
 
 export async function pedirNovaSenha(email: string): Promise<Resultado> {
