@@ -28,13 +28,16 @@ import { PageviewTracker } from "./pageview-tracker";
 // atraso máximo entre publicar e ver no ar.
 const buscarArtigo = unstable_cache(
   async (blogId: string, slug: string) => {
-    const { data } = await createAdminClient()
+    const { data, error } = await createAdminClient()
       .from("articles")
       .select("*")
       .eq("blog_id", blogId)
       .eq("slug", slug)
       .eq("status", "published")
       .maybeSingle();
+    // Erro de leitura não é "artigo não existe": guardado, viraria 404 por
+    // um minuto (mesma regra de tenant.ts).
+    if (error) throw new Error(`artigo publicado: ${error.message}`);
     return data;
   },
   ["artigo-publicado"],

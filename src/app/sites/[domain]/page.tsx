@@ -57,12 +57,15 @@ export async function generateMetadata({
 // é a mesma para todo visitante e mudava só quando alguém publica.
 const artigosPublicados = unstable_cache(
   async (blogId: string) => {
-    const { data } = await createAdminClient()
+    const { data, error } = await createAdminClient()
       .from("articles")
       .select("*")
       .eq("blog_id", blogId)
       .eq("status", "published")
       .order("published_at", { ascending: false });
+    // Erro de leitura não é "blog sem artigos": guardado, esvaziaria a capa
+    // por um minuto (mesma regra de tenant.ts).
+    if (error) throw new Error(`artigos publicados: ${error.message}`);
     return data;
   },
   ["artigos-publicados"],

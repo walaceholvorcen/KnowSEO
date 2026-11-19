@@ -79,12 +79,18 @@ const blogPorHost = unstable_cache(
     const decodedHost = decodeURIComponent(host);
     const hostname = decodedHost.split(":")[0];
 
+    // Falha de leitura NÃO é "blog não existe". Devolver null num erro faria
+    // esta resposta ser guardada por um minuto: uma piscada do banco virava
+    // 404 no blog do cliente para todo visitante desse minuto (visto em
+    // 19/11, na primeira visita depois de um deploy). Lançar faz o pedido
+    // falhar sozinho e nada ser guardado; o seguinte tenta de novo.
     const bySubdomain = async (subdomain: string) => {
-      const { data } = await admin
+      const { data, error } = await admin
         .from("blogs")
         .select("*")
         .eq("subdomain", subdomain)
         .maybeSingle();
+      if (error) throw new Error(`blog por subdomínio: ${error.message}`);
       return (data as Blog) ?? null;
     };
 
@@ -107,11 +113,12 @@ const blogPorHost = unstable_cache(
     // .vercel.app gravados por engano (antes da guarda no servidor) nunca são
     // servidos: responder ali seria substituir o site do cliente pelo blog.
     if (!isSafeCustomDomain(hostname)) return null;
-    const { data } = await admin
+    const { data, error } = await admin
       .from("blogs")
       .select("*")
       .eq("custom_domain", hostname)
       .maybeSingle();
+    if (error) throw new Error(`blog por domínio: ${error.message}`);
 
     return (data as Blog) ?? null;
   },

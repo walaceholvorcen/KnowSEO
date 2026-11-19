@@ -3450,3 +3450,25 @@ apagadas em seguida.
 O robô é reconhecido pelo nome que declara, e nome se forja. Serve para
 tendência, não para auditoria. O degrau seguinte é conferir o IP contra as
 faixas que cada empresa publica.
+
+### 79b. A piscada do banco que virava 404 por um minuto
+
+Na conferência depois do deploy, a capa de `blog.dataknow.es` respondeu
+404 uma vez; os quatro pedidos seguintes deram 200 com os 13 artigos.
+
+A causa provável é um defeito da seção 62. As três consultas guardadas por
+um minuto (qual blog mora neste endereço, o artigo, a lista de artigos)
+faziam `const { data } = ...; return data ?? null` - o erro era ignorado.
+Uma falha de leitura devolvia "não existe", e **"não existe" era guardado
+por sessenta segundos**: todo visitante daquele minuto via 404 no blog do
+cliente por causa de um soluço que durou um instante.
+
+Agora as três lançam o erro. `unstable_cache` não guarda exceção: o pedido
+azarado falha sozinho, e o seguinte consulta de novo.
+
+**A lição:** cache transforma erro passageiro em erro durável. Em toda
+função guardada, "não achei" e "não consegui perguntar" precisam ser
+respostas diferentes - e só a primeira pode ser guardada.
+
+Dito com honestidade: a causa é provável, não provada. O 404 não se
+repetiu para ser examinado, e a correção fecha o caminho que o explicaria.
