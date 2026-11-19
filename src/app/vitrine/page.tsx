@@ -30,7 +30,7 @@ import { pagina } from "@/components/ui";
 import { lerFuso } from "@/lib/datas";
 import { AgenciaPainel } from "@/app/agencia/painel";
 import { carregarSubcontas } from "@/app/agencia/dados";
-import { carregarDesempenho, enderecoDoBlog } from "@/app/(dashboard)/performance/dados";
+import { carregarDesempenho, carregarIndexacao, enderecoDoBlog } from "@/app/(dashboard)/performance/dados";
 import { DesempenhoBoard } from "@/app/(dashboard)/performance/desempenho-board";
 import { diaNoFuso } from "@/lib/grafico";
 import { carregarTrafegoDeIA } from "@/app/(dashboard)/visibility/trafego-dados";
@@ -358,6 +358,17 @@ export default async function Vitrine({
       escopo: "site",
       hoje: diaNoFuso(new Date(), fuso),
     });
+    const { data: noAr } = await admin
+      .from("articles")
+      .select("slug")
+      .eq("blog_id", blog.id)
+      .eq("status", "published")
+      .order("published_at", { ascending: false });
+    const indexacaoDaVitrine = await carregarIndexacao({
+      workspaceId: blog.workspace_id,
+      blog,
+      slugs: ((noAr as { slug: string }[]) ?? []).map((a) => a.slug),
+    });
     conteudo = (
       <DesempenhoBoard
         tela={dados}
@@ -365,6 +376,7 @@ export default async function Vitrine({
         escopo="site"
         propriedade={blog.gsc_property!}
         enderecoDoBlog={enderecoDoBlog(blog)}
+        indexacao={indexacaoDaVitrine}
       />
     );
   }

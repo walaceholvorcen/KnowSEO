@@ -6,7 +6,7 @@ import { botao, pagina } from "@/components/ui";
 import { lerFuso } from "@/lib/datas";
 import { diaNoFuso } from "@/lib/grafico";
 import { lerPeriodo } from "@/lib/google/desempenho";
-import { carregarDesempenho, enderecoDoBlog, type Escopo } from "./dados";
+import { carregarDesempenho, carregarIndexacao, enderecoDoBlog, type Escopo } from "./dados";
 import { DesempenhoBoard } from "./desempenho-board";
 
 export default async function DesempenhoPage({
@@ -43,9 +43,18 @@ export default async function DesempenhoPage({
   const filtro = enderecoDoBlog(blog);
   const escopo: Escopo = params.escopo === "blog" && filtro ? "blog" : "site";
 
+  const { data: publicados } = await supabase
+    .from("articles")
+    .select("slug")
+    .eq("blog_id", blog.id)
+    .eq("status", "published")
+    .order("published_at", { ascending: false });
+  const slugs = ((publicados as { slug: string }[]) ?? []).map((a) => a.slug);
+
   // Falha do Google vira `null` aqui e a tela de erro é montada depois, fora
   // de qualquer try: é uma recusa esperada (conexão vencida), não um defeito.
-  const tela = await carregarDesempenho({
+  const [tela, indexacao] = await Promise.all([
+    carregarDesempenho({
     workspaceId: workspace.id,
     blog,
     periodo,
@@ -54,7 +63,9 @@ export default async function DesempenhoPage({
   }).catch((err) => {
     console.error("[desempenho] leitura do Search Console falhou", err);
     return null;
-  });
+  }),
+    carregarIndexacao({ workspaceId: workspace.id, blog, slugs }),
+  ]);
 
   if (!tela) {
     return (
@@ -76,6 +87,7 @@ export default async function DesempenhoPage({
       escopo={escopo}
       propriedade={blog.gsc_property}
       enderecoDoBlog={filtro}
+      indexacao={indexacao}
     />
   );
 }

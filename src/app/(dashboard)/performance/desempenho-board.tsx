@@ -15,6 +15,7 @@ import {
   type Periodo,
 } from "@/lib/google/desempenho";
 import type { Escopo, TelaDeDesempenho } from "./dados";
+import type { Indexacao } from "@/lib/google/indexacao";
 
 // O relatório de desempenho do Search Console, dentro do painel: a agência
 // não precisa de duas abas abertas para responder "o Google está mandando
@@ -34,6 +35,7 @@ export function DesempenhoBoard({
   escopo,
   propriedade,
   enderecoDoBlog,
+  indexacao,
 }: {
   tela: TelaDeDesempenho;
   periodo: Periodo;
@@ -42,6 +44,8 @@ export function DesempenhoBoard({
   propriedade: string;
   /** Null quando o blog não mora no site do cliente: some o filtro. */
   enderecoDoBlog: string | null;
+  /** Null quando não há o que conferir (ver carregarIndexacao). */
+  indexacao: Indexacao | null;
 }) {
   const [metrica, setMetrica] = useState<Metrica>("cliques");
   const { desempenho: d, consultas, paginas } = tela;
@@ -88,6 +92,8 @@ export function DesempenhoBoard({
           ? `${inteiro(d.total.cliques)} ${d.total.cliques === 1 ? "clique" : "cliques"} e ${inteiro(d.total.impressoes)} impressões no Google em ${nomeDoPeriodo}.`
           : `O Google não registrou nenhuma impressão em ${nomeDoPeriodo}.`}
       </Lede>
+
+      {indexacao && <ConhecidoPeloGoogle indexacao={indexacao} />}
 
       {/* Os filtros numa linha só, acima de tudo o que eles recortam. */}
       <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
@@ -196,6 +202,40 @@ export function DesempenhoBoard({
 
       <Tabela titulo="Consultas" coluna="O que as pessoas buscaram" linhas={consultas} />
       <Tabela titulo="Páginas" coluna="Onde elas chegaram" linhas={paginas} ehEndereco />
+    </div>
+  );
+}
+
+// Antes do gráfico, porque é a pergunta anterior a ele: de nada adianta ler
+// cliques de um blog que o Google ainda não sabe que existe. Quando está
+// tudo indexado vira uma linha discreta; quando não está, ganha o filete de
+// atenção e os passos.
+const SITEMAP: Record<Indexacao["sitemap"], string> = {
+  enviado: "Sitemap do blog: enviado e lido pelo Google.",
+  aguardando: "Sitemap do blog: enviado, aguardando a leitura do Google.",
+  "com-erro": "Sitemap do blog: o Google acusou erro.",
+  "nao-enviado": "Sitemap do blog: não enviado ao Google.",
+};
+
+function ConhecidoPeloGoogle({ indexacao: i }: { indexacao: Indexacao }) {
+  const ok = i.passos.length === 0 && i.fora === 0 && i.conferidos > 0;
+  return (
+    <div
+      role="status"
+      className={cn(
+        "mb-6 rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm dark:border-slate-800 dark:bg-slate-900",
+        !ok && "border-l-2 border-l-nota-atencao dark:border-l-nota-atencao",
+      )}
+    >
+      <p className="font-medium text-slate-900 dark:text-slate-100">{i.veredito}</p>
+      <p className="mt-1 text-slate-600 dark:text-slate-400">{SITEMAP[i.sitemap]}</p>
+      {i.passos.length > 0 && (
+        <ol className="mt-2 list-decimal space-y-1 pl-5 text-slate-700 dark:text-slate-300">
+          {i.passos.map((p) => (
+            <li key={p}>{p}</li>
+          ))}
+        </ol>
+      )}
     </div>
   );
 }

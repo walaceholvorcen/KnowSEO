@@ -1,5 +1,6 @@
 import { obterAccessToken } from "./oauth";
 import type { LinhaDoGoogle } from "./desempenho";
+import type { SitemapNoGoogle } from "./indexacao";
 
 // Propriedades que a conta conectada enxerga - alimenta o seletor onde o
 // usuário escolhe qual delas é este blog. Sem isto ele teria que digitar
@@ -128,6 +129,30 @@ export async function consultarDesempenho(params: {
     impressoes: r.impressions,
     ctr: r.ctr,
     posicao: r.position,
+  }));
+}
+
+// Os sitemaps que alguém enviou para esta propriedade. Falha devolve lista
+// vazia - e quem chama trata "vazio" como "não enviado", que é também o
+// conselho certo quando não se sabe.
+export async function listarSitemaps(
+  workspaceId: string,
+  siteUrl: string,
+): Promise<SitemapNoGoogle[]> {
+  const token = await obterAccessToken(workspaceId);
+  const res = await fetch(
+    `https://www.googleapis.com/webmasters/v3/sites/${encodeURIComponent(siteUrl)}/sitemaps`,
+    { headers: { Authorization: `Bearer ${token}` } },
+  );
+  if (!res.ok) return [];
+  const data = (await res.json()) as {
+    sitemap?: { path: string; isPending?: boolean; errors?: string | number; lastDownloaded?: string }[];
+  };
+  return (data.sitemap ?? []).map((s) => ({
+    path: s.path,
+    pendente: Boolean(s.isPending),
+    erros: Number(s.errors ?? 0),
+    ultimaLeitura: s.lastDownloaded ?? null,
   }));
 }
 

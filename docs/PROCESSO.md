@@ -3547,3 +3547,29 @@ sozinho e avisar.
 se o produto funciona. Dado recortado pelo que é nosso é a pergunta que
 faltava - o número do site inteiro deixava o blog pegar carona no mérito
 alheio.
+
+### 80b. O painel passou a perguntar "o Google conhece este blog?"
+
+No topo de Desempenho - Google entra um bloco com a resposta: quantos dos
+doze artigos mais recentes o Google indexou (uma inspeção de URL por
+artigo, guardada por uma hora), se o sitemap do blog foi enviado e lido, e
+o que fazer quando falta. `src/lib/google/indexacao.ts`, função pura, 7
+testes.
+
+Três decisões:
+
+- **O sitemap do site principal não vale pelo do blog.** No Mibolsillo
+  havia `cliente.com/sitemap.xml` enviado; o do blog é outro arquivo, em
+  outro endereço.
+- **Falha de conferência não vira "não indexado".** Cota estourada ou rede
+  fora contam como "sem resposta" e não entram na conta - senão um soluço
+  do Google mandaria a agência cobrar do cliente um link que já existe.
+- **Enviado e ainda não lido é espera, não erro**, e o bloco não manda
+  enviar de novo.
+
+O dono enviou o sitemap da DataKnow em 19/11. A tela do Search Console
+mostrou "Não foi possível buscar o sitemap" logo depois; a API, consultada
+em seguida, disse o contrário - baixado quatro segundos após o envio, 14
+endereços, zero erros. Aquela mensagem é o estado inicial da tela do
+Google, não um defeito do arquivo (conferido: 200, `application/xml`, XML
+válido, sem `noindex`).
