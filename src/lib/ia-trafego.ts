@@ -10,6 +10,7 @@
 //    gente, e o navegador diz de onde veio).
 //
 // Função pura: quem grava e quem desenha leem a mesma tabela daqui.
+import { diaNoFuso } from "./grafico.ts";
 
 export type Assistente = "claude" | "chatgpt" | "perplexity" | "google" | "copilot";
 
@@ -245,4 +246,62 @@ export function resumirTrafegoDeIA(eventos: EventoDeIA[]): TrafegoDeIA {
       cliques: ordenados.reduce((s, l) => s + l.cliques, 0),
     },
   };
+}
+
+export type MetricaDeIA = "leituras" | "cliques" | "indexacoes";
+
+export interface SerieDeIA {
+  assistente: Assistente;
+  nome: string;
+  /** Um valor por dia de `dias`; null nos dias anteriores à contagem. */
+  leituras: (number | null)[];
+  cliques: (number | null)[];
+  indexacoes: (number | null)[];
+}
+
+/**
+ * O período dia a dia, uma série por assistente, para o gráfico.
+ *
+ * Dia anterior ao começo da contagem fica `null`, não zero: zero diria
+ * "ninguém leu", e a verdade é "ninguém estava contando". O gráfico deixa
+ * um buraco onde não há dado.
+ */
+export function seriesDiariasDeIA(
+  eventos: EventoDeIA[],
+  dias: string[],
+  fuso: string,
+): SerieDeIA[] {
+  const ligada = diaNoFuso(CONTAGEM_DESDE, fuso);
+  const vazio = () => dias.map((d) => (d < ligada ? null : 0));
+  const fixos: Assistente[] = ["claude", "chatgpt", "perplexity"];
+  const series = new Map<Assistente, SerieDeIA>(
+    fixos.map((a) => [
+      a,
+      { assistente: a, nome: NOME_DO_ASSISTENTE[a], leituras: vazio(), cliques: vazio(), indexacoes: vazio() },
+    ]),
+  );
+  const posicao = new Map(dias.map((d, i) => [d, i]));
+
+  for (const e of eventos) {
+    const i = posicao.get(diaNoFuso(e.created_at, fuso));
+    if (i === undefined) continue;
+
+    let assistente: Assistente | null = null;
+    let metrica: MetricaDeIA | null = null;
+    if (e.event_type === "ai_bot") {
+      const robo = roboPeloAgente(e.agente);
+      if (robo?.papel === "leitura") metrica = "leituras";
+      else if (robo?.papel === "indexacao") metrica = "indexacoes";
+      assistente = robo?.assistente ?? null;
+    } else if (e.event_type === "pageview") {
+      assistente = assistenteDaVisita(e.referrer);
+      metrica = "cliques";
+    }
+    const serie = assistente && series.get(assistente);
+    if (!serie || !metrica) continue;
+    const valor = serie[metrica][i];
+    if (valor !== null) serie[metrica][i] = valor + 1;
+  }
+
+  return [...series.values()];
 }

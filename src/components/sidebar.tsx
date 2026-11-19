@@ -25,6 +25,7 @@ import {
   CalendarDays,
   ExternalLink,
   ArrowLeft,
+  TrendingUp,
   Menu,
   Plus,
   X,
@@ -74,7 +75,11 @@ const GRUPOS: { rotulo: string | null; itens: Item[] }[] = [
   },
   {
     rotulo: "Resultado",
-    itens: [{ href: "/reports", label: "Relatórios", icon: BarChart3 }],
+    itens: [
+      // O que o Google mediu, antes do relatório que a agência entrega.
+      { href: "/performance", label: "Desempenho - Google", icon: TrendingUp },
+      { href: "/reports", label: "Relatórios", icon: BarChart3 },
+    ],
   },
 ];
 

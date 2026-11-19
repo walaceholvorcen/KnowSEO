@@ -6,6 +6,7 @@ import {
   origemDaVisita,
   resumirTrafegoDeIA,
   roboDeIA,
+  seriesDiariasDeIA,
 } from "./ia-trafego.ts";
 
 describe("robôs de IA", () => {
@@ -166,5 +167,51 @@ describe("período mostrado", () => {
       inicioDoPeriodo(new Date("2027-01-10T12:00:00.000Z")).toISOString(),
       "2026-12-13T12:00:00.000Z",
     );
+  });
+});
+
+describe("série por dia para o gráfico", () => {
+  const DIAS = ["2026-11-17", "2026-11-18", "2026-11-19", "2026-11-20"];
+  const em = (quando: string, event_type: string, extra: object) => ({
+    event_type,
+    article_id: "a1",
+    created_at: quando,
+    ...extra,
+  });
+
+  test("antes de a contagem existir é buraco, não zero", () => {
+    const [claude] = seriesDiariasDeIA([], DIAS, "UTC");
+    assert.deepEqual(claude.leituras, [null, null, 0, 0]);
+  });
+
+  test("cada evento cai no dia, no assistente e na métrica certos", () => {
+    const s = seriesDiariasDeIA(
+      [
+        em("2026-11-19T15:00:00.000Z", "ai_bot", { agente: "claude-user" }),
+        em("2026-11-20T09:00:00.000Z", "ai_bot", { agente: "claude-user" }),
+        em("2026-11-20T10:00:00.000Z", "ai_bot", { agente: "claude-searchbot" }),
+        em("2026-11-20T11:00:00.000Z", "ai_bot", { agente: "claudebot" }),
+        em("2026-11-20T12:00:00.000Z", "pageview", { referrer: "utm:chatgpt.com" }),
+      ],
+      DIAS,
+      "UTC",
+    );
+    const claude = s.find((x) => x.assistente === "claude")!;
+    const gpt = s.find((x) => x.assistente === "chatgpt")!;
+    assert.deepEqual(claude.leituras, [null, null, 1, 1]);
+    assert.deepEqual(claude.indexacoes, [null, null, 0, 1]);
+    // Treino não entra em série nenhuma: não diz nada sobre ser citado.
+    assert.deepEqual(claude.cliques, [null, null, 0, 0]);
+    assert.deepEqual(gpt.cliques, [null, null, 0, 1]);
+  });
+
+  test("o dia é o do fuso de quem opera", () => {
+    // 01h UTC do dia 20 ainda é dia 19 em São Paulo.
+    const [claude] = seriesDiariasDeIA(
+      [em("2026-11-20T01:00:00.000Z", "ai_bot", { agente: "claude-user" })],
+      DIAS,
+      "America/Sao_Paulo",
+    );
+    assert.deepEqual(claude.leituras, [null, null, 1, 0]);
   });
 });

@@ -1,17 +1,24 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
+  CONTAGEM_DESDE,
   inicioDoPeriodo,
   resumirTrafegoDeIA,
+  seriesDiariasDeIA,
   type EventoDeIA,
+  type SerieDeIA,
   type TrafegoDeIA,
 } from "@/lib/ia-trafego";
+import { diaNoFuso, diasAntes, diasEntre } from "@/lib/grafico";
 
 export interface TrafegoDaTela {
   resumo: TrafegoDeIA;
   /** Título de cada artigo da lista, pelo id. */
   titulos: Record<string, string>;
-  /** Começo do período somado (ISO). */
-  desde: string;
+  /** Os 28 dias do gráfico ("AAAA-MM-DD"), no fuso de quem opera. */
+  dias: string[];
+  series: SerieDeIA[];
+  /** Dia em que a contagem começou, no mesmo fuso. */
+  ligadaEm: string;
 }
 
 // O que os assistentes fizeram no blog no período: passagens de robô e
@@ -26,8 +33,10 @@ export interface TrafegoDaTela {
 export async function carregarTrafegoDeIA(
   supabase: SupabaseClient,
   blogId: string,
+  fuso: string,
 ): Promise<TrafegoDaTela> {
-  const desde = inicioDoPeriodo(new Date()).toISOString();
+  const agora = new Date();
+  const desde = inicioDoPeriodo(agora).toISOString();
 
   const [{ data: robos }, { data: visitas }] = await Promise.all([
     supabase
@@ -45,10 +54,17 @@ export async function carregarTrafegoDeIA(
       .gte("created_at", desde),
   ]);
 
-  const resumo = resumirTrafegoDeIA([
+  const eventos = [
     ...((robos as EventoDeIA[]) ?? []),
     ...((visitas as EventoDeIA[]) ?? []),
-  ]);
+  ];
+  const resumo = resumirTrafegoDeIA(eventos);
+
+  // O eixo tem sempre 28 dias, mesmo na primeira semana: os dias anteriores
+  // à contagem aparecem vazios, e o gráfico não muda de largura conforme o
+  // histórico cresce.
+  const hoje = diaNoFuso(agora, fuso);
+  const dias = diasEntre(diasAntes(hoje, 27), hoje);
 
   const titulos: Record<string, string> = {};
   if (resumo.artigos.length) {
@@ -61,5 +77,11 @@ export async function carregarTrafegoDeIA(
     }
   }
 
-  return { resumo, titulos, desde };
+  return {
+    resumo,
+    titulos,
+    dias,
+    series: seriesDiariasDeIA(eventos, dias, fuso),
+    ligadaEm: diaNoFuso(CONTAGEM_DESDE, fuso),
+  };
 }

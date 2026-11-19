@@ -30,6 +30,9 @@ import { pagina } from "@/components/ui";
 import { lerFuso } from "@/lib/datas";
 import { AgenciaPainel } from "@/app/agencia/painel";
 import { carregarSubcontas } from "@/app/agencia/dados";
+import { carregarDesempenho, enderecoDoBlog } from "@/app/(dashboard)/performance/dados";
+import { DesempenhoBoard } from "@/app/(dashboard)/performance/desempenho-board";
+import { diaNoFuso } from "@/lib/grafico";
 import { carregarTrafegoDeIA } from "@/app/(dashboard)/visibility/trafego-dados";
 import { lerPeriodo } from "@/lib/relatorio";
 import { carregarRelatorio } from "@/app/(dashboard)/reports/dados";
@@ -253,7 +256,7 @@ export default async function Vitrine({
         rodada={null}
         motores={getProviders().map((p) => p.name)}
         fuso={fuso}
-        trafego={await carregarTrafegoDeIA(admin, blog.id)}
+        trafego={await carregarTrafegoDeIA(admin, blog.id, fuso)}
       />
     );
   }
@@ -343,6 +346,25 @@ export default async function Vitrine({
         contexto={contexto}
         token="exemplo"
         fuso={fuso}
+      />
+    );
+  }
+
+  if (tela === "performance") {
+    const dados = await carregarDesempenho({
+      workspaceId: blog.workspace_id,
+      blog,
+      periodo: 90,
+      escopo: "site",
+      hoje: diaNoFuso(new Date(), fuso),
+    });
+    conteudo = (
+      <DesempenhoBoard
+        tela={dados}
+        periodo={90}
+        escopo="site"
+        propriedade={blog.gsc_property!}
+        enderecoDoBlog={enderecoDoBlog(blog)}
       />
     );
   }

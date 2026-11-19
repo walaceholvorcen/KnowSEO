@@ -3472,3 +3472,78 @@ respostas diferentes - e só a primeira pode ser guardada.
 
 Dito com honestidade: a causa é provável, não provada. O 404 não se
 repetiu para ser examinado, e a correção fecha o caminho que o explicaria.
+
+## 80. Os dois gráficos, e o que o filtro "Só o blog" revelou
+
+Pedido do dono: um painel como o de IA generativa do Search Console, com
+caixas para escolher Claude, ChatGPT e Perplexity, e o desempenho do Google
+dentro do Ranknow, "para não precisar abrir as duas abas".
+
+### As peças
+
+- **`src/components/grafico-de-linhas.tsx`** - linha por dia, uma ou mais
+  séries, dica com linha vertical, setas do teclado e tabela para leitor de
+  tela. Serve às duas telas.
+- **`src/lib/grafico.ts`** (9 testes) - o dia no fuso de quem opera, as
+  marcas do eixo em passo redondo, e os trechos da linha: `null` é "não há
+  dado", diferente de zero, e a linha não atravessa buraco.
+- **Raio X**: o bloco "Assistentes lendo o seu blog" virou painel no formato
+  do Search Console - a métrica em cima (leituras para responder, cliques,
+  indexação), as caixas dos três assistentes, o gráfico de 28 dias. O trecho
+  anterior a 19/11 fica vazio e marcado "contagem ligada".
+- **Desempenho - Google** (`/performance`, no menu em Resultado): cliques,
+  impressões, CTR e posição por dia, período de 7/28/90 dias, consultas e
+  páginas. Lido da API do Search Console e guardado por meia hora.
+
+### Decisões de gráfico (skill de dataviz)
+
+- **Um eixo só.** O Search Console sobrepõe cliques e impressões em duas
+  escalas, e as linhas se cruzam onde não significa nada. Aqui se troca de
+  métrica nos cartões de cima.
+- **Três cores conferidas pelo validador**, nos dois temas e em todos os
+  pares (as linhas se cruzam): cobalto, laranja `#eb6834`/`#d95926` e água
+  `#1baf7a`/`#199e70`. A água fica abaixo de 3:1 no fundo claro, então cada
+  série leva também um tracejado próprio e a legenda traz o total em texto.
+- **A cor segue o assistente**, não a ordem: desmarcar o Claude não repinta
+  o ChatGPT.
+- **O eixo do Google termina no último dia fechado.** O Google omite o dia
+  sem impressão (zero de verdade) e ainda não tem os dois ou três mais
+  recentes (não se sabe). Desenhar zero nos últimos faria toda semana
+  parecer queda.
+- **Posição média pesada pela impressão**, como o original, e com o eixo
+  invertido: posição 1 em cima.
+
+### Um defeito pego olhando a tela
+
+A tabela para leitor de tela levava `sr-only` direto na `<table>`. Tabela
+ignora `width: 1px`, e a página ganhava 7px de rolagem lateral no celular.
+A classe foi para uma caixa em volta.
+
+### O que o filtro revelou - e isto vale mais que o gráfico
+
+Ao testar "Só o blog" contra a API real, o blog da DataKnow devolveu **zero
+impressões** em 28 dias, contra 7.235 do site inteiro. A inspeção de URL do
+próprio Google respondeu, para seis artigos seguidos: *"URL is unknown to
+Google"*, nunca rastreada. E a propriedade não tem **nenhum sitemap
+enviado**.
+
+Treze artigos no ar desde outubro, e o Google não sabe que existem. O
+`robots.txt` do blog aponta o sitemap, mas ninguém chega ao `robots.txt` de
+um subdomínio que nenhuma página linka - e o site institucional não tem
+link para o blog. O crescimento que o dono viu no relatório de IA
+generativa é do site principal, não do conteúdo publicado por aqui.
+
+No Mibolsillo alguém enviou o sitemap do site em 11/11: três de seis
+artigos conferidos já estão indexados.
+
+É a explicação mais provável para "nenhuma visita desde setembro", e o
+produto não tinha como perceber: publicar terminava em "está no ar".
+Publicar tem de terminar em "o Google sabe". O conserto não é de código
+ainda: enviar o sitemap do blog no Search Console e o cliente pôr um link
+para o blog no site dele. O passo de produto é o painel conferir isso
+sozinho e avisar.
+
+**A lição:** o filtro existia para comparar dois números e acabou medindo
+se o produto funciona. Dado recortado pelo que é nosso é a pergunta que
+faltava - o número do site inteiro deixava o blog pegar carona no mérito
+alheio.

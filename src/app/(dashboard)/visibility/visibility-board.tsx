@@ -422,7 +422,7 @@ export function VisibilityBoard({
 
       {/* Antes das fontes e das perguntas: é o único número da tela que
           não depende de rodada nem de sorteio de resposta. */}
-      <TrafegoDeIA trafego={trafego} fuso={fuso} />
+      <TrafegoDeIA trafego={trafego} />
 
       <FontesDoMercado leitura={fontes} />
 

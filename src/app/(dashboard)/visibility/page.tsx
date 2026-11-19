@@ -11,6 +11,7 @@ export default async function VisibilityPage() {
   const blog = await getBlogAtivo(supabase, workspace.id);
   if (!blog) redirect("/onboarding");
 
+  const fuso = await lerFuso();
   const [{ data: queries }, { data: checks }, { data: rodada }, trafego] =
     await Promise.all([
       // As mesmas dez que a rodada usa: a tela não pode listar perguntas que
@@ -35,7 +36,7 @@ export default async function VisibilityPage() {
         .order("started_at", { ascending: false })
         .limit(1)
         .maybeSingle(),
-      carregarTrafegoDeIA(supabase, blog.id),
+      carregarTrafegoDeIA(supabase, blog.id, fuso),
     ]);
 
   // Rodada em curso: conta o que já chegou, para a tela abrir mostrando o
@@ -72,7 +73,7 @@ export default async function VisibilityPage() {
       checks={(checks as AiVisibilityCheck[]) ?? []}
       rodada={resumo}
       motores={getProviders().map((p) => p.name)}
-      fuso={await lerFuso()}
+      fuso={fuso}
       trafego={trafego}
     />
   );

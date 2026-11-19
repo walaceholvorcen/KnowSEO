@@ -1,4 +1,5 @@
 import { obterAccessToken } from "./oauth";
+import type { LinhaDoGoogle } from "./desempenho";
 
 // Propriedades que a conta conectada enxerga - alimenta o seletor onde o
 // usuário escolhe qual delas é este blog. Sem isto ele teria que digitar
@@ -67,6 +68,66 @@ export async function buscarDesempenhoDeBusca(params: {
     clicks: r.clicks,
     impressions: r.impressions,
     position: r.position,
+  }));
+}
+
+// Uma dimensão do relatório de desempenho: por dia, por consulta ou por
+// página. É o que alimenta a tela Desempenho.
+//
+// Diferente de `buscarDesempenhoDeBusca`, aqui a falha LANÇA em vez de
+// devolver lista vazia: esta leitura é guardada em cache, e "o Google
+// recusou" guardado como "não houve nenhum clique" seria um painel
+// mentindo por meia hora.
+export async function consultarDesempenho(params: {
+  workspaceId: string;
+  siteUrl: string;
+  desde: string; // AAAA-MM-DD
+  ate: string;
+  dimensao: "date" | "query" | "page";
+  /** Restringe às páginas cujo endereço contém este trecho (só o blog). */
+  paginaContem?: string | null;
+  limite?: number;
+}): Promise<LinhaDoGoogle[]> {
+  const { workspaceId, siteUrl, desde, ate, dimensao, paginaContem, limite = 1000 } = params;
+  const token = await obterAccessToken(workspaceId);
+
+  const res = await fetch(
+    `https://www.googleapis.com/webmasters/v3/sites/${encodeURIComponent(siteUrl)}/searchAnalytics/query`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        startDate: desde,
+        endDate: ate,
+        type: "web",
+        dimensions: [dimensao],
+        rowLimit: limite,
+        ...(paginaContem
+          ? {
+              dimensionFilterGroups: [
+                { filters: [{ dimension: "page", operator: "contains", expression: paginaContem }] },
+              ],
+            }
+          : {}),
+      }),
+    },
+  );
+  if (!res.ok) {
+    throw new Error(`Search Console respondeu ${res.status}: ${(await res.text()).slice(0, 200)}`);
+  }
+
+  const data = (await res.json()) as {
+    rows?: { keys: string[]; clicks: number; impressions: number; ctr: number; position: number }[];
+  };
+  return (data.rows ?? []).map((r) => ({
+    chave: r.keys[0],
+    cliques: r.clicks,
+    impressoes: r.impressions,
+    ctr: r.ctr,
+    posicao: r.position,
   }));
 }
 
