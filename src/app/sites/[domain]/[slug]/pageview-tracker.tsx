@@ -40,6 +40,11 @@ export function PageviewTracker({
         eventType: "pageview",
         path: window.location.pathname,
         visitorId: getVisitorId(),
+        // De onde a pessoa veio. É o que separa a visita que chegou por um
+        // link do Claude ou do ChatGPT das demais. O ChatGPT marca o link
+        // com utm_source; parte dos aplicativos não manda página anterior.
+        origem: document.referrer,
+        marcacao: new URLSearchParams(window.location.search).get("utm_source"),
       }),
       keepalive: true,
     }).catch(() => {});

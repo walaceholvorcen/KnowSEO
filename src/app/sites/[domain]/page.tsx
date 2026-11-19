@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import type { Metadata } from "next";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { registrarRoboDeIA } from "@/lib/ia-registro";
 import { resolveBlogByHost, tenantOrigin } from "@/lib/tenant";
 import { textoSobre } from "@/lib/contrast";
 import {
@@ -84,6 +85,8 @@ export default async function TenantBlogHome({
   // para o novo em vez de servir a mesma vitrine em dois lugares.
   const enderecoNovo = enderecoNovoDoBlog(blog, base);
   if (enderecoNovo) permanentRedirect(enderecoNovo);
+
+  await registrarRoboDeIA(blog.id, null, "/");
 
   const list = ((await artigosPublicados(blog.id)) as Article[]) ?? [];
   // Quem lê o blog é o mercado do cliente, não quem opera o painel: a data

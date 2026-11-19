@@ -3375,3 +3375,78 @@ Dar login ao cliente de uma subconta criada pela agência. Hoje o cliente
 tem login quando ele mesmo se cadastra (e a conta dele aparece no painel).
 O convite por e-mail é o passo seguinte, e depende de SMTP próprio: o
 remetente padrão do Supabase manda poucos e-mails por hora.
+
+## 79. O Claude lendo o blog: a medição que não depende de ninguém (migração 0025)
+
+Pedido do dono, depois de ver no Search Console que a IA do Google já
+mostra o site dele: trazer esse número para a tela do GEO, e ter o mesmo
+acompanhamento para o Claude, que para ele é "primordial".
+
+### O Google não entrega o relatório por API
+
+Antes de escrever uma linha, a API do Search Console foi chamada com a
+conexão real da DataKnow. O relatório de IA generativa (junho/2026) existe
+na tela e não existe na API: `type: "generativeAi"` e variações voltam 400,
+e `searchAppearance` volta vazio. A API responde normalmente para o resto
+(8.461 impressões de busca comum em 90 dias). Sem API, o caminho possível é
+importar o arquivo que o botão "Exportar" gera - e isso só se constrói com
+um arquivo de verdade na mão, para o leitor não ser escrito às cegas.
+Fica pendente do arquivo.
+
+### O Claude não tem painel - mas o blog é nosso
+
+Anthropic, OpenAI e Perplexity não oferecem nada parecido com o Search
+Console (conferido em 19/11/2026). Só que o blog do cliente é servido por
+este app, então dá para contar sem pedir nada a ninguém:
+
+- **O robô abrindo o artigo.** `Claude-User` busca a página quando alguém
+  faz uma pergunta e o Claude precisa ler ao vivo: é o mais perto que
+  existe de uma impressão. `Claude-SearchBot` monta o índice de busca dele,
+  `ClaudeBot` coleta para treino. Os três são contados, e **não se
+  misturam**: "o Claude leu para responder" e "o Claude treinou em cima"
+  são fatos diferentes, e somar os dois inflaria o número que importa.
+- **A pessoa que clicou no link da resposta.** O navegador diz de onde ela
+  veio (`document.referrer`), e o ChatGPT ainda marca o link com
+  `utm_source`.
+
+ChatGPT e Perplexity entram na mesma régua de graça - é a mesma tabela de
+nomes. É o que a Profound vende como "Agent Analytics".
+
+### As decisões
+
+- **Mesma tabela das visitas, tipo novo (`ai_bot`)**, em vez de tabela
+  própria: é o mesmo fato ("alguém pediu esta página"), com as mesmas
+  chaves e a mesma regra de acesso. Antes de fazer isso, os quatro lugares
+  que contam visita foram conferidos: todos filtram por tipo, então a linha
+  nova não infla visita nem clique.
+- **Anotado no servidor**, porque robô não executa o JavaScript do contador.
+  A gravação vai em `after()`: o robô não espera o banco, e falha de
+  medição nunca derruba a página.
+- **A rota pública recusa `ai_bot`.** `/api/track` aceita pedido de
+  qualquer um; se aceitasse o tipo novo, um `curl` fabricaria "o Claude leu
+  seu artigo". Só o servidor grava, lendo o cabeçalho do pedido de verdade.
+- **A coluna `referrer` estava cheia de lixo.** Gravava o cabeçalho do
+  pedido de rastreio - que é a própria página do blog. Ou seja, o endereço
+  do artigo, em todas as linhas, desde o primeiro dia. Agora grava de que
+  site a pessoa veio, só a origem (sem caminho nem parâmetro, que podem
+  carregar dado de quem navegava), e só se for outro site.
+- **A tela diz desde quando conta.** "0 leituras em 28 dias" seria mentira
+  num período em que ninguém estava contando. A data está fixa no código e
+  aparece escrita no bloco.
+
+### Como foi verificado
+
+Servidor local contra o banco real, no blog da conta de teste: três pedidos
+com os cabeçalhos dos robôs (dois do Claude, um do ChatGPT), um de pessoa
+comum, duas visitas simuladas (vinda de `claude.ai` e marcada
+`utm_source=chatgpt.com`) e uma tentativa de forjar robô pela rota pública.
+Resultado: três linhas de robô com o papel certo, nenhuma para a pessoa
+comum, as duas visitas reconhecidas, a falsificação recusada com 400. A
+tela mostrou os números em 1280px e 375px. As cinco linhas de teste foram
+apagadas em seguida.
+
+### O limite, dito na função
+
+O robô é reconhecido pelo nome que declara, e nome se forja. Serve para
+tendência, não para auditoria. O degrau seguinte é conferir o IP contra as
+faixas que cada empresa publica.

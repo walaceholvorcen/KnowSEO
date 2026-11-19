@@ -16,6 +16,7 @@ import {
 } from "@/lib/blog-endereco";
 import { perguntasFrequentes } from "@/lib/artigo/faq";
 import { autorGravado } from "@/lib/autor";
+import { registrarRoboDeIA } from "@/lib/ia-registro";
 import { PageviewTracker } from "./pageview-tracker";
 
 // O artigo, buscado uma vez só.
@@ -117,6 +118,10 @@ export default async function TenantArticlePage({
   const inicio = await tenantOrigin(domain);
   const enderecoNovo = enderecoNovoDoBlog(blog, inicio);
   if (enderecoNovo) permanentRedirect(`${enderecoNovo}/${slug}`);
+
+  // Robô de IA não roda o contador de visitas, que é JavaScript: a passagem
+  // dele é anotada aqui, pelo cabeçalho do pedido (ver lib/ia-registro).
+  await registrarRoboDeIA(blog.id, article.id, `/${slug}`);
 
   const origin = urlPublicaDoBlog(blog).url;
   const app = origemDoApp();

@@ -13,7 +13,7 @@ export type KeywordStatus = "suggested" | "approved" | "rejected" | "written";
 export type KeywordSource = "ai" | "dataforseo" | "google_ads" | "manual";
 export type ArticleStatus = "draft" | "scheduled" | "published";
 export type GenerationStatus = "idle" | "generating" | "done" | "error";
-export type EventType = "pageview" | "cta_click" | "whatsapp_click";
+export type EventType = "pageview" | "cta_click" | "whatsapp_click" | "ai_bot";
 
 export interface OnboardingSteps {
   brand_dna: boolean;
@@ -158,6 +158,8 @@ export interface AnalyticsEvent {
   event_type: EventType;
   path: string | null;
   referrer: string | null;
+  /** Robô de IA que pediu a página; só em event_type "ai_bot" (0025). */
+  agente?: string | null;
   visitor_id: string | null;
   created_at: string;
 }

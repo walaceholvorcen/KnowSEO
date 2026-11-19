@@ -4,13 +4,14 @@ import { getProviders, MAX_PERGUNTAS } from "@/lib/ai-visibility/runner";
 import type { AiQuery, AiVisibilityCheck } from "@/types";
 import { VisibilityBoard, type RodadaResumo } from "./visibility-board";
 import { lerFuso } from "@/lib/datas";
+import { carregarTrafegoDeIA } from "./trafego-dados";
 
 export default async function VisibilityPage() {
   const { supabase, workspace } = await requireUserAndWorkspace();
   const blog = await getBlogAtivo(supabase, workspace.id);
   if (!blog) redirect("/onboarding");
 
-  const [{ data: queries }, { data: checks }, { data: rodada }] =
+  const [{ data: queries }, { data: checks }, { data: rodada }, trafego] =
     await Promise.all([
       // As mesmas dez que a rodada usa: a tela não pode listar perguntas que
       // a análise não vai consultar.
@@ -34,6 +35,7 @@ export default async function VisibilityPage() {
         .order("started_at", { ascending: false })
         .limit(1)
         .maybeSingle(),
+      carregarTrafegoDeIA(supabase, blog.id),
     ]);
 
   // Rodada em curso: conta o que já chegou, para a tela abrir mostrando o
@@ -71,6 +73,7 @@ export default async function VisibilityPage() {
       rodada={resumo}
       motores={getProviders().map((p) => p.name)}
       fuso={await lerFuso()}
+      trafego={trafego}
     />
   );
 }

@@ -17,6 +17,8 @@ import { fontesDaResposta, lerFontes } from "@/lib/ai-visibility/fontes";
 import { formatarData } from "@/lib/datas";
 import { markdownParaHtml } from "@/lib/markdown";
 import { FontesDoMercado, ROTULO_TIPO } from "./fontes-do-mercado";
+import { TrafegoDeIA } from "./trafego-de-ia";
+import type { TrafegoDaTela } from "./trafego-dados";
 import type { AiQuery, AiVisibilityCheck } from "@/types";
 
 const INTENT_LABEL: Record<string, string> = {
@@ -102,6 +104,7 @@ export function VisibilityBoard({
   rodada,
   motores,
   fuso,
+  trafego,
 }: {
   blogId: string;
   queries: AiQuery[];
@@ -110,6 +113,8 @@ export function VisibilityBoard({
   motores: string[];
   /** Fuso de quem opera o painel, lido do cookie no servidor. */
   fuso: string;
+  /** Robôs e visitas de assistentes no blog - medição direta, não amostra. */
+  trafego: TrafegoDaTela;
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState<"questions" | "run" | null>(null);
@@ -414,6 +419,10 @@ export function VisibilityBoard({
           })}
         </dl>
       )}
+
+      {/* Antes das fontes e das perguntas: é o único número da tela que
+          não depende de rodada nem de sorteio de resposta. */}
+      <TrafegoDeIA trafego={trafego} fuso={fuso} />
 
       <FontesDoMercado leitura={fontes} />
 

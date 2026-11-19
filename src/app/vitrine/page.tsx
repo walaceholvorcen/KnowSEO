@@ -30,6 +30,7 @@ import { pagina } from "@/components/ui";
 import { lerFuso } from "@/lib/datas";
 import { AgenciaPainel } from "@/app/agencia/painel";
 import { carregarSubcontas } from "@/app/agencia/dados";
+import { carregarTrafegoDeIA } from "@/app/(dashboard)/visibility/trafego-dados";
 import { lerPeriodo } from "@/lib/relatorio";
 import { carregarRelatorio } from "@/app/(dashboard)/reports/dados";
 import { Relatorio } from "@/app/(dashboard)/reports/relatorio";
@@ -252,6 +253,7 @@ export default async function Vitrine({
         rodada={null}
         motores={getProviders().map((p) => p.name)}
         fuso={fuso}
+        trafego={await carregarTrafegoDeIA(admin, blog.id)}
       />
     );
   }
