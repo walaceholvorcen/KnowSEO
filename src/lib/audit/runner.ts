@@ -8,6 +8,15 @@ import {
 } from "@/lib/crawler";
 import { parsePage } from "./parse";
 import { runRules, computeScores, pareceHome } from "./rules";
+
+// Como os robôs de busca das IAs se apresentam (documentação de cada empresa,
+// nov/2026). O teste pede a home com cada um: firewall que barra robô de IA
+// costuma decidir pelo nome, antes de olhar qualquer outra coisa.
+const COMO_SE_APRESENTAM: { agente: string; ua: string }[] = [
+  { agente: "OAI-SearchBot", ua: "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko); compatible; OAI-SearchBot/1.3; +https://openai.com/searchbot" },
+  { agente: "Claude-SearchBot", ua: "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; Claude-SearchBot/1.0; +https://www.anthropic.com)" },
+  { agente: "PerplexityBot", ua: "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; PerplexityBot/1.0; +https://perplexity.ai/perplexitybot)" },
+];
 import type {
   Finding,
   PageSnapshot,
@@ -176,7 +185,18 @@ export async function auditSite(siteUrl: string): Promise<AuditResult | null> {
         ? { url: fantasma.problema.url, status: fantasma.problema.status, igualHome: false }
         : undefined;
 
+  // Só o status conta, não o corpo. Segue redirecionamento: site que manda
+  // para o www tem de ser testado no www, onde o firewall de fato responde.
+  const acessoDeIA = await Promise.all(
+    COMO_SE_APRESENTAM.map(async ({ agente, ua }) => {
+      const r = await fetchComStatus(origin, "follow", ua);
+      await r?.res.body?.cancel().catch(() => {});
+      return { agente, status: r ? r.status : null };
+    }),
+  );
+
   const signals: SiteSignals = {
+    acessoDeIA,
     soft404,
     origin,
     isHttps: origin.startsWith("https://"),

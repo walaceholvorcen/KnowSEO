@@ -1,4 +1,4 @@
-import { test } from "node:test";
+import { test, describe } from "node:test";
 import assert from "node:assert/strict";
 import {
   perguntasComCitacao,
@@ -68,4 +68,45 @@ test("pareceCortada: termina em palavra sem pontuação", () => {
   assert.equal(pareceCortada("Diz «assim»"), false);
   assert.equal(pareceCortada(""), false);
   assert.equal(pareceCortada(null), false);
+});
+
+import { visibilidade, dentroDaMargem, paresParaDesempate } from "./resumo.ts";
+
+describe("visibilidade com margem de erro", () => {
+  test("20% em 10 respostas cobre de 6% a 51%", () => {
+    assert.deepEqual(visibilidade(2, 10), { pct: 20, de: 6, ate: 51, n: 10 });
+  });
+
+  test("zero citações não dá margem negativa", () => {
+    const v = visibilidade(0, 20)!;
+    assert.equal(v.de, 0);
+    assert.equal(v.pct, 0);
+    assert.ok(v.ate > 0 && v.ate < 20);
+  });
+
+  test("sem amostra não há número", () => {
+    assert.equal(visibilidade(0, 0), null);
+  });
+
+  test("de 20% para 30% com 20 respostas cada é acaso possível", () => {
+    assert.ok(dentroDaMargem(visibilidade(4, 20)!, visibilidade(6, 20)!));
+  });
+
+  test("de 0% para 70% com 20 respostas é mudança de verdade", () => {
+    assert.ok(!dentroDaMargem(visibilidade(0, 20)!, visibilidade(14, 20)!));
+  });
+});
+
+describe("terceira resposta só onde as duas discordam", () => {
+  test("desempata só o par que divergiu", () => {
+    const pares = paresParaDesempate([
+      { query_id: "a", provider: "claude", cited: true },
+      { query_id: "a", provider: "claude", cited: false },
+      { query_id: "b", provider: "claude", cited: false },
+      { query_id: "b", provider: "claude", cited: false },
+      { query_id: "c", provider: "claude", cited: true },
+      { query_id: "c", provider: "claude", cited: true },
+    ]);
+    assert.deepEqual(pares, [{ query_id: "a", provider: "claude" }]);
+  });
 });

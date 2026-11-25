@@ -77,4 +77,7 @@ export interface SiteSignals {
    *  mesmo title e (mesmo h1 ou corpo do mesmo tamanho). Opcional pelo mesmo
    *  motivo dos campos acima. */
   soft404?: { url: string; status: number | null; igualHome: boolean };
+  /** A home pedida por quem se apresenta como robô de busca de IA. Null no
+   *  status = nem respondeu. Opcional pelo mesmo motivo dos campos acima. */
+  acessoDeIA?: { agente: string; status: number | null }[];
 }

@@ -16,6 +16,7 @@ import {
 } from "@/lib/google/desempenho";
 import type { Escopo, TelaDeDesempenho } from "./dados";
 import type { Indexacao } from "@/lib/google/indexacao";
+import { semMovimento, type Movimento } from "@/lib/google/movimento";
 
 // O relatório de desempenho do Search Console, dentro do painel: a agência
 // não precisa de duas abas abertas para responder "o Google está mandando
@@ -36,6 +37,7 @@ export function DesempenhoBoard({
   propriedade,
   enderecoDoBlog,
   indexacao,
+  movimento,
 }: {
   tela: TelaDeDesempenho;
   periodo: Periodo;
@@ -46,6 +48,8 @@ export function DesempenhoBoard({
   enderecoDoBlog: string | null;
   /** Null quando não há o que conferir (ver carregarIndexacao). */
   indexacao: Indexacao | null;
+  /** Null quando o Google falhou nesta leitura: a seção some, o resto fica. */
+  movimento: Movimento | null;
 }) {
   const [metrica, setMetrica] = useState<Metrica>("cliques");
   const { desempenho: d, consultas, paginas } = tela;
@@ -200,6 +204,8 @@ export function DesempenhoBoard({
         </div>
       </div>
 
+      {movimento && <OQueMudou movimento={movimento} nomeDoPeriodo={nomeDoPeriodo} />}
+
       <Tabela titulo="Consultas" coluna="O que as pessoas buscaram" linhas={consultas} />
       <Tabela titulo="Páginas" coluna="Onde elas chegaram" linhas={paginas} ehEndereco />
     </div>
@@ -237,6 +243,92 @@ function ConhecidoPeloGoogle({ indexacao: i }: { indexacao: Indexacao }) {
         </ol>
       )}
     </div>
+  );
+}
+
+// A posição se move semanas antes de a visita aparecer: é o sinal de que o
+// trabalho está andando quando o gráfico de cliques ainda é uma linha reta.
+// Cada lista só aparece se tiver o que dizer.
+const semEsquema = (u: string) => u.replace(/^https?:\/\//, "");
+
+function OQueMudou({ movimento: m, nomeDoPeriodo }: { movimento: Movimento; nomeDoPeriodo: string }) {
+  const listas: {
+    titulo: string;
+    apoio: string;
+    /** Texto que não pode ser cortado: os dois endereços da disputa. */
+    quebrar?: boolean;
+    itens: { chave: string; texto: string; valor: string }[];
+  }[] = [
+    {
+      titulo: "Subiram no Google",
+      apoio: "Ganharam duas posições ou mais.",
+      itens: m.subiram.map((x) => ({ chave: x.chave, texto: x.chave, valor: `${umaCasa(x.antes)} → ${umaCasa(x.agora)}` })),
+    },
+    {
+      titulo: "Caíram no Google",
+      apoio: "Perderam duas posições ou mais.",
+      itens: m.cairam.map((x) => ({ chave: x.chave, texto: x.chave, valor: `${umaCasa(x.antes)} → ${umaCasa(x.agora)}` })),
+    },
+    {
+      titulo: "Quase na primeira página",
+      apoio: "Posição 8 a 20: um artigo mais completo sobre o termo costuma bastar.",
+      itens: m.quaseLa.map((x) => ({ chave: x.chave, texto: x.chave, valor: `posição ${umaCasa(x.posicao)}` })),
+    },
+    {
+      titulo: "Páginas perdendo cliques",
+      apoio: "Perderam 30% ou mais: hora de atualizar o conteúdo.",
+      itens: m.decaindo.map((x) => ({ chave: x.chave, texto: semEsquema(x.chave), valor: `${x.antes} → ${x.agora} cliques` })),
+    },
+    {
+      titulo: "Páginas disputando a mesma busca",
+      apoio: "Duas páginas do site na mesma consulta dividem a força. Junte ou diferencie.",
+      quebrar: true,
+      itens: m.disputas.map((x) => ({
+        chave: x.consulta,
+        texto: `${x.paginas.map(semEsquema).join(" e ")}, em "${x.consulta}"`,
+        valor: x.consultas > 1 ? `${x.consultas} buscas` : "1 busca",
+      })),
+    },
+  ].filter((l) => l.itens.length > 0);
+
+  return (
+    <>
+      <Secao>O que mudou</Secao>
+      <p className="text-sm text-slate-600 dark:text-slate-400">
+        {semMovimento(m)
+          ? `Nenhum movimento relevante contra os ${nomeDoPeriodo} anteriores. Com pouca impressão, a posição ainda não tem amostra para se mover.`
+          : `Comparado aos ${nomeDoPeriodo} anteriores, sem os três dias mais recentes que o Google ainda não fechou.`}
+      </p>
+      {listas.length > 0 && (
+        <div className="mt-4 grid gap-6 sm:grid-cols-2">
+          {listas.map((lista) => (
+            <div key={lista.titulo} className="min-w-0">
+              <h3 className="text-sm font-medium text-slate-900 dark:text-slate-100">{lista.titulo}</h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400">{lista.apoio}</p>
+              <ul className="mt-2">
+                {lista.itens.map((i) => (
+                  <li
+                    key={i.chave}
+                    className="flex items-baseline justify-between gap-3 border-b border-slate-200 py-1.5 text-sm last:border-0 dark:border-slate-800"
+                  >
+                    <span
+                      className={cn(
+                        "min-w-0 text-slate-800 dark:text-slate-200",
+                        lista.quebrar ? "break-all" : "truncate",
+                      )}
+                      title={i.texto}
+                    >
+                      {i.texto}
+                    </span>
+                    <span className="tabular font-display shrink-0 text-slate-600 dark:text-slate-400">{i.valor}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      )}
+    </>
   );
 }
 

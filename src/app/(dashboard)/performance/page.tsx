@@ -6,7 +6,13 @@ import { botao, pagina } from "@/components/ui";
 import { lerFuso } from "@/lib/datas";
 import { diaNoFuso } from "@/lib/grafico";
 import { lerPeriodo } from "@/lib/google/desempenho";
-import { carregarDesempenho, carregarIndexacao, enderecoDoBlog, type Escopo } from "./dados";
+import {
+  carregarDesempenho,
+  carregarIndexacao,
+  carregarMovimento,
+  enderecoDoBlog,
+  type Escopo,
+} from "./dados";
 import { DesempenhoBoard } from "./desempenho-board";
 
 export default async function DesempenhoPage({
@@ -53,18 +59,14 @@ export default async function DesempenhoPage({
 
   // Falha do Google vira `null` aqui e a tela de erro é montada depois, fora
   // de qualquer try: é uma recusa esperada (conexão vencida), não um defeito.
-  const [tela, indexacao] = await Promise.all([
-    carregarDesempenho({
-    workspaceId: workspace.id,
-    blog,
-    periodo,
-    escopo,
-    hoje: diaNoFuso(new Date(), await lerFuso()),
-  }).catch((err) => {
-    console.error("[desempenho] leitura do Search Console falhou", err);
-    return null;
-  }),
+  const hoje = diaNoFuso(new Date(), await lerFuso());
+  const [tela, indexacao, movimento] = await Promise.all([
+    carregarDesempenho({ workspaceId: workspace.id, blog, periodo, escopo, hoje }).catch((err) => {
+      console.error("[desempenho] leitura do Search Console falhou", err);
+      return null;
+    }),
     carregarIndexacao({ workspaceId: workspace.id, blog, slugs }),
+    carregarMovimento({ workspaceId: workspace.id, blog, periodo, escopo, hoje }),
   ]);
 
   if (!tela) {
@@ -88,6 +90,7 @@ export default async function DesempenhoPage({
       propriedade={blog.gsc_property}
       enderecoDoBlog={filtro}
       indexacao={indexacao}
+      movimento={movimento}
     />
   );
 }

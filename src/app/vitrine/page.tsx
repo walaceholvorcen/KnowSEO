@@ -30,7 +30,7 @@ import { pagina } from "@/components/ui";
 import { lerFuso } from "@/lib/datas";
 import { AgenciaPainel } from "@/app/agencia/painel";
 import { carregarSubcontas } from "@/app/agencia/dados";
-import { carregarDesempenho, carregarIndexacao, enderecoDoBlog } from "@/app/(dashboard)/performance/dados";
+import { carregarDesempenho, carregarIndexacao, carregarMovimento, enderecoDoBlog } from "@/app/(dashboard)/performance/dados";
 import { DesempenhoBoard } from "@/app/(dashboard)/performance/desempenho-board";
 import { diaNoFuso } from "@/lib/grafico";
 import { carregarTrafegoDeIA } from "@/app/(dashboard)/visibility/trafego-dados";
@@ -377,6 +377,13 @@ export default async function Vitrine({
         propriedade={blog.gsc_property!}
         enderecoDoBlog={enderecoDoBlog(blog)}
         indexacao={indexacaoDaVitrine}
+        movimento={await carregarMovimento({
+          workspaceId: blog.workspace_id,
+          blog,
+          periodo: 90,
+          escopo: "site",
+          hoje: diaNoFuso(new Date(), fuso),
+        })}
       />
     );
   }

@@ -46,8 +46,13 @@ const OPCOES: sanitizeHtml.IOptions = {
   },
 };
 
+// Caracteres invisíveis (largura zero, controle de direção) que o modelo às
+// vezes deixa no texto. Não aparecem para quem lê, mas quebram busca dentro
+// da página, cópia e comparação de texto - e são assinatura de texto gerado.
+const INVISIVEIS = /[​-‍⁠﻿‪-‮⁦-⁩]/g;
+
 export function htmlSeguro(html: string | null | undefined): string {
-  return html ? sanitizeHtml(html, OPCOES) : "";
+  return html ? sanitizeHtml(html.replace(INVISIVEIS, ""), OPCOES) : "";
 }
 
 // JSON dentro de <script type="application/ld+json">. JSON.stringify não

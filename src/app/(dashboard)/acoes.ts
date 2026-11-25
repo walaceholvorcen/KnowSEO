@@ -3,7 +3,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { htmlSeguro } from "@/lib/html-seguro";
 import { slugify } from "@/lib/utils";
-import type { InternalLink } from "@/types";
+import type { Blog, InternalLink } from "@/types";
+import { after } from "next/server";
+import { avisarIndexNow } from "@/lib/indexnow";
 import { normalizarAutor, type Autor } from "@/lib/autor";
 import {
   diaUTC,
@@ -59,7 +61,7 @@ export async function salvarArtigo(dados: {
       updated_at: new Date().toISOString(),
     })
     .eq("id", dados.id)
-    .select("id");
+    .select("id,blog_id");
 
   if (error) {
     return {
@@ -70,6 +72,16 @@ export async function salvarArtigo(dados: {
     };
   }
   if (!data?.length) return { erro: NADA_MUDOU };
+
+  // Publicado (ou corrigido depois de publicado): avisa o Bing. Depois da
+  // resposta, para a tela não esperar o buscador.
+  if (status === "published") {
+    // O blog é lido aqui, ainda dentro do pedido: a sessão vem do cookie, e
+    // depois da resposta não há pedido de onde lê-lo.
+    const blogId = (data[0] as { blog_id: string }).blog_id;
+    const { data: blog } = await supabase.from("blogs").select("*").eq("id", blogId).maybeSingle();
+    if (blog) after(() => avisarIndexNow(blog as Blog, [slug]));
+  }
   return { erro: null, slug };
 }
 

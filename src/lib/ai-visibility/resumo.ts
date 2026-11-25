@@ -74,3 +74,60 @@ export function pareceCortada(texto: string | null | undefined): boolean {
   if (!limpo) return false;
   return /[\p{L}\p{N}]$/u.test(limpo);
 }
+
+// Visibilidade com margem de erro (intervalo de Wilson, 95%).
+//
+// Com dez perguntas, "20%" pode ser sorte: a IA responde diferente a cada
+// vez, e numa amostra pequena dois acertos a mais mudam o número em vinte
+// pontos. O intervalo diz até onde o número pode ir só por acaso - é o que
+// impede o painel de comemorar (ou lamentar) um movimento que não existe.
+// Wilson e não a fórmula simples porque ela não fica negativa nem passa de
+// 100% com amostra pequena ou taxa perto de zero, que é o caso comum aqui.
+export interface Visibilidade {
+  /** Percentual medido, arredondado. */
+  pct: number;
+  /** Limites do intervalo de 95%, em pontos percentuais inteiros. */
+  de: number;
+  ate: number;
+  /** Respostas consideradas: o tamanho da amostra, sempre mostrado. */
+  n: number;
+}
+
+export function visibilidade(citadas: number, n: number): Visibilidade | null {
+  if (n <= 0) return null;
+  const z = 1.96;
+  const p = citadas / n;
+  const base = 1 + (z * z) / n;
+  const centro = (p + (z * z) / (2 * n)) / base;
+  const folga = (z * Math.sqrt((p * (1 - p)) / n + (z * z) / (4 * n * n))) / base;
+  return {
+    pct: Math.round(p * 100),
+    de: Math.max(0, Math.round((centro - folga) * 100)),
+    ate: Math.min(100, Math.round((centro + folga) * 100)),
+    n,
+  };
+}
+
+/** Os intervalos se tocam: a diferença entre as duas medições pode ser acaso. */
+export function dentroDaMargem(a: Visibilidade, b: Visibilidade): boolean {
+  return a.de <= b.ate && b.de <= a.ate;
+}
+
+// Quais pares pergunta × motor merecem a terceira resposta.
+//
+// A mesma pergunta é feita duas vezes a cada motor. Onde as duas concordam
+// (citou nas duas, ou em nenhuma), uma terceira quase nunca muda a leitura;
+// onde discordam, é a terceira que desempata. Perguntar três vezes tudo
+// custaria 50% a mais para confirmar o que já está estável.
+export function paresParaDesempate(checks: CheckMin[]): { query_id: string; provider: string }[] {
+  const pares = new Map<string, { query_id: string; provider: string; vistos: Set<boolean> }>();
+  for (const c of checks) {
+    const chave = `${c.query_id}\u0000${c.provider}`;
+    const atual = pares.get(chave) ?? { query_id: c.query_id, provider: c.provider, vistos: new Set<boolean>() };
+    atual.vistos.add(c.cited);
+    pares.set(chave, atual);
+  }
+  return [...pares.values()]
+    .filter((p) => p.vistos.size > 1)
+    .map(({ query_id, provider }) => ({ query_id, provider }));
+}

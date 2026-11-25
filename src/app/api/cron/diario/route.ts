@@ -3,7 +3,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { avaliarArtigo } from "@/lib/artigo/qualidade";
 import { venceu } from "@/lib/calendario";
 import { abrirExecucao, fecharExecucao } from "../semanal/execucoes";
-import type { Article } from "@/types";
+import { avisarIndexNow } from "@/lib/indexnow";
+import type { Article, Blog } from "@/types";
 
 // Publica o que o calendário marcou para hoje.
 //
@@ -71,6 +72,7 @@ export async function GET(request: Request) {
   );
 
   const publicados: string[] = [];
+  const slugsPorBlog = new Map<string, string[]>();
   const reprovados: { artigo: string; motivo: string }[] = [];
 
   for (const artigo of fila) {
@@ -117,6 +119,16 @@ export async function GET(request: Request) {
       continue;
     }
     publicados.push(artigo.title);
+    slugsPorBlog.set(artigo.blog_id, [...(slugsPorBlog.get(artigo.blog_id) ?? []), artigo.slug]);
+  }
+
+  // Avisa o Bing do que acabou de ir ao ar. Um aviso por blog, com todos os
+  // artigos dele; avisarIndexNow nunca lança.
+  if (slugsPorBlog.size) {
+    const { data: blogs } = await admin.from("blogs").select("*").in("id", [...slugsPorBlog.keys()]);
+    await Promise.all(
+      ((blogs as Blog[]) ?? []).map((b) => avisarIndexNow(b, slugsPorBlog.get(b.id) ?? [])),
+    );
   }
 
   await fecharExecucao(execucao, {

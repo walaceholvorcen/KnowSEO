@@ -12,6 +12,9 @@ import {
   perguntasDaRodada,
   pareceCortada,
   placarPorMotor,
+  visibilidade,
+  dentroDaMargem,
+  type Visibilidade,
 } from "@/lib/ai-visibility/resumo";
 import { fontesDaResposta, lerFontes } from "@/lib/ai-visibility/fontes";
 import { formatarData } from "@/lib/datas";
@@ -85,10 +88,24 @@ function buildTimeline(checks: AiVisibilityCheck[], fuso: string) {
       // das 22h aparecia no dia seguinte.
       rotulo: formatarData(v.quando, fuso, "curta"),
       score: Math.round((v.cited / v.total) * 100),
+      medida: visibilidade(v.cited, v.total)!,
     }))
     // ISO completo ordena por instante; o dia UTC empatava rodadas do mesmo dia.
     .sort((a, b) => a.quando.localeCompare(b.quando))
     .slice(-12);
+}
+
+// Uma pergunta é feita mais de uma vez ao mesmo motor; a linha conta as
+// vezes em vez de repetir "não citou · não citou · não citou".
+function leituraDoMotor(citadas: number, total: number, achouSeuSite: boolean): string {
+  if (total === 1) {
+    return citadas ? "citou você" : achouSeuSite ? "achou seu site e citou outro" : "não citou";
+  }
+  if (citadas === total) return `citou você nas ${total} respostas`;
+  if (citadas > 0) return `citou você em ${citadas} de ${total} respostas`;
+  return achouSeuSite
+    ? `achou seu site e citou outro (${total} respostas)`
+    : `não citou em nenhuma das ${total} respostas`;
 }
 
 function listaDeMotores(nomes: string[]): string {
@@ -188,13 +205,22 @@ export function VisibilityBoard({
   const perguntasMedidas = perguntasDaRodada(latest);
   const perguntasCitadas = perguntasComCitacao(latest);
 
-  const score = latest.length
-    ? Math.round((latest.filter((c) => c.cited).length / latest.length) * 100)
-    : null;
-  const timeline = buildTimeline(checks, fuso);
-  const previous =
-    timeline.length > 1 ? timeline[timeline.length - 2].score : null;
-  const delta = score !== null && previous !== null ? score - previous : null;
+  const medida = visibilidade(latest.filter((c) => c.cited).length, latest.length);
+  const score = medida?.pct ?? null;
+  // A evolução só compara rodadas do MESMO conjunto de perguntas. Trocar as
+  // perguntas muda o número sem nada ter mudado na IA - um projeto aberto de
+  // monitoramento mediu 31 pontos de variação só por isso. Rodadas de
+  // conjuntos antigos saem do gráfico (continuam no banco).
+  const perguntasAtuais = new Set(queries.map((q) => q.id));
+  const timeline = buildTimeline(
+    checks.filter((c) => perguntasAtuais.has(c.query_id)),
+    fuso,
+  );
+  const anterior: Visibilidade | null =
+    timeline.length > 1 ? timeline[timeline.length - 2].medida : null;
+  const delta = score !== null && anterior !== null ? score - anterior.pct : null;
+  const deltaNaMargem =
+    medida !== null && anterior !== null && dentroDaMargem(medida, anterior);
   const semCitacao = timeline.every((t) => t.score === 0);
 
   const fontes = lerFontes(latest);
@@ -230,6 +256,14 @@ export function VisibilityBoard({
   }
 
   async function gerarPerguntas() {
+    if (
+      queries.length > 0 &&
+      !window.confirm(
+        "Trocar as perguntas recomeça a evolução do zero: rodadas com perguntas diferentes não se comparam. Continuar?",
+      )
+    ) {
+      return;
+    }
     setBusy("questions");
     setError(null);
     try {
@@ -379,6 +413,31 @@ export function VisibilityBoard({
         </p>
       )}
 
+      {/* O número sempre com a margem e o tamanho da amostra ao lado. Sem
+          isso "20%" parecia medida exata, e era uma faixa de 6% a 51%. */}
+      {medida && !runAtivo && (
+        <div className="mb-6 rounded-xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-900">
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            Visibilidade nas respostas
+          </p>
+          <p className="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+            <span className="tabular font-display text-2xl text-slate-900 dark:text-slate-100">
+              {medida.pct}%
+            </span>
+            <span className="text-sm text-slate-600 dark:text-slate-400">
+              {medida.ate - medida.de <= 2
+                ? `em ${medida.n} respostas`
+                : `pode estar entre ${medida.de}% e ${medida.ate}%, com ${medida.n} respostas`}
+            </span>
+          </p>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            A IA responde diferente a cada vez, então cada pergunta é feita
+            mais de uma vez. A faixa é o quanto o número pode variar só por
+            acaso.
+          </p>
+        </div>
+      )}
+
       {/* Um placar por assistente. A divergência entre eles é a informação:
           cada um busca num índice diferente, e aparecer no Perplexity e
           sumir no ChatGPT é diagnóstico, não erro de medição. */}
@@ -480,7 +539,11 @@ export function VisibilityBoard({
             <p className="mt-3 text-sm text-slate-600 dark:text-slate-400">
               {delta === 0
                 ? "Sem mudança em relação à rodada anterior."
-                : `${delta > 0 ? "Subiu" : "Caiu"} ${Math.abs(delta)} pontos em relação à rodada anterior.`}
+                : `${delta > 0 ? "Subiu" : "Caiu"} ${Math.abs(delta)} pontos em relação à rodada anterior${
+                    deltaNaMargem
+                      ? ", dentro da margem de erro: ainda não dá para dizer que mudou de verdade."
+                      : "."
+                  }`}
             </p>
           )}
         </>
@@ -518,25 +581,23 @@ export function VisibilityBoard({
                       {respostas.length === 0 &&
                         (q.intent ? " · " : "") +
                           (runAtivo ? "Aguardando resposta" : "Ainda não consultada")}
-                      {respostas.map((r) => (
-                        <span key={r.id}>
-                          {" · "}
-                          <span
-                            className={cn(
-                              r.cited && "font-medium text-nota-excelente",
-                            )}
-                          >
-                            {ROTULO_MOTOR[r.provider] ?? r.provider}:{" "}
-                            {r.cited
-                              ? r.match_type === "domain" && r.position
-                                ? `citou você (${r.position}ª fonte)`
-                                : "citou você"
-                              : r.found_in_search
-                                ? "achou seu site e citou outro"
-                                : "não citou"}
+                      {placarPorMotor(respostas).map((m) => {
+                        const doMotor = respostas.filter((r) => r.provider === m.provider);
+                        const achou = doMotor.some((r) => !r.cited && r.found_in_search);
+                        return (
+                          <span key={m.provider}>
+                            {" · "}
+                            <span
+                              className={cn(
+                                m.citadas > 0 && "font-medium text-nota-excelente",
+                              )}
+                            >
+                              {ROTULO_MOTOR[m.provider] ?? m.provider}:{" "}
+                              {leituraDoMotor(m.citadas, m.total, achou)}
+                            </span>
                           </span>
-                        </span>
-                      ))}
+                        );
+                      })}
                     </p>
 
                     {respostas.length > 0 && (
@@ -572,10 +633,15 @@ export function VisibilityBoard({
                       <div className="mt-3 space-y-3">
                         {respostas
                           .filter((r) => r.answer_excerpt)
-                          .map((r) => (
+                          .map((r) => {
+                            const doMotor = respostas.filter((x) => x.provider === r.provider);
+                            return (
                             <div key={r.id}>
                               <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
                                 {ROTULO_MOTOR[r.provider] ?? r.provider}
+                                {doMotor.length > 1 &&
+                                  `, resposta ${doMotor.indexOf(r) + 1} de ${doMotor.length}`}
+                                {r.cited && " · citou você"}
                               </p>
                               {/* Resposta inteira, com rolagem: cortar em N
                                   caracteres deixava a frase pela metade. O HTML
@@ -597,7 +663,8 @@ export function VisibilityBoard({
                               )}
                               <FontesDaResposta check={r} />
                             </div>
-                          ))}
+                            );
+                          })}
                       </div>
                     )}
                   </div>

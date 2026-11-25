@@ -4,7 +4,7 @@ import { isSafeCustomDomain } from "./dominio.ts";
 import { normalizarPasta } from "./pasta.ts";
 import { slugify } from "./utils.ts";
 
-type BlogEndereco = {
+export type BlogEndereco = {
   subdomain: string;
   custom_domain: string | null;
   domain_status: DomainStatus;

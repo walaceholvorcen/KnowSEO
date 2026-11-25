@@ -5,6 +5,7 @@ import {
   listarSitemaps,
 } from "@/lib/google/search-console";
 import { resumirIndexacao, type Indexacao } from "@/lib/google/indexacao";
+import { compararPeriodos, type Movimento } from "@/lib/google/movimento";
 import {
   montarDesempenho,
   type Desempenho,
@@ -116,6 +117,57 @@ export async function carregarIndexacao(params: {
     slugs.slice(0, ARTIGOS_CONFERIDOS).map((slug) => `${publica.url}/${slug}`),
   ).catch((err) => {
     console.error("[indexação] conferência com o Google falhou", err);
+    return null;
+  });
+}
+
+// O Google leva dois a três dias para fechar cada dia. Comparar períodos que
+// terminam hoje faria o atual ter três dias a menos de dado que o anterior -
+// toda página pareceria perder cliques. Os dois terminam antes da lacuna.
+const DIAS_SEM_DADO = 3;
+
+// Cinco leituras: consultas e páginas dos dois períodos, e consulta × página
+// do atual. Guardado por meia hora, como o resto da tela.
+const lerMovimento = unstable_cache(
+  async (
+    workspaceId: string,
+    siteUrl: string,
+    periodo: Periodo,
+    paginaContem: string | null,
+    hoje: string,
+  ): Promise<Movimento> => {
+    const ate = diasAntes(hoje, DIAS_SEM_DADO);
+    const desde = diasAntes(ate, periodo - 1);
+    const ateAntes = diasAntes(desde, 1);
+    const desdeAntes = diasAntes(ateAntes, periodo - 1);
+    const agora = { workspaceId, siteUrl, desde, ate, paginaContem };
+    const antes = { ...agora, desde: desdeAntes, ate: ateAntes };
+    const [consultasAgora, consultasAntes, paginasAgora, paginasAntes, consultaPagina] =
+      await Promise.all([
+        consultarDesempenho({ ...agora, dimensao: "query" }),
+        consultarDesempenho({ ...antes, dimensao: "query" }),
+        consultarDesempenho({ ...agora, dimensao: "page" }),
+        consultarDesempenho({ ...antes, dimensao: "page" }),
+        consultarDesempenho({ ...agora, dimensao: "query", segunda: "page" }),
+      ]);
+    return compararPeriodos({ consultasAgora, consultasAntes, paginasAgora, paginasAntes, consultaPagina });
+  },
+  ["movimento-google-v3"],
+  { revalidate: 1800 },
+);
+
+/** O que mudou contra o período anterior de mesmo tamanho. Null se o Google falhar. */
+export async function carregarMovimento(params: {
+  workspaceId: string;
+  blog: Blog;
+  periodo: Periodo;
+  escopo: Escopo;
+  hoje: string;
+}): Promise<Movimento | null> {
+  const { workspaceId, blog, periodo, escopo, hoje } = params;
+  const filtro = escopo === "blog" ? enderecoDoBlog(blog) : null;
+  return lerMovimento(workspaceId, blog.gsc_property!, periodo, filtro, hoje).catch((err) => {
+    console.error("[movimento] leitura do Search Console falhou", err);
     return null;
   });
 }

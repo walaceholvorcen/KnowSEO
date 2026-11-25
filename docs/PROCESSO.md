@@ -3573,3 +3573,89 @@ em seguida, disse o contrário - baixado quatro segundos após o envio, 14
 endereços, zero erros. Aquela mensagem é o estado inicial da tela do
 Google, não um defeito do arquivo (conferido: 200, `application/xml`, XML
 válido, sem `noindex`).
+
+## 81. O que o benchmark de 13 repositórios trouxe para o produto
+
+Em 25/11 foram lidos 13 projetos abertos de SEO e GEO no GitHub, sem
+instalar nada (geo-optimizer-skill, geo-seo-claude, claude-seo, open-seo,
+elmo, potato, niubigeo, aws-samples de citação, seomachine e outros). A
+descoberta que orienta tudo: o único teste sério (geo-optimizer-skill, 341
+páginas contra o Perplexity, com estudo registrado antes de rodar) não
+achou relação entre a nota GEO e ser citado. A nota IA da Auditoria diz
+"apto a ser lido"; quem prova citação é o Raio X. Cinco coisas entraram.
+
+### 1. Raio X com número confiável
+- **Cada pergunta duas vezes por motor, a terceira só onde as duas
+  discordam** (`paresParaDesempate`). A mesma IA, perguntada de novo, às
+  vezes cita e às vezes não; uma resposta só fazia o número da semana
+  depender do sorteio. Rodada de 10 perguntas no Claude: 20 a ~25
+  consultas, ~2 min (medido: 10 consultas levavam ~55s).
+- **Margem de erro** (intervalo de Wilson, 95%) ao lado do número, com o
+  tamanho da amostra: "0%, pode estar entre 0% e 28%, com 10 respostas".
+  Wilson e não a fórmula simples porque não fica negativo com taxa perto de
+  zero, que é o caso comum.
+- **A evolução só compara rodadas do mesmo conjunto de perguntas**, e
+  "Gerar perguntas" avisa que recomeça a série. Variação dentro da margem é
+  dita como tal ("ainda não dá para dizer que mudou").
+- A linha da pergunta conta as respostas ("citou você em 1 de 3") em vez de
+  repetir o motor três vezes.
+
+### 2. "O que mudou" no Desempenho - Google
+`compararPeriodos` (função pura): o período contra o anterior de mesmo
+tamanho, os dois terminando três dias antes de hoje (o Google ainda não
+fechou esses dias; sem o recuo, toda página "perderia" cliques). Lista quem
+subiu ou caiu 2+ posições (com 10+ impressões nos dois lados), termos na
+posição 8 a 20, páginas que perderam 30% dos cliques e páginas disputando
+a mesma busca. A disputa é agrupada por par de páginas (as variações de uma
+busca são o mesmo problema) e ignora a home, que aparecer junto de outra
+página numa busca pela marca é o normal. Com dado real achou que
+`/gestao-de-performance/` e `/sobre-nosotros` da DataKnow disputam 19
+buscas.
+
+### 3. Trava de qualidade
+Três avisos (não travas), calibrados nos 33 artigos publicados - nenhum
+dispara neles:
+- **Dado sem fonte**: só estatística de população ("73% das empresas") ou
+  estudo sem nome ("estudos mostram"), sem link, sem atribuição escrita e
+  sem citação entre parênteses. A primeira versão pegava qualquer
+  porcentagem e acusava a regra 50/30/20 e o Gartner nomeado.
+- **Texto genérico**: menos de 2 nomes próprios ou números por 100
+  palavras (os reais ficam entre 2,8 e 11,2).
+- **Ritmo de máquina**: desvio do tamanho das frases abaixo de 4 (os reais
+  ficam entre 6,6 e 22,7).
+- `htmlSeguro` tira caracteres invisíveis (largura zero, controle de
+  direção).
+
+### 4. Aviso ao Bing (IndexNow)
+A cada publicação (manual ou pelo robô diário) o Bing recebe a home e os
+artigos. A chave é derivada do id do blog e servida em
+`<blog>/indexnow.txt` (também na pasta). Só em produção e só para blog no
+endereço do cliente: `/b/` é `noindex`. Nunca lança. O Google não
+participa do protocolo.
+
+### 5. Três regras novas na Auditoria (nota IA)
+- `IA_BLOQUEADA_NO_ROBOTS`: robots.txt barra o robô de busca ou de leitura
+  de ChatGPT, Claude ou Perplexity. Bloquear só o treino (GPTBot,
+  ClaudeBot) não é achado. `robotsBloqueiaTudo` passou a ser o mesmo
+  `robotsBloqueiaAgente` com o Googlebot.
+- `IA_BLOQUEADA_NO_SERVIDOR`: a home pedida como OAI-SearchBot, Claude-
+  SearchBot e PerplexityBot volta 401/403/429/503 enquanto abre normal. O
+  texto avisa que o teste se apresenta pelo nome a partir de outro
+  endereço, então pede confirmação no painel antes de mudar.
+- `SCHEMA_FORA_DO_TEXTO`: pergunta de FAQ ou título de artigo no JSON-LD
+  que a página não mostra.
+
+Conferido em sites reais: DataKnow, Mibolsillo, os dois blogs e
+isocialweb passam limpos; o nytimes.com acusa as duas primeiras, e é
+verdade (o robots.txt dele barra os seis robôs e o servidor responde 403).
+
+### O que ficou de fora, e por quê
+ai.txt, `/ai/*.json`, Content-Signal e negociação de markdown: nenhum
+mostrou efeito. Nota GEO calculada por IA: opinião com cara de número.
+Vigia de artigos no ar (mudança de título/canonical): vale quando houver
+mais clientes publicando. ChatGPT pelo app real exige intermediário pago
+(DataForSEO ou Cloro, ~US$ 0,65-1,20 por pergunta/mês); o Perplexity mudou
+de endpoint (`/v1/agent`) em 27/09 e o adaptador precisa ser reescrito
+antes de ligar. Um dos repositórios afirma que a política do Google proíbe
+mostrar dado do Planejador de Palavras-chave fora de campanha - não
+conferido, e precisa ser antes de vender volume de busca como recurso.

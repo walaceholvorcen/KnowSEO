@@ -6,6 +6,7 @@ import { PerplexityProvider } from "./perplexity-provider";
 import { GeminiProvider } from "./gemini-provider";
 import type { AiProvider } from "./provider";
 import { MOTORES_DESLIGADOS } from "@/lib/modulos";
+import { paresParaDesempate, type CheckMin } from "./resumo";
 import type { AiQuery, Blog } from "@/types";
 
 // Gera perguntas e responde à checagem de "a IA está configurada?" das
@@ -49,6 +50,12 @@ const CONCORRENCIA = 6;
 // Uma rodada "rodando" há mais que isto morreu sem fechar (a função passou
 // do tempo máximo). Sem esta regra ela travaria o botão para sempre.
 const RODADA_ORFA_MS = 10 * 60 * 1000;
+
+// Cada pergunta é feita duas vezes a cada motor, e uma terceira só onde as
+// duas respostas discordam (ver paresParaDesempate). Uma resposta só por
+// pergunta fazia o número da semana depender do sorteio daquela resposta: a
+// mesma IA, perguntada de novo, às vezes cita e às vezes não.
+export const RESPOSTAS_POR_PERGUNTA = 2;
 
 export interface RunSummary {
   total: number;
@@ -124,7 +131,9 @@ export async function iniciarRodada(params: {
     .insert({
       blog_id: params.blogId,
       providers: params.providers.map((p) => p.name),
-      total: params.perguntas * params.providers.length,
+      // O mínimo garantido. O desempate soma ao total quando acontece, e a
+      // barra de progresso acompanha.
+      total: params.perguntas * params.providers.length * RESPOSTAS_POR_PERGUNTA,
       origem: params.origem,
     })
     .select("id")
@@ -173,9 +182,10 @@ export async function executarRodada(params: {
   const brandNames = blog.brand_names?.length ? blog.brand_names : [blog.name];
   const brandDomains = dominiosDaMarca(blog);
 
-  const tarefas = queries.flatMap((query) =>
-    providers.map((provider) => ({ query, provider })),
-  );
+  const tarefas = Array.from({ length: RESPOSTAS_POR_PERGUNTA }, () =>
+    queries.flatMap((query) => providers.map((provider) => ({ query, provider }))),
+  ).flat();
+  const respondidas: CheckMin[] = [];
   const summary: RunSummary = {
     total: tarefas.length,
     cited: 0,
@@ -183,54 +193,68 @@ export async function executarRodada(params: {
     runId,
   };
 
-  try {
-    await mapWithConcurrency(tarefas, CONCORRENCIA, async ({ query, provider }) => {
-      try {
-        const answer = await provider.ask(query.question);
-        // Sem coluna para isto: fica no log, para dar para medir se 8000
-        // tokens bastam antes de pensar em migração.
-        if (answer.truncada) {
-          console.warn("[ai-visibility] resposta cortada por limite", provider.name, query.id);
-        }
-
-        const result = detectCitation({
-          answerText: answer.answerText,
-          citationUrls: answer.citationUrls,
-          searchResultUrls: answer.searchResultUrls,
-          brandNames,
-          brandDomains,
-        });
-
-        if (result.cited) summary.cited++;
-
-        const { error } = await admin.from("ai_visibility_checks").insert({
-          blog_id: blog.id,
-          run_id: runId,
-          query_id: query.id,
-          provider: answer.provider,
-          cited: result.cited,
-          match_type: result.matchType,
-          position: result.position,
-          competitors: result.competitors.slice(0, 10),
-          directories: result.directories.slice(0, 10),
-          found_in_search: result.foundInSearch,
-          // Resposta inteira: a coluna é text sem limite (migration 0002) e
-          // qualquer corte (500, depois 2000) acabava no meio da frase que
-          // recomendava o concorrente — justo a prova que a tela mostra.
-          answer_excerpt: answer.answerText,
-        });
-        if (error) throw new Error(error.message);
-      } catch (err) {
-        summary.failed++;
-        summary.primeiroErro ??= `${provider.name}: ${err instanceof Error ? err.message : String(err)}`;
-        console.error(
-          "[ai-visibility] falha",
-          provider.name,
-          query.id,
-          err,
-        );
+  const responder = async ({ query, provider }: { query: AiQuery; provider: AiProvider }) => {
+    try {
+      const answer = await provider.ask(query.question);
+      // Sem coluna para isto: fica no log, para dar para medir se 8000
+      // tokens bastam antes de pensar em migração.
+      if (answer.truncada) {
+        console.warn("[ai-visibility] resposta cortada por limite", provider.name, query.id);
       }
+
+      const result = detectCitation({
+        answerText: answer.answerText,
+        citationUrls: answer.citationUrls,
+        searchResultUrls: answer.searchResultUrls,
+        brandNames,
+        brandDomains,
+      });
+
+      if (result.cited) summary.cited++;
+
+      const { error } = await admin.from("ai_visibility_checks").insert({
+        blog_id: blog.id,
+        run_id: runId,
+        query_id: query.id,
+        provider: answer.provider,
+        cited: result.cited,
+        match_type: result.matchType,
+        position: result.position,
+        competitors: result.competitors.slice(0, 10),
+        directories: result.directories.slice(0, 10),
+        found_in_search: result.foundInSearch,
+        // Resposta inteira: a coluna é text sem limite (migration 0002) e
+        // qualquer corte (500, depois 2000) acabava no meio da frase que
+        // recomendava o concorrente — justo a prova que a tela mostra.
+        answer_excerpt: answer.answerText,
+      });
+      if (error) throw new Error(error.message);
+      respondidas.push({ query_id: query.id, provider: provider.name, cited: result.cited });
+    } catch (err) {
+      summary.failed++;
+      summary.primeiroErro ??= `${provider.name}: ${err instanceof Error ? err.message : String(err)}`;
+      console.error(
+        "[ai-visibility] falha",
+        provider.name,
+        query.id,
+        err,
+      );
+    }
+  };
+
+  try {
+    await mapWithConcurrency(tarefas, CONCORRENCIA, responder);
+
+    const desempate = paresParaDesempate(respondidas).flatMap(({ query_id, provider }) => {
+      const query = queries.find((q) => q.id === query_id);
+      const motor = providers.find((p) => p.name === provider);
+      return query && motor ? [{ query, provider: motor }] : [];
     });
+    if (desempate.length) {
+      summary.total += desempate.length;
+      await admin.from("ai_visibility_runs").update({ total: summary.total }).eq("id", runId);
+      await mapWithConcurrency(desempate, CONCORRENCIA, responder);
+    }
   } finally {
     // A rodada fecha mesmo se algo explodir fora do laço - uma rodada presa
     // em "running" trava o botão da tela até virar órfã.

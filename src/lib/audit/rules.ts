@@ -1,5 +1,6 @@
 import type { Category, Finding, PageSnapshot, SiteSignals, Severity } from "./types";
 import { blocoJsonLd, fichaDoSite, nomeComparavel } from "./entidade.ts";
+import { ROBOS_DE_BUSCA_IA, STATUS_DE_BLOQUEIO, robotsBloqueiaAgente, schemaForaDoTexto } from "./ia.ts";
 
 // Regras de auditoria. Função pura: recebe sinais, devolve achados.
 // Nenhuma regra chama rede - é o que permite testar cada uma com um caso
@@ -50,41 +51,7 @@ function duplicatesBy(
 // Googlebot ele manda, senão vale o grupo do curinga. Grupos de outros
 // agentes não dizem nada sobre a indexação no Google.
 export function robotsBloqueiaTudo(body: string): boolean {
-  const grupos: { agentes: string[]; bloqueia: boolean }[] = [];
-  let atual: { agentes: string[]; bloqueia: boolean } | null = null;
-  let ultimaFoiAgente = false;
-
-  for (const bruta of body.split(/\r?\n/)) {
-    const linha = bruta.replace(/#.*/, "").trim();
-    if (!linha) continue;
-
-    const separador = linha.indexOf(":");
-    if (separador === -1) continue;
-
-    const campo = linha.slice(0, separador).trim().toLowerCase();
-    const valor = linha.slice(separador + 1).trim();
-
-    if (campo === "user-agent") {
-      // User-agents seguidos compartilham o mesmo bloco de regras.
-      if (!ultimaFoiAgente) {
-        atual = { agentes: [], bloqueia: false };
-        grupos.push(atual);
-      }
-      atual?.agentes.push(valor.toLowerCase());
-      ultimaFoiAgente = true;
-      continue;
-    }
-
-    ultimaFoiAgente = false;
-    if (campo === "disallow" && valor === "/" && atual) {
-      atual.bloqueia = true;
-    }
-  }
-
-  const doGoogle = grupos.filter((g) => g.agentes.includes("googlebot"));
-  if (doGoogle.length) return doGoogle.some((g) => g.bloqueia);
-
-  return grupos.filter((g) => g.agentes.includes("*")).some((g) => g.bloqueia);
+  return robotsBloqueiaAgente(body, "googlebot");
 }
 
 // A resposta a um caminho inventado é a home disfarçada? Mesmo título e
@@ -673,6 +640,72 @@ export function runRules(signals: SiteSignals): Finding[] {
     });
   }
 
+  // ------------------------------------------------ acesso dos robôs de IA
+  //
+  // Só os robôs que decidem a citação (busca e leitura). Bloquear os de
+  // treino (GPTBot, ClaudeBot) é escolha legítima do cliente e não tira o
+  // site de resposta nenhuma - por isso não entram na conta.
+  if (signals.robotsTxt.found) {
+    const body = signals.robotsTxt.body ?? "";
+    const barrados = ROBOS_DE_BUSCA_IA.filter((r) => robotsBloqueiaAgente(body, r.agente));
+    if (barrados.length) {
+      const assistentes = [...new Set(barrados.map((r) => r.assistente))];
+      add({
+        code: "IA_BLOQUEADA_NO_ROBOTS",
+        severity: "high",
+        category: "geo",
+        title: `O robots.txt impede ${assistentes.join(", ")} de ler o site`,
+        impact:
+          "O assistente não pode usar o que não pode ler. Com o robô de busca dele barrado, o site não entra nas respostas, por melhor que seja o conteúdo.",
+        evidence: `Bloqueados: ${barrados.map((r) => r.agente).join(", ")}`,
+        fix: `Libere no robots.txt (User-agent: ${barrados[0].agente} / Allow: /). Se a intenção é não alimentar o treino de modelos, bloqueie só GPTBot e ClaudeBot: isso não tira o site das respostas.`,
+        affectedUrls: [`${signals.origin}/robots.txt`],
+        affectedCount: 1,
+      });
+    }
+  }
+
+  // O robots.txt libera e o firewall (Cloudflare, Wordfence) barra: o caso
+  // que ninguém vê, porque o site abre normal no navegador. O Cloudflare
+  // ativou "bloquear robôs de IA" por padrão em domínios novos em 2025.
+  const home = pages.find((p) => p.url.replace(/\/$/, "") === signals.origin);
+  const recusados = (signals.acessoDeIA ?? []).filter(
+    (a) => a.status === null || STATUS_DE_BLOQUEIO.has(a.status),
+  );
+  if (home && home.statusCode < 400 && recusados.length) {
+    add({
+      code: "IA_BLOQUEADA_NO_SERVIDOR",
+      severity: "high",
+      category: "geo",
+      title: "O servidor recusa robôs de IA que o robots.txt libera",
+      impact:
+        "A página abre para pessoas e devolve erro para o robô do assistente. Para a IA o site está fora do ar - e nada no robots.txt denuncia isso.",
+      evidence: recusados
+        .map((a) => `${a.agente}: ${a.status === null ? "sem resposta" : `respondeu ${a.status}`}`)
+        .join("; "),
+      fix: "Confira o firewall do site. No Cloudflare: Security > Bots, desligue \"Block AI bots\" ou libere os robôs de busca (OAI-SearchBot, Claude-SearchBot, PerplexityBot). Nosso teste se apresenta como esses robôs a partir de outro endereço, então confirme no painel antes de mudar.",
+      affectedUrls: [signals.origin],
+      affectedCount: 1,
+    });
+  }
+
+  const divergentes = pages
+    .map((p) => ({ p, fora: schemaForaDoTexto(p.html) }))
+    .filter((x) => x.fora.length);
+  if (divergentes.length) {
+    add({
+      code: "SCHEMA_FORA_DO_TEXTO",
+      severity: "medium",
+      category: "geo",
+      title: `${divergentes.length} página(s) com dado estruturado que o texto não mostra`,
+      impact:
+        "Pergunta de FAQ ou título no JSON-LD que não aparece na página é tratado pelo Google como marcação enganosa, e a IA encontra duas versões da mesma página.",
+      evidence: `Ex.: "${divergentes[0].fora[0].slice(0, 120)}" está no JSON-LD de ${divergentes[0].p.url} e não no texto`,
+      fix: "Faça o JSON-LD repetir exatamente o que a página mostra. Costuma acontecer quando o texto é editado e o dado estruturado fica para trás.",
+      ...scope(divergentes.map((x) => x.p)),
+    });
+  }
+
   return findings;
 }
 
@@ -718,6 +751,9 @@ export const CHECAGENS: {
   { code: "ENTIDADE_NOME_INCONSISTENTE", rotulo: "Um nome só para a empresa", categoria: "geo", nota: "ia" },
   { code: "TEXTO_GENERICO", rotulo: "Texto com fatos, não folheto", categoria: "geo", nota: "ia" },
   { code: "NO_HEADING_STRUCTURE", rotulo: "Textos longos com subtítulos", categoria: "geo", nota: "ia" },
+  { code: "IA_BLOQUEADA_NO_ROBOTS", rotulo: "robots.txt libera a busca das IAs", categoria: "geo", nota: "ia" },
+  { code: "IA_BLOQUEADA_NO_SERVIDOR", rotulo: "Servidor atende robôs de IA", categoria: "geo", nota: "ia" },
+  { code: "SCHEMA_FORA_DO_TEXTO", rotulo: "Dado estruturado igual ao texto", categoria: "geo", nota: "ia" },
 ];
 
 // ---------------------------------------------------------------------------
@@ -747,6 +783,8 @@ const GEO_CATEGORIES = new Set(["geo"]);
 // páginas.
 const SITE_INTEIRO = new Set([
   "SOFT_404",
+  "IA_BLOQUEADA_NO_ROBOTS",
+  "IA_BLOQUEADA_NO_SERVIDOR",
   "NO_LLMS_TXT",
   "SEM_ENTIDADE",
   "ENTIDADE_SEM_SAMEAS",

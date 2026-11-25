@@ -7,6 +7,7 @@ import {
   iniciarRodada,
   rodadaEmAndamento,
   MAX_PERGUNTAS,
+  RESPOSTAS_POR_PERGUNTA,
 } from "@/lib/ai-visibility/runner";
 import type { AiQuery, Blog } from "@/types";
 
@@ -111,6 +112,6 @@ export async function POST(request: Request) {
 
   return NextResponse.json({
     runId,
-    total: queries.length * providers.length,
+    total: queries.length * providers.length * RESPOSTAS_POR_PERGUNTA,
   });
 }

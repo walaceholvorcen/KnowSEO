@@ -2,8 +2,11 @@ import { test, describe } from "node:test";
 import assert from "node:assert/strict";
 import { avaliarArtigo, type ArtigoParaAvaliar } from "./qualidade.ts";
 
+// Enchimento com nome próprio no meio: só "palavra" repetida é, com razão,
+// texto genérico para a regra de densidade.
+const ENCHIMENTO = ["palavra", "Madrid", "custa", "em", "média"];
 const paragrafo = (n: number) =>
-  `<p>${"palavra ".repeat(n).trim()}</p>`;
+  `<p>${Array.from({ length: n }, (_, i) => ENCHIMENTO[i % ENCHIMENTO.length]).join(" ")}</p>`;
 
 // Artigo que passa em tudo: serve de base para os testes mudarem um ponto
 // de cada vez e provarem que a regra testada é a que disparou.
@@ -106,5 +109,39 @@ describe("trava de qualidade", () => {
       keywordsPublicadas: ["Quanto custa agência de tráfego pago"],
     });
     assert.ok(c.includes("CANIBALIZACAO"));
+  });
+});
+
+import { dadosSemFonte, densidade, variacaoDasFrases } from "./qualidade.ts";
+
+describe("dado sem fonte", () => {
+  test("estatística de população sem dono é acusada", () => {
+    assert.equal(dadosSemFonte("<p>O 73% das empresas perde clientes por isso.</p>").length, 1);
+    assert.equal(dadosSemFonte("<p>Estudos mostram que o e-mail converte mais.</p>").length, 1);
+  });
+
+  test("com link, atribuição ou citação entre parênteses passa", () => {
+    assert.equal(dadosSemFonte('<p>O 73% das empresas, <a href="https://ine.es">segundo dados</a>.</p>').length, 0);
+    assert.equal(dadosSemFonte("<p>Segundo o INE, 73% das empresas são pequenas.</p>").length, 0);
+    assert.equal(dadosSemFonte("<p>El 99,8% de las compañías son pymes (INE, DIRCE 2025).</p>").length, 0);
+  });
+
+  test("porcentagem de regra ou exemplo de conta não é pesquisa", () => {
+    assert.equal(dadosSemFonte("<p>Separe 50% para necessidades e 30% para desejos.</p>").length, 0);
+    assert.equal(dadosSemFonte("<p>Um fee que reduz o CPA em 30% se paga.</p>").length, 0);
+  });
+});
+
+describe("texto genérico e ritmo", () => {
+  test("texto que nomeia coisas tem densidade; o vazio não", () => {
+    assert.ok(densidade("Em Madrid a Hacienda cobra 21% de IVA desde 2012 no Modelo 303.") > 2);
+    assert.equal(densidade("a empresa oferece soluções completas para o seu negócio crescer sempre"), 0);
+  });
+
+  test("frases do mesmo tamanho têm desvio baixo", () => {
+    const igual = Array(20).fill("Esta frase tem sempre seis palavras.").join(" ");
+    assert.ok(variacaoDasFrases(igual).desvio < 1);
+    const variado = "Curta. " + "Esta outra frase é bem mais longa e carrega bem mais coisa dentro dela. ".repeat(2) + "Média aqui de novo.";
+    assert.ok(variacaoDasFrases(variado).desvio > 3);
   });
 });

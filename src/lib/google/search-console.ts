@@ -85,11 +85,13 @@ export async function consultarDesempenho(params: {
   desde: string; // AAAA-MM-DD
   ate: string;
   dimensao: "date" | "query" | "page";
+  /** Segunda dimensão: consulta × página, para achar duas páginas na mesma busca. */
+  segunda?: "page";
   /** Restringe às páginas cujo endereço contém este trecho (só o blog). */
   paginaContem?: string | null;
   limite?: number;
-}): Promise<LinhaDoGoogle[]> {
-  const { workspaceId, siteUrl, desde, ate, dimensao, paginaContem, limite = 1000 } = params;
+}): Promise<(LinhaDoGoogle & { pagina?: string })[]> {
+  const { workspaceId, siteUrl, desde, ate, dimensao, segunda, paginaContem, limite = 1000 } = params;
   const token = await obterAccessToken(workspaceId);
 
   const res = await fetch(
@@ -104,7 +106,7 @@ export async function consultarDesempenho(params: {
         startDate: desde,
         endDate: ate,
         type: "web",
-        dimensions: [dimensao],
+        dimensions: segunda ? [dimensao, segunda] : [dimensao],
         rowLimit: limite,
         ...(paginaContem
           ? {
@@ -125,6 +127,7 @@ export async function consultarDesempenho(params: {
   };
   return (data.rows ?? []).map((r) => ({
     chave: r.keys[0],
+    ...(segunda ? { pagina: r.keys[1] } : {}),
     cliques: r.clicks,
     impressoes: r.impressions,
     ctr: r.ctr,

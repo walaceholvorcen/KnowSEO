@@ -59,3 +59,7 @@ test("JSON-LD não fecha o <script>", () => {
   // Continua sendo o mesmo JSON para quem lê.
   assert.equal(JSON.parse(saida).headline, "</script><script>alert(1)</script>");
 });
+
+test("caracteres invisíveis saem do texto", () => {
+  assert.equal(htmlSeguro("<p>a​b﻿c‮d</p>"), "<p>abcd</p>");
+});

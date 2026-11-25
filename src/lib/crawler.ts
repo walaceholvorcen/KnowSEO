@@ -95,13 +95,14 @@ export async function fetchComStatus(
   // "manual" para sondar um host específico: seguir o salto levaria a
   // checagem (e a requisição) para outro endereço que não o digitado.
   redirect: RequestRedirect = "follow",
+  userAgent = USER_AGENT,
 ): Promise<RespostaCrawler | null> {
   if (!isPublicHttpUrl(url)) return null;
   try {
     const res = await fetch(url, {
       redirect,
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-      headers: { "User-Agent": USER_AGENT },
+      headers: { "User-Agent": userAgent },
     });
     return { res, status: res.status, finalUrl: res.url || url };
   } catch {
